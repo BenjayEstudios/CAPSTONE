@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1790043965404,
+      "tag": "0000_blue_spirit",
+      "breakpoints": true
+    }
+  ]
+}

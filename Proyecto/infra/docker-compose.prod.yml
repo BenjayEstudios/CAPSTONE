@@ -1,0 +1,37 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cotizapp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - rest
+
+  rest:
+    build:
+      context: ..
+      dockerfile: apps/rest/Dockerfile
+    container_name: cotizapp-rest
+    restart: unless-stopped
+    env_file:
+      - ../apps/rest/.env
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.4
+    container_name: cotizapp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_USER: cotizapp
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: cotizapp
+    volumes:
+      - cotizapp-mysql-data:/var/lib/mysql
+
+volumes:
+  cotizapp-mysql-data:

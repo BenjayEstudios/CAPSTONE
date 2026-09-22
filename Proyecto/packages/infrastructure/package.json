@@ -1,0 +1,27 @@
+{
+  "name": "@cotizapp/infrastructure",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsc -b --watch --preserveWatchOutput",
+    "build": "tsc -b",
+    "check-types": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@cotizapp/domain": "workspace:*",
+    "drizzle-orm": "^0.44.0",
+    "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "@cotizapp/shared-config": "workspace:*",
+    "drizzle-kit": "^0.31.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.0.0"
+  }
+}

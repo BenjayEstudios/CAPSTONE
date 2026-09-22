@@ -1,0 +1,10 @@
+packages:
+  - "apps/rest"
+  - "apps/web"
+  - "packages/*"
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  lmdb: true
+  msgpackr-extract: true
+  nice-napi: true
