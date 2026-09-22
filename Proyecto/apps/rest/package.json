@@ -1,0 +1,31 @@
+{
+  "name": "@cotizapp/rest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --include '../../packages/domain/dist/**' --include '../../packages/application/dist/**' --include '../../packages/infrastructure/dist/**' src/server/index.ts",
+    "build": "tsc -b",
+    "start": "node dist/server/index.js",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@cotizapp/application": "workspace:*",
+    "@cotizapp/domain": "workspace:*",
+    "@cotizapp/infrastructure": "workspace:*",
+    "@fastify/cors": "^10.0.0",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@cotizapp/shared-config": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.0.0"
+  }
+}

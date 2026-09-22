@@ -1,0 +1,36 @@
+.claude/
+CLAUDE.local.md
+.env
+.env.*
+!.env.example
+
+# Node / pnpm
+node_modules/
+dist/
+build/
+.turbo/
+.pnpm-store/
+*.tsbuildinfo
+pnpm-lock.yaml.bak
+
+# Angular
+apps/web/.angular/
+apps/web/dist/
+
+# Flutter / Dart
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/.packages
+apps/mobile/build/
+apps/mobile/.pub-cache/
+apps/mobile/.pub/
+apps/mobile/**/android/.gradle
+apps/mobile/**/ios/Pods/
+
+# Drizzle
+apps/rest/drizzle/
+*.log
+
+# OS
+.DS_Store

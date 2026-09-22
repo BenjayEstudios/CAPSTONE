@@ -1,0 +1,9 @@
+{
+  "extends": "@cotizapp/shared-config/typescript/base",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [{ "path": "../domain" }],
+  "include": ["src"]
+}

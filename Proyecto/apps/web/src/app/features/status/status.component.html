@@ -1,0 +1,18 @@
+<div class="status-card">
+  <h1>Cotizapp</h1>
+  <p class="subtitle">Frontend levantado correctamente ✅</p>
+
+  @switch (state()) {
+    @case ("loading") {
+      <p class="badge badge-loading">Conectando con el backend…</p>
+    }
+    @case ("ok") {
+      <p class="badge badge-ok">Backend conectado</p>
+      <p class="detail">{{ response()?.status }} · {{ response()?.timestamp }}</p>
+    }
+    @case ("error") {
+      <p class="badge badge-error">No se pudo conectar al backend</p>
+      <p class="detail">Verifica que apps/rest este corriendo y que environment.apiUrl apunte al puerto correcto.</p>
+    }
+  }
+</div>

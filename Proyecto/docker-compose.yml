@@ -1,0 +1,99 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: cotizapp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_USER: cotizapp
+      MYSQL_PASSWORD: cotizapp
+      MYSQL_ROOT_PASSWORD: cotizapp
+      MYSQL_DATABASE: cotizapp
+    ports:
+      - "3306:3306"
+    volumes:
+      - cotizapp-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ucotizapp", "-pcotizapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Contenedores de desarrollo: montan el repo como bind mount y corren
+  # `pnpm dev` con hot-reload (tsx watch / ng serve). Fijan node:22-alpine
+  # (pnpm@11.17.0, el que declara el package.json raiz, requiere Node >=22.13)
+  # para que todo el equipo use la misma version de Node sin importar lo
+  # que tengan instalado localmente. No son para produccion: para eso esta
+  # apps/rest/Dockerfile + infra/docker-compose.prod.yml.
+  rest:
+    image: node:22-alpine
+    container_name: cotizapp-rest
+    working_dir: /repo
+    env_file:
+      - ./apps/rest/.env
+    environment:
+      # Overrides sobre el .env: dentro del contenedor hay que escuchar en
+      # todas las interfaces y hablarle a mysql por el nombre del servicio,
+      # no por localhost.
+      HOST: 0.0.0.0
+      DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/repo
+      # node_modules propios del contenedor: si no se aislan con volumenes,
+      # el `pnpm install` de adentro pisaria el node_modules del host (que
+      # puede tener binarios nativos de otro SO/arquitectura).
+      - rest-root-node-modules:/repo/node_modules
+      - rest-app-node-modules:/repo/apps/rest/node_modules
+      - rest-web-node-modules:/repo/apps/web/node_modules
+      - rest-domain-node-modules:/repo/packages/domain/node_modules
+      - rest-application-node-modules:/repo/packages/application/node_modules
+      - rest-infrastructure-node-modules:/repo/packages/infrastructure/node_modules
+      - rest-shared-config-node-modules:/repo/packages/shared-config/node_modules
+    # turbo run dev --filter=@cotizapp/rest... (con "...") corre el dev de
+    # rest Y el de sus dependencias del workspace (domain/application/
+    # infrastructure, que compilan en modo watch) para que un cambio ahi
+    # tambien reinicie el server. Un `pnpm --filter @cotizapp/rest dev` a
+    # secas no lo haria.
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec turbo run dev --filter=@cotizapp/rest..."
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    image: node:22-alpine
+    container_name: cotizapp-web
+    working_dir: /repo
+    env_file:
+      - ./apps/web/.env
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/repo
+      - web-root-node-modules:/repo/node_modules
+      - web-app-node-modules:/repo/apps/web/node_modules
+      - web-rest-node-modules:/repo/apps/rest/node_modules
+      - web-domain-node-modules:/repo/packages/domain/node_modules
+      - web-application-node-modules:/repo/packages/application/node_modules
+      - web-infrastructure-node-modules:/repo/packages/infrastructure/node_modules
+      - web-shared-config-node-modules:/repo/packages/shared-config/node_modules
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/web exec ng serve --host 0.0.0.0 --port 4200"
+    depends_on:
+      - rest
+
+volumes:
+  cotizapp-mysql-data:
+  rest-root-node-modules:
+  rest-app-node-modules:
+  rest-web-node-modules:
+  rest-domain-node-modules:
+  rest-application-node-modules:
+  rest-infrastructure-node-modules:
+  rest-shared-config-node-modules:
+  web-root-node-modules:
+  web-app-node-modules:
+  web-rest-node-modules:
+  web-domain-node-modules:
+  web-application-node-modules:
+  web-infrastructure-node-modules:
+  web-shared-config-node-modules:
