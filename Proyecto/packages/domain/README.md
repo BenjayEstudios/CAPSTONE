@@ -1,7 +1,7 @@
 # @cotizapp/domain
 
 Capa de dominio: TypeScript puro, sin dependencias de infraestructura (nada
-de Drizzle, MySQL, Fastify). Por eso `apps/web` puede importarlo
+de Drizzle, MySQL, Fastify). Por eso `apps/ecommerce` puede importarlo
 directamente sin arrastrar dependencias de servidor.
 
 ## Estructura

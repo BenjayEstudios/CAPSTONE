@@ -10,7 +10,7 @@ features/<feature>/
 ```
 
 Previstas para el distribuidor (esta app **no** incluye catálogo de compra
-ni checkout — eso es exclusivo de `apps/web`):
+ni checkout — eso es exclusivo de `apps/ecommerce`):
 
 - `estadisticas` — ventas, visitas al perfil, desempeño por producto.
 - `calificaciones` — reseñas recibidas de clientes.

@@ -24,7 +24,7 @@ export function agregarAlCarro(deps: { carroRepository: CarroRepository }) {
 ```
 
 Quien arma `deps` (con la implementación real del repositorio) es el
-composition root de `apps/rest` (`src/server/app.ts`), no este paquete.
+composition root de `apps/backend` (`src/server/app.ts`), no este paquete.
 
 ## Dependencias
 

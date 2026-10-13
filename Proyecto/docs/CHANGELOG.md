@@ -4,6 +4,27 @@ Bitácora de cambios relevantes (features, decisiones de arquitectura,
 refactors grandes). Cada entrada: fecha, qué cambió, por qué, y qué carpetas
 toca.
 
+## 2026-10-13 — Rename de apps: rest→backend, web→ecommerce, + admin-site
+
+Se renombró `apps/rest` a `apps/backend` y `apps/web` a `apps/ecommerce` para
+que el nombre de carpeta describa el rol de cada app en vez de su protocolo
+(REST) o su naturaleza técnica (web), y para dejar espacio al nuevo nombre
+`apps/admin-site`. Se agregó `apps/admin-site` (Angular, scaffold mínimo,
+misma convención que `apps/ecommerce`) como la futura interfaz de
+administración del sitio (gestión de usuarios, moderación, catálogo global —
+aún sin implementar).
+
+**Toca**: nombres de paquete (`@cotizapp/backend`, `@cotizapp/ecommerce`),
+`pnpm-workspace.yaml`, `docker-compose.yml` (servicios, contenedores,
+volúmenes), `infra/docker-compose.prod.yml`, `infra/nginx/nginx.conf`,
+`apps/backend/Dockerfile`, `apps/ecommerce/angular.json` (nombre de proyecto,
+`outputPath`, build targets), `.gitignore`, `README.md`,
+`docs/ARCHITECTURE.md`, comentarios de referencia cruzada en
+`packages/application`, `packages/domain`, `packages/shared-config`,
+`apps/mobile`. Las entradas anteriores de este changelog mencionan `apps/rest`
+y `apps/web` porque describen el estado del repo en ese momento — se dejan
+sin editar.
+
 ## 2026-09-22 — Auth por rutas (preHandler) + rutas como RouteOptions
 
 Se agregó `apps/rest/src/plugins/auth.ts` (`requireAuth`/`requireRol`, como

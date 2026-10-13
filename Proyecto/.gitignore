@@ -14,8 +14,10 @@ build/
 pnpm-lock.yaml.bak
 
 # Angular
-apps/web/.angular/
-apps/web/dist/
+apps/ecommerce/.angular/
+apps/ecommerce/dist/
+apps/admin-site/.angular/
+apps/admin-site/dist/
 
 # Flutter / Dart
 apps/mobile/.dart_tool/
@@ -29,7 +31,7 @@ apps/mobile/**/android/.gradle
 apps/mobile/**/ios/Pods/
 
 # Drizzle
-apps/rest/drizzle/
+apps/backend/drizzle/
 *.log
 
 # OS
