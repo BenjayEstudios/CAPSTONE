@@ -8,16 +8,16 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - rest
+      - backend
 
-  rest:
+  backend:
     build:
       context: ..
-      dockerfile: apps/rest/Dockerfile
-    container_name: cotizapp-rest
+      dockerfile: apps/backend/Dockerfile
+    container_name: cotizapp-backend
     restart: unless-stopped
     env_file:
-      - ../apps/rest/.env
+      - ../apps/backend/.env
     depends_on:
       - mysql
 

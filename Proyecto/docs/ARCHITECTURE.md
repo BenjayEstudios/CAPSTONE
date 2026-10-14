@@ -21,18 +21,18 @@ Turborepo, Clean Architecture), adaptada al stack definido para Cotizapp:
 domain          →  entidades, DTOs, interfaces de repositorio (puro TypeScript, sin infraestructura)
 application     →  casos de uso; reciben sus dependencias (repos, servicios) por parámetro/constructor
 infrastructure  →  implementación real de las interfaces de domain/ (Drizzle + MySQL)
-apps/rest       →  capa de interfaz HTTP; las rutas de Fastify arman las dependencias
+apps/backend    →  capa de interfaz HTTP; las rutas de Fastify arman las dependencias
                     (composition root) y llaman a los casos de uso de application/
 ```
 
-Regla de dependencia: `apps/rest` → `application` → `domain` ← `infrastructure`.
+Regla de dependencia: `apps/backend` → `application` → `domain` ← `infrastructure`.
 `infrastructure` depende de `domain` (implementa sus interfaces) pero `domain`
 nunca depende de `infrastructure` ni de Drizzle/MySQL directamente.
 
-`apps/web` puede importar `@cotizapp/domain` (tipos/DTOs) sin arrastrar
+`apps/ecommerce` puede importar `@cotizapp/domain` (tipos/DTOs) sin arrastrar
 dependencias de servidor, ya que ese paquete es TypeScript puro.
 
-## Backend (`apps/rest`)
+## Backend (`apps/backend`)
 
 - Fastify + TypeScript. `src/server/app.ts` expone un `buildApp()` que arma la
   instancia de Fastify (plugins, manejo de errores) y actúa como
@@ -55,7 +55,7 @@ dependencias de servidor, ya que ese paquete es TypeScript puro.
   en el [README](../README.md#autenticación-y-autorización-en-las-rutas).
 - Drizzle: schema y migraciones viven en `packages/infrastructure`, dialecto MySQL.
 
-## Frontend web (`apps/web`)
+## Ecommerce (`apps/ecommerce`)
 
 - Angular + TypeScript. Una sola app para **clientes/pymes** y
   **distribuidores**, con enrutamiento y guards por rol (no dos apps
@@ -64,6 +64,19 @@ dependencias de servidor, ya que ese paquete es TypeScript puro.
   `comparador`, `carrito`, `checkout`, `panel-distribuidor`).
 - `src/app/core/` para lo transversal: cliente HTTP (interceptors de auth),
   estado de sesión, guards de rol.
+
+## Admin-site (`apps/admin-site`)
+
+- Angular + TypeScript, misma convención estructural que `apps/ecommerce`
+  (feature-based, `src/app/{core,features,shared}`). Es la interfaz de
+  **administración del sitio** (equipo interno Cotizapp), separada de
+  `apps/ecommerce` porque sirve a un rol distinto (administrador) y no debe
+  compartir build/deploy con el frontend de clientes.
+- Scaffold mínimo por ahora, sin features implementadas. Módulos previstos:
+  gestión de usuarios/organizaciones, moderación (`moderacion_caso`),
+  catálogo global y auditoría (`auditoria_log`).
+- Como `apps/ecommerce`, puede importar `@cotizapp/domain` (tipos/DTOs) sin
+  arrastrar dependencias de servidor.
 
 ## Mobile (`apps/mobile`)
 
@@ -93,7 +106,7 @@ SQL a partir del schema de Drizzle; `db:migrate` lo aplica contra
 ## Pagos
 
 Integración con Webpay/MercadoPago en modo sandbox, consumida solo desde
-`apps/rest` (los datos de tarjeta nunca tocan el backend propio). El reparto
+`apps/backend` (los datos de tarjeta nunca tocan el backend propio). El reparto
 (split) entre distribuidores es simulado en base de datos propia — no hay
 split nativo de la pasarela — y se refleja en la tabla `liquidacion`.
 
@@ -111,7 +124,7 @@ crear categorías (`GET/POST /categorias`, la segunda protegida con
 `packages/domain/src/{entities,dtos,repositories}/categoria.*`,
 `packages/application/src/use-cases/{listar,crear}-categoria.use-case.ts`,
 `packages/infrastructure/src/{db/schema,repositories}/categoria.*` y
-`apps/rest/src/routes/categorias/{list,create,index}.ts`. El recorrido paso
+`apps/backend/src/routes/categorias/{list,create,index}.ts`. El recorrido paso
 a paso está en el [README](../README.md#cómo-agregar-una-funcionalidad-nueva-ejemplo-de-referencia-categoria)
 raíz — úsenlo como plantilla para el resto de entidades (`producto`,
 `oferta`, `carro`...).
@@ -120,5 +133,5 @@ raíz — úsenlo como plantilla para el resto de entidades (`producto`,
 
 Scaffold base con un caso de uso end-to-end implementado (`categoria`, ver
 arriba) a modo de ejemplo; el resto de módulos de negocio (`auth`,
-`catalogo`, `pedidos`, `pagos`) y las vistas de `apps/web`/`apps/mobile`
-todavía no.
+`catalogo`, `pedidos`, `pagos`) y las vistas de `apps/ecommerce`/`apps/mobile`
+todavía no. `apps/admin-site` es scaffold nuevo, sin features.

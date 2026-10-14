@@ -8,9 +8,10 @@ Ingeniería en Informática.
 
 ## Stack
 
-- **Web**: Angular + TypeScript — una sola app para clientes y distribuidores (`apps/web`).
+- **Ecommerce**: Angular + TypeScript — una sola app para clientes y distribuidores (`apps/ecommerce`).
+- **Admin-site**: Angular + TypeScript — administración del sitio, uso interno (`apps/admin-site`). Scaffold mínimo, sin features todavía.
 - **Mobile**: Flutter + Riverpod + go_router, exclusiva para distribuidores (`apps/mobile`).
-- **Backend**: Fastify + TypeScript + Drizzle ORM + MySQL (`apps/rest`).
+- **Backend**: Fastify + TypeScript + Drizzle ORM + MySQL (`apps/backend`).
 - **Infraestructura**: Digital Ocean, un droplet con Docker (Nginx + API + MySQL) — ver `infra/`.
 - **Monorepo**: pnpm workspaces + Turborepo.
 
@@ -22,26 +23,28 @@ El modelo de datos completo (DBML) vive en [DataBase/dbDiagram.sql](DataBase/dbD
 
 - Node.js >= 22.13 y pnpm (`corepack enable`) — el `packageManager` del repo es `pnpm@11.17.0`, que exige Node ≥22.13.
 - Docker + Docker Compose (para MySQL, y opcionalmente para correr todo el stack).
-- Angular CLI (`pnpm add -g @angular/cli`) si vas a trabajar en `apps/web` fuera de Docker.
+- Angular CLI (`pnpm add -g @angular/cli`) si vas a trabajar en `apps/ecommerce`/`apps/admin-site` fuera de Docker.
 - Flutter SDK para `apps/mobile` (no está en Docker, se corre aparte).
 
 ## Levantar el entorno
 
-Hay dos formas de levantar backend + frontend + base de datos. Ambas leen
-las mismas variables de `apps/rest/.env` / `apps/web/.env`.
+Hay dos formas de levantar backend + frontends + base de datos. Todas leen
+las mismas variables de `apps/backend/.env` / `apps/ecommerce/.env` /
+`apps/admin-site/.env`.
 
 ### Opción A — Docker Compose (recomendado para empezar rápido)
 
-Un solo comando levanta MySQL, el backend y el frontend juntos, con
-hot-reload en los tres (ver [¿Cómo funciona el hot-reload?](#cómo-funciona-el-hot-reload) más abajo):
+Un solo comando levanta MySQL, el backend y los dos frontends juntos, con
+hot-reload en todos (ver [¿Cómo funciona el hot-reload?](#cómo-funciona-el-hot-reload) más abajo):
 
 ```bash
-cp apps/rest/.env.example apps/rest/.env      # o pide el .env real a Infraestructura
+cp apps/backend/.env.example apps/backend/.env      # o pide el .env real a Infraestructura
 docker compose up
 ```
 
 - Backend: http://localhost:8000
-- Frontend: http://localhost:4200
+- Frontend (ecommerce): http://localhost:4200
+- Frontend (admin-site): http://localhost:4300
 - MySQL: localhost:3306 (user/pass `cotizapp`/`cotizapp`, db `cotizapp`)
 
 La primera vez tarda 1-2 minutos: cada contenedor corre `pnpm install` y
@@ -53,22 +56,25 @@ Comandos útiles:
 ```bash
 docker compose up -d              # todo en background
 docker compose logs -f            # logs de todo, en vivo
-docker compose logs -f rest       # logs solo del backend
-docker compose logs -f web        # logs solo del frontend
-docker compose ps                 # qué está corriendo
-docker compose down               # apagar todo
+docker compose logs -f backend     # logs solo del backend
+docker compose logs -f ecommerce   # logs solo del frontend de clientes
+docker compose logs -f admin-site  # logs solo del frontend de administración
+docker compose ps                  # qué está corriendo
+docker compose down                # apagar todo
 ```
 
-Si cambias algo en `apps/rest/.env`, `apps/web/.env` o en `docker-compose.yml`,
-no hace falta bajar todo el stack — recrea solo el servicio afectado:
+Si cambias algo en `apps/backend/.env`, `apps/ecommerce/.env`,
+`apps/admin-site/.env` o en `docker-compose.yml`, no hace falta bajar todo el
+stack — recrea solo el servicio afectado:
 
 ```bash
-docker compose up -d rest         # recrea solo el backend (detecta el .env nuevo)
-docker compose up -d web          # recrea solo el frontend
+docker compose up -d backend      # recrea solo el backend (detecta el .env nuevo)
+docker compose up -d ecommerce    # recrea solo el frontend de clientes
+docker compose up -d admin-site   # recrea solo el frontend de administración
 ```
 
 Si solo quieres reiniciar el proceso sin cambios de config:
-`docker compose restart rest`.
+`docker compose restart backend`.
 
 ### Opción B — Todo local, sin Docker para las apps (Docker solo para MySQL)
 
@@ -76,14 +82,15 @@ Si solo quieres reiniciar el proceso sin cambios de config:
 pnpm install
 docker compose up -d mysql
 
-cp apps/rest/.env.example apps/rest/.env
+cp apps/backend/.env.example apps/backend/.env
 cp packages/infrastructure/.env.example packages/infrastructure/.env
 
-pnpm dev   # corre TODO en paralelo vía Turborepo: rest, web, y el watch de domain/application/infrastructure
+pnpm dev   # corre TODO en paralelo vía Turborepo: backend, ecommerce, admin-site, y el watch de domain/application/infrastructure
 
 # o por separado:
-pnpm --filter=@cotizapp/rest dev   # backend en :8000
-pnpm --filter=@cotizapp/web dev    # web en :4200
+pnpm --filter=@cotizapp/backend dev     # backend en :8000
+pnpm --filter=@cotizapp/ecommerce dev   # ecommerce en :4200
+pnpm --filter=@cotizapp/admin-site dev  # admin-site en :4300
 
 cd apps/mobile && flutter pub get && flutter run
 ```
@@ -101,15 +108,15 @@ pnpm db:migrate    # la aplica contra DATABASE_URL
 
 ## Variables de entorno
 
-- `apps/rest/.env` — configuración del backend (puerto, DB, JWT, CORS, etc.). Hay `.env.example`, `.env.dev` y `.env.prod` de referencia — cada variable tiene un comentario explicando para qué sirve. La única variable de base de datos que el código realmente lee es `DATABASE_URL` (`apps/rest/src/config/env.ts`); las `DB_HOST`/`DB_PORT`/`DB_USER`/etc. desglosadas son solo informativas.
-- `apps/web/.env` — **ojo**: este archivo no lo lee Angular (Angular no soporta `.env` nativo). La config real del frontend vive en `apps/web/src/environments/environment.ts` (producción) y `environment.development.ts` (dev). Si necesitas cambiar la URL de la API en desarrollo, edita `environment.development.ts`, no `.env`.
+- `apps/backend/.env` — configuración del backend (puerto, DB, JWT, CORS, etc.). Hay `.env.example`, `.env.dev` y `.env.prod` de referencia — cada variable tiene un comentario explicando para qué sirve. La única variable de base de datos que el código realmente lee es `DATABASE_URL` (`apps/backend/src/config/env.ts`); las `DB_HOST`/`DB_PORT`/`DB_USER`/etc. desglosadas son solo informativas.
+- `apps/ecommerce/.env` / `apps/admin-site/.env` — **ojo**: estos archivos no los lee Angular (Angular no soporta `.env` nativo). La config real de cada frontend vive en `src/environments/environment.ts` (producción) y `environment.development.ts` (dev). Si necesitas cambiar la URL de la API en desarrollo, edita `environment.development.ts`, no `.env`.
 - Nunca se commitean (`.env` y `.env.*` están en `.gitignore`, excepto `.env.example`). Pide el `.env` real a Infraestructura o arma el tuyo copiando el `.example`.
 
 ## ¿Cómo funciona el hot-reload?
 
-- **Backend** (`apps/rest`): `tsx watch` reinicia el proceso al guardar algo en `apps/rest/src`. Si tocas `packages/domain`, `packages/application` o `packages/infrastructure` (que `rest` importa como dependencias compiladas, no como código fuente), Turborepo compila esos paquetes en modo watch (`tsc -b --watch`) y `tsx watch` está configurado para vigilar también sus `dist/`, así que **también reinicia el backend**.
-- **Frontend** (`apps/web`): `ng serve` (Vite) hace hot-reload automático de cualquier archivo bajo `apps/web/src`, incluyendo `environment.development.ts`.
-- **Variables de entorno**: si cambias `apps/rest/.env`/`apps/web/.env`, el proceso *no* se entera solo — hay que recrear el contenedor (`docker compose up -d rest`) o reiniciar el proceso local.
+- **Backend** (`apps/backend`): `tsx watch` reinicia el proceso al guardar algo en `apps/backend/src`. Si tocas `packages/domain`, `packages/application` o `packages/infrastructure` (que `backend` importa como dependencias compiladas, no como código fuente), Turborepo compila esos paquetes en modo watch (`tsc -b --watch`) y `tsx watch` está configurado para vigilar también sus `dist/`, así que **también reinicia el backend**.
+- **Frontends** (`apps/ecommerce`, `apps/admin-site`): `ng serve` (Vite) hace hot-reload automático de cualquier archivo bajo `src/` de cada app, incluyendo `environment.development.ts`.
+- **Variables de entorno**: si cambias `apps/backend/.env`/`apps/ecommerce/.env`/`apps/admin-site/.env`, el proceso *no* se entera solo — hay que recrear el contenedor correspondiente (`docker compose up -d backend`) o reiniciar el proceso local.
 
 ## Cómo agregar una funcionalidad nueva (ejemplo de referencia: `categoria`)
 
@@ -141,20 +148,20 @@ conviene escribirlos:
    `DrizzleCategoriaRepository implements CategoriaRepository`: la única
    clase que sabe que existe Drizzle/MySQL.
 
-7. **Rutas HTTP** — [`apps/rest/src/routes/categorias/list.ts`](apps/rest/src/routes/categorias/list.ts) y [`create.ts`](apps/rest/src/routes/categorias/create.ts)
+7. **Rutas HTTP** — [`apps/backend/src/routes/categorias/list.ts`](apps/backend/src/routes/categorias/list.ts) y [`create.ts`](apps/backend/src/routes/categorias/create.ts)
    Un archivo por operación, cada uno exporta un `RouteOptions` de Fastify
    (`listCategoriasRoute`, `createCategoriaRoute`). Arman el repositorio
    concreto con `request.server.db` (ya conectado en el composition root) y
-   llaman al caso de uso. [`categorias/index.ts`](apps/rest/src/routes/categorias/index.ts)
+   llaman al caso de uso. [`categorias/index.ts`](apps/backend/src/routes/categorias/index.ts)
    solo los agrupa en `categoriaRoutes: RouteOptions[]` — ver
    [convención de rutas](#convención-de-rutas-http) más abajo.
 
-8. **Composition root** — [`apps/rest/src/server/app.ts`](apps/rest/src/server/app.ts) → [`src/routes/index.ts`](apps/rest/src/routes/index.ts)
+8. **Composition root** — [`apps/backend/src/server/app.ts`](apps/backend/src/server/app.ts) → [`src/routes/index.ts`](apps/backend/src/routes/index.ts)
    `app.decorate("db", db)` conecta Drizzle una sola vez; `routes/index.ts`
    junta el `RouteOptions[]` de cada módulo (`...categoriaRoutes`) y
    `registerRoutes` los registra con `routes.forEach(route => app.route(route))`.
 
-Regla de dependencia a mantener siempre: `apps/rest → application → domain ← infrastructure`.
+Regla de dependencia a mantener siempre: `apps/backend → application → domain ← infrastructure`.
 `domain` nunca importa nada de `infrastructure` ni de Drizzle/MySQL.
 
 Para probarlo (con el backend corriendo, local o en Docker):
@@ -171,13 +178,13 @@ pasos cambiando `categoria` por la tabla que corresponda.
 
 ## Convención de rutas HTTP
 
-Las rutas de `apps/rest` no se registran con `app.get(...)`/`app.post(...)`
+Las rutas de `apps/backend` no se registran con `app.get(...)`/`app.post(...)`
 sueltos dentro de una función — se definen como objetos `RouteOptions` de
 Fastify, uno por archivo/operación, y se agregan en arreglos que
 `routes/index.ts` junta y registra en un loop:
 
 ```
-apps/rest/src/routes/
+apps/backend/src/routes/
   categorias/
     list.ts      // export const listCategoriasRoute: RouteOptions = { method: "GET", url: "/categorias", handler: ... }
     create.ts    // export const createCategoriaRoute: RouteOptions = { method: "POST", url: "/categorias", preHandler: [...], handler: ... }
@@ -197,21 +204,21 @@ el `handler`.
 
 ## Autenticación y autorización en las rutas
 
-La seguridad se resuelve en dos capas, ambas en `apps/rest` (ni `domain` ni
+La seguridad se resuelve en dos capas, ambas en `apps/backend` (ni `domain` ni
 `application` saben que existe un JWT):
 
-1. **¿Estás logueado?** — [`requireAuth`](apps/rest/src/plugins/auth.ts) es
+1. **¿Estás logueado?** — [`requireAuth`](apps/backend/src/plugins/auth.ts) es
    un `preHandler` de Fastify: verifica el `Bearer <token>` del header
    `Authorization` contra `JWT_SECRET`, y si es válido deja los claims en
    `request.auth` (`{ sub, organizacionId, rol }`). Si falta o es inválido,
    corta con 401 antes de llegar al handler.
-2. **¿Tenés permiso?** — [`requireRol(...roles)`](apps/rest/src/plugins/auth.ts)
+2. **¿Tenés permiso?** — [`requireRol(...roles)`](apps/backend/src/plugins/auth.ts)
    es otro `preHandler` que se compone con `requireAuth`: revisa
    `request.auth.rol` contra la lista de roles permitidos para esa ruta. Si
    no calza, corta con 403.
 
-Ejemplo real: [`categorias/list.ts`](apps/rest/src/routes/categorias/list.ts)
-queda público (catálogo visible sin login); [`categorias/create.ts`](apps/rest/src/routes/categorias/create.ts)
+Ejemplo real: [`categorias/list.ts`](apps/backend/src/routes/categorias/list.ts)
+queda público (catálogo visible sin login); [`categorias/create.ts`](apps/backend/src/routes/categorias/create.ts)
 requiere estar logueado *y* tener rol `administrador`:
 
 ```ts
@@ -233,7 +240,7 @@ export const createCategoriaRoute: RouteOptions = {
 
 Para proteger una ruta nueva, se agrega el mismo array de `preHandler` al
 `RouteOptions` — no hace falta tocar nada en `domain`/`application`/`infrastructure`.
-`JWT_SECRET` está validado en `apps/rest/src/config/env.ts` (Zod): si falta,
+`JWT_SECRET` está validado en `apps/backend/src/config/env.ts` (Zod): si falta,
 el server no arranca, en vez de fallar recién en el primer request
 protegido. Para probarlo con `curl`, hay que mandar un JWT firmado con el
 mismo `JWT_SECRET` del `.env`:
@@ -259,14 +266,15 @@ vez de comparar el código de rol a mano.
 
 ```
 apps/
-  rest/           # backend Fastify (interfaz HTTP)
+  backend/        # backend Fastify (interfaz HTTP)
     src/
       config/       # validación de variables de entorno (Zod)
       lib/          # logger y utilidades propias del backend
       plugins/      # auth (requireAuth/requireRol), rate-limit, etc.
       routes/       # un modulo por dominio de negocio (ver convención de rutas)
       server/       # app.ts (composition root) + index.ts (arranque)
-  web/            # Angular — portal de clientes y de distribuidores
+  ecommerce/      # Angular — portal de clientes y de distribuidores
+  admin-site/     # Angular — administración del sitio (scaffold mínimo)
   mobile/         # app Flutter — solo distribuidores
 packages/
   domain/         # entidades, DTOs, interfaces de repositorio
@@ -275,15 +283,15 @@ packages/
   shared-config/  # tsconfig y eslint compartidos
 infra/            # docker-compose de producción + Nginx (Digital Ocean)
 docs/             # arquitectura y changelog
-docker-compose.yml # stack de desarrollo local (mysql + rest + web)
+docker-compose.yml # stack de desarrollo local (mysql + backend + ecommerce + admin-site)
 ```
 
 ## Troubleshooting
 
-- **`docker compose up` falla el servicio `web` por el puerto 4200 ocupado**: probablemente tienes un `ng serve` local corriendo aparte. Ciérralo o usa `docker compose up mysql rest` nada más.
-- **El backend no conecta a la base de datos**: revisa `DATABASE_URL` en `apps/rest/.env`. Dentro de Docker Compose, el backend debe apuntar al host `mysql` (nombre del servicio), no a `localhost` — `docker-compose.yml` ya lo sobreescribe automáticamente vía `environment:`.
-- **El frontend dice "No se pudo conectar al backend"**: confirma que `apps/web/src/environments/environment.development.ts` (no `.env`) apunte al puerto real del backend, y que `apps/web/angular.json` tenga el `fileReplacements` de `development` → `environment.development.ts` (sin eso, Angular usa siempre `environment.ts`, el de producción).
-- **Cambié algo en `packages/domain|application|infrastructure` y el backend no se enteró**: confirma que `pnpm dev` (o `docker compose`) esté usando Turborepo (`turbo run dev`), no `pnpm --filter @cotizapp/rest dev` a secas — solo así se levanta el `tsc -b --watch` de esos paquetes junto con el backend.
+- **`docker compose up` falla el servicio `ecommerce` por el puerto 4200 ocupado**: probablemente tienes un `ng serve` local corriendo aparte. Ciérralo o usa `docker compose up mysql backend` nada más.
+- **El backend no conecta a la base de datos**: revisa `DATABASE_URL` en `apps/backend/.env`. Dentro de Docker Compose, el backend debe apuntar al host `mysql` (nombre del servicio), no a `localhost` — `docker-compose.yml` ya lo sobreescribe automáticamente vía `environment:`.
+- **El frontend dice "No se pudo conectar al backend"**: confirma que `apps/ecommerce/src/environments/environment.development.ts` (no `.env`) apunte al puerto real del backend, y que `apps/ecommerce/angular.json` tenga el `fileReplacements` de `development` → `environment.development.ts` (sin eso, Angular usa siempre `environment.ts`, el de producción).
+- **Cambié algo en `packages/domain|application|infrastructure` y el backend no se enteró**: confirma que `pnpm dev` (o `docker compose`) esté usando Turborepo (`turbo run dev`), no `pnpm --filter @cotizapp/backend dev` a secas — solo así se levanta el `tsc -b --watch` de esos paquetes junto con el backend.
 
 ## Equipo
 

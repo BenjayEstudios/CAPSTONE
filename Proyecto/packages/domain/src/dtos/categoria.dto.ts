@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Schema de validacion de entrada para crear una categoria. Se usa tanto en
-// el caso de uso (packages/application) como en la ruta HTTP (apps/rest),
+// el caso de uso (packages/application) como en la ruta HTTP (apps/backend),
 // para no duplicar reglas de validacion en las dos capas.
 export const crearCategoriaSchema = z.object({
   nombre: z.string().min(1).max(80),

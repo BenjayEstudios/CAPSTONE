@@ -1,10 +1,10 @@
 # @cotizapp/shared-config
 
 Configuración compartida de TypeScript y ESLint para los paquetes/apps
-Node.js del monorepo (`apps/rest`, `packages/*`), para no duplicarla ni
+Node.js del monorepo (`apps/backend`, `packages/*`), para no duplicarla ni
 desincronizarla entre proyectos.
 
-`apps/web` (Angular) y `apps/mobile` (Flutter) usan sus propias herramientas
+`apps/ecommerce` (Angular) y `apps/mobile` (Flutter) usan sus propias herramientas
 de build/lint (Angular CLI / `flutter analyze`) y no dependen de este paquete.
 
 ## Estructura

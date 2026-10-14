@@ -1,6 +1,7 @@
 packages:
-  - "apps/rest"
-  - "apps/web"
+  - "apps/backend"
+  - "apps/ecommerce"
+  - "apps/admin-site"
   - "packages/*"
 allowBuilds:
   '@swc/core': true

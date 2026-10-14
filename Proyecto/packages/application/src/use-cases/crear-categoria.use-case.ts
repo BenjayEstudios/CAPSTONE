@@ -3,7 +3,7 @@ import { crearCategoriaSchema, type CategoriaRepository, type CrearCategoriaDto 
 export function crearCategoria(deps: { categoriaRepository: CategoriaRepository }) {
   return async (input: CrearCategoriaDto) => {
     // La validacion vive en el DTO de @cotizapp/domain para que la
-    // compartan el caso de uso y la ruta HTTP (apps/rest) sin duplicarla.
+    // compartan el caso de uso y la ruta HTTP (apps/backend) sin duplicarla.
     const data = crearCategoriaSchema.parse(input);
     return deps.categoriaRepository.crear(data);
   };
