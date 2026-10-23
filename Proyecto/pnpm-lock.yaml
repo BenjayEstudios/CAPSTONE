@@ -196,6 +196,9 @@ importers:
       '@cotizapp/domain':
         specifier: workspace:*
         version: link:../domain
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       drizzle-orm:
         specifier: ^0.44.0
         version: 0.44.7(mysql2@3.24.4(@types/node@22.20.4))
@@ -206,9 +209,15 @@ importers:
       '@cotizapp/shared-config':
         specifier: workspace:*
         version: link:../shared-config
+      '@types/node':
+        specifier: ^22.20.4
+        version: 22.20.4
       drizzle-kit:
         specifier: ^0.31.0
         version: 0.31.10
+      tsx:
+        specifier: ^4.23.13
+        version: 4.23.13
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -2806,6 +2815,10 @@ packages:
 
   batch@0.6.1:
     resolution: {integrity: sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw==}
+
+  bcryptjs@3.0.3:
+    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
+    hasBin: true
 
   big.js@5.2.2:
     resolution: {integrity: sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==}
@@ -8116,6 +8129,8 @@ snapshots:
   baseline-browser-mapping@2.11.25: {}
 
   batch@0.6.1: {}
+
+  bcryptjs@3.0.3: {}
 
   big.js@5.2.2: {}
 

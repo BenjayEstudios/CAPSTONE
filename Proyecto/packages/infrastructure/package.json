@@ -11,16 +11,20 @@
     "check-types": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/db/seed/run.ts",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@cotizapp/domain": "workspace:*",
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.44.0",
     "mysql2": "^3.11.0"
   },
   "devDependencies": {
     "@cotizapp/shared-config": "workspace:*",
+    "@types/node": "^22.20.4",
     "drizzle-kit": "^0.31.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.9.2",
     "vitest": "^3.0.0"
   }
