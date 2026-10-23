@@ -32,10 +32,13 @@ services:
       - ./apps/backend/.env
     environment:
       # Overrides sobre el .env: dentro del contenedor hay que escuchar en
-      # todas las interfaces y hablarle a mysql por el nombre del servicio,
-      # no por localhost.
+      # todas las interfaces.
       HOST: 0.0.0.0
-      DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
+      # DATABASE_URL comentado a proposito: mientras esta linea existe, pisa
+      # lo que pongas en apps/backend/.env (apunte a Aiven o a lo que sea).
+      # Descomentar y apuntar a mysql:3306 (nombre del servicio) para volver
+      # a usar el MySQL local de este mismo docker-compose.yml.
+      # DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
     ports:
       - "8000:8000"
     volumes:
