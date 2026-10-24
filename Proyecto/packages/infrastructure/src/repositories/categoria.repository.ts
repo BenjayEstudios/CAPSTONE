@@ -1,5 +1,10 @@
-import { eq } from "drizzle-orm";
-import type { Categoria, CategoriaRepository, CrearCategoriaDto } from "@cotizapp/domain";
+import { count, eq } from "drizzle-orm";
+import type {
+  ActualizarCategoriaDto,
+  Categoria,
+  CategoriaRepository,
+  CrearCategoriaDto
+} from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { categoria } from "../db/schema/categoria.schema.js";
 
@@ -27,6 +32,21 @@ export class DrizzleCategoriaRepository implements CategoriaRepository {
     return filas.map(toEntity);
   }
 
+  async buscarPorId(id: number): Promise<Categoria | null> {
+    const [fila] = await this.db.select().from(categoria).where(eq(categoria.id, id)).limit(1);
+    return fila ? toEntity(fila) : null;
+  }
+
+  async buscarPorSlug(slug: string): Promise<Categoria | null> {
+    const [fila] = await this.db.select().from(categoria).where(eq(categoria.slug, slug)).limit(1);
+    return fila ? toEntity(fila) : null;
+  }
+
+  async contarHijos(id: number): Promise<number> {
+    const [fila] = await this.db.select({ n: count() }).from(categoria).where(eq(categoria.padreId, id));
+    return Number(fila?.n ?? 0);
+  }
+
   async crear(input: CrearCategoriaDto): Promise<Categoria> {
     const [{ id }] = await this.db
       .insert(categoria)
@@ -38,6 +58,12 @@ export class DrizzleCategoriaRepository implements CategoriaRepository {
       })
       .$returningId();
 
+    const [fila] = await this.db.select().from(categoria).where(eq(categoria.id, id));
+    return toEntity(fila);
+  }
+
+  async actualizar(id: number, cambios: ActualizarCategoriaDto): Promise<Categoria> {
+    await this.db.update(categoria).set(cambios).where(eq(categoria.id, id));
     const [fila] = await this.db.select().from(categoria).where(eq(categoria.id, id));
     return toEntity(fila);
   }

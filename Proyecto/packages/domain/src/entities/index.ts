@@ -6,3 +6,4 @@ export * from "./categoria.entity.js";
 export * from "./organizacion.entity.js";
 export * from "./rol.entity.js";
 export * from "./usuario.entity.js";
+export * from "./producto.entity.js";

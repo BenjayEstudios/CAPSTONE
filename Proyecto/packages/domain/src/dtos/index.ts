@@ -3,3 +3,5 @@
 // AddCarroLineaDto, CheckoutOrdenDto...) se agrega siguiendo el mismo patron.
 export * from "./categoria.dto.js";
 export * from "./auth.dto.js";
+export * from "./common.dto.js";
+export * from "./producto.dto.js";

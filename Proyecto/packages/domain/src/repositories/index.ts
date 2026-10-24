@@ -3,3 +3,4 @@
 // ProductoRepository...) se agrega siguiendo el mismo patron.
 export * from "./categoria.repository.js";
 export * from "./usuario.repository.js";
+export * from "./producto.repository.js";

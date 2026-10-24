@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
-import Fastify, { type FastifyError } from "fastify";
+import Fastify from "fastify";
+import { errorHandler } from "../lib/error-handler.js";
 import { createDbClient } from "@cotizapp/infrastructure";
 import type { Env } from "../config/env.js";
 import { logger } from "../lib/logger.js";
@@ -21,15 +22,7 @@ export async function buildApp(env: Env) {
     await pool.end();
   });
 
-  app.setErrorHandler((error: FastifyError, request, reply) => {
-    logger.error(error.message, { method: request.method, url: request.url, err: error });
-    reply.status(error.statusCode ?? 500).send({
-      error: {
-        code: error.code ?? "INTERNAL_ERROR",
-        message: error.message
-      }
-    });
-  });
+  app.setErrorHandler(errorHandler);
 
   await registerRoutes(app);
 

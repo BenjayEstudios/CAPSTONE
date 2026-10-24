@@ -1,19 +1,18 @@
 import type { RouteOptions } from "fastify";
-import { crearCategoriaSchema } from "@cotizapp/domain";
 import { crearCategoria } from "@cotizapp/application";
 import { DrizzleCategoriaRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requireRol } from "../../plugins/auth.js";
 
 // Ruta protegida: requiere estar logueado y tener rol "administrador"
-// (ver apps/backend/src/plugins/auth.ts).
+// (ver apps/backend/src/plugins/auth.ts). La validacion (Zod) y las reglas
+// (slug unico, arbol de 2 niveles) viven en el caso de uso.
 export const createCategoriaRoute: RouteOptions = {
   method: "POST",
   url: "/categorias",
   preHandler: [requireAuth, requireRol("administrador")],
   handler: async (request, reply) => {
     const categoriaRepository = new DrizzleCategoriaRepository(request.server.db);
-    const input = crearCategoriaSchema.parse(request.body);
-    const nuevaCategoria = await crearCategoria({ categoriaRepository })(input);
+    const nuevaCategoria = await crearCategoria({ categoriaRepository })(request.body as never);
     reply.status(201);
     return nuevaCategoria;
   }
