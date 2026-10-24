@@ -3,3 +3,6 @@
 // ejemplo de referencia; el resto (Organizacion, Usuario, Producto, Oferta,
 // Carro, Orden, Liquidacion...) se agrega siguiendo el mismo patron.
 export * from "./categoria.entity.js";
+export * from "./organizacion.entity.js";
+export * from "./rol.entity.js";
+export * from "./usuario.entity.js";
