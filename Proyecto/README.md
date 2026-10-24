@@ -177,6 +177,10 @@ curl -X POST http://localhost:8000/categorias \
 Para agregar otra entidad (ej. `producto`), copia este mismo recorrido de 8
 pasos cambiando `categoria` por la tabla que corresponda.
 
+El CRUD completo (obtener, actualizar y eliminar, errores 400/404/409, token
+para probar y las pantallas Angular) está en
+[docs/desarrollo/crud/](docs/desarrollo/crud/README.md).
+
 ## Convención de rutas HTTP
 
 Las rutas de `apps/backend` no se registran con `app.get(...)`/`app.post(...)`

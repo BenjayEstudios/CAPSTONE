@@ -10,6 +10,8 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-10-24 | [Colección de Postman de la API](2026-10-24-coleccion-de-postman.md) | KAN-88 | — |
+| 2026-10-24 | [Guía de CRUD de punta a punta](2026-10-24-guia-de-crud-de-punta-a-punta.md) | KAN-86 | KAN-118 |
 | 2026-10-23 | [Consultas de analítica para los paneles](2026-10-23-consultas-de-analitica.md) | KAN-88 | KAN-143 |
 | 2026-10-23 | [Reestructuración de la documentación](2026-10-23-reestructuracion-de-documentacion.md) | — | — |
 | 2026-10-23 | [Mobile: catálogo, búsqueda, filtros y comparador](2026-10-23-mobile-catalogo-y-comparador.md) | KAN-87 | KAN-127, 128, 129 |

@@ -21,6 +21,10 @@ Corre completa sin backend (`USE_FAKES=true` es el default): login,
 navegación de los dos perfiles y cuenta usan los datos del seed. No hace
 falta levantar `apps/backend` ni la base.
 
+Atajo: con las funciones de
+[docs/desarrollo/ATAJOS-DE-TERMINAL.md](../../docs/desarrollo/ATAJOS-DE-TERMINAL.md)
+instaladas, los pasos 1 y 2 se reducen a `mobile-demo`.
+
 ### 1. Levantar el emulador
 
 ```bash
