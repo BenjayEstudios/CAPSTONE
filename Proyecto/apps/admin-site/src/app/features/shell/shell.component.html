@@ -1,0 +1,27 @@
+<div class="app">
+  <header class="header">
+    <div class="regla"></div>
+    <div class="barra">
+      <button type="button" class="btn btn-secondary menu-btn" (click)="menuAbierto.set(!menuAbierto())"
+        [attr.aria-expanded]="menuAbierto()" aria-controls="sidebar">Menú</button>
+      <span class="marca">{{ brand.nombre }}</span>
+      <span class="meta producto">{{ brand.producto }}</span>
+      <span class="spacer"></span>
+      <span class="meta fecha">{{ fecha }}</span>
+      <span class="meta">{{ usuario()?.nombre }} · {{ usuario()?.rol }}</span>
+      <button type="button" class="btn btn-secondary" (click)="cerrarSesion()">Cerrar sesión</button>
+    </div>
+    <div class="regla fina"></div>
+  </header>
+
+  <div class="cuerpo">
+    <nav id="sidebar" class="sidebar" [class.abierto]="menuAbierto()" aria-label="Módulos">
+      @for (m of modulos(); track m.path) {
+        <a [routerLink]="'/' + m.path" routerLinkActive="activo" (click)="menuAbierto.set(false)">{{ m.label }}</a>
+      }
+    </nav>
+    <main class="contenido">
+      <router-outlet />
+    </main>
+  </div>
+</div>
