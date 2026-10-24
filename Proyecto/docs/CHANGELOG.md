@@ -4,6 +4,53 @@ Bitácora de cambios relevantes (features, decisiones de arquitectura,
 refactors grandes). Cada entrada: fecha, qué cambió, por qué, y qué carpetas
 toca.
 
+## 2026-10-23 — Datos semilla y de prueba (KAN-141)
+
+Nuevo comando `pnpm --filter @cotizapp/infrastructure db:seed`: vacía las
+21 tablas y carga un escenario coherente — 4 proveedores con ofertas a
+precios distintos por producto (comparador), 2 clientes, usuarios de todos
+los roles, 2 órdenes multiproveedor con envíos, líneas, liquidación y DTE,
+y datos de cobertura, analítica, auditoría y moderación. IDs fijos y
+claves hasheadas con bcrypt; usuarios y clave de prueba documentados en
+`packages/infrastructure/README.md`.
+
+**Por qué**: para que backend, ecommerce, admin-site y mobile trabajen
+contra datos reales en vez de mocks, y para tener la demo armada.
+
+**Ojo**: si `DATABASE_URL` apunta a un host no local (Aiven) el script
+se niega a correr salvo con `--allow-remote`, porque borra todo.
+
+**Toca**: `packages/infrastructure/src/db/seed/*` (nuevo),
+`packages/infrastructure/package.json` (script `db:seed`, deps `bcryptjs`,
+`tsx`, `@types/node`), `packages/infrastructure/README.md`,
+`pnpm-lock.yaml`.
+
+## 2026-10-22 — Traducción completa del modelo DBML a Drizzle + CORS multi-frontend
+
+Se tradujeron las 20 tablas restantes de `DataBase/dbDiagram.sql` (DBML) a
+schema de Drizzle (`packages/infrastructure/src/db/schema/<tabla>.schema.ts`),
+siguiendo el mismo patrón que `categoria`. Se generó y aplicó la migración
+`0001_tense_next_avengers.sql` contra el MySQL local — las 21 tablas (20
+nuevas + `categoria`) ya existen en la base de datos, con todas sus FKs e
+indices, incluida la referencia circular `usuario` ↔ `rol`.
+
+Tambien se corrigió CORS en `apps/backend`: `CORS_ORIGIN` (singular, el
+que realmente leía `@fastify/cors`) solo permitía `localhost:4200`, pero
+`admin-site` corre en `:4300` — causaba `CORS policy` bloqueando requests
+desde ahí. `env.ts` ahora parsea `CORS_ORIGINS` (plural, lista separada por
+coma) como arreglo y es la única variable que se usa; se eliminó la
+`CORS_ORIGIN` singular duplicada de los `.env`.
+
+**Por qué**: con el modelo completo en Drizzle, cualquiera del equipo puede
+empezar a escribir repositorios/casos de uso contra tablas reales en vez de
+mockear datos. El fix de CORS desbloqueaba a quien estuviera probando
+`admin-site` contra el backend local.
+
+**Toca**: `packages/infrastructure/src/db/schema/*.ts` (20 archivos
+nuevos + `index.ts`), `packages/infrastructure/migrations/0001_*.sql`,
+`apps/backend/src/config/env.ts`, `apps/backend/src/server/app.ts`,
+`apps/backend/.env`, `apps/backend/.env.example`, `docs/ARCHITECTURE.md`.
+
 ## 2026-10-13 — Rename de apps: rest→backend, web→ecommerce, + admin-site
 
 Se renombró `apps/rest` a `apps/backend` y `apps/web` a `apps/ecommerce` para

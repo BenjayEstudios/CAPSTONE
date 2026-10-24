@@ -94,14 +94,21 @@ MySQL. El modelo entidad-relación completo (DBML) vive en
 volumen/cantidad, no precio unitario), `carro`, `orden`, `orden_linea`,
 `orden_envio`, `documento_tributario`, `liquidacion` (reparto simulado por
 distribuidor), `proveedor_documento`, `proveedor_cobertura`,
-`evento_analitico`, `auditoria_log`, `moderacion_caso`. El schema de Drizzle
-en `packages/infrastructure/src/db/schema` debe traducir ese modelo —
-`categoria` ya está traducida como ejemplo de referencia (ver más abajo), el
-resto todavía no.
+`evento_analitico`, `auditoria_log`, `moderacion_caso`. Las 21 tablas ya
+están traducidas 1:1 al schema de Drizzle en
+`packages/infrastructure/src/db/schema/<tabla>.schema.ts` (`categoria` es
+el ejemplo de referencia documentado más abajo; el resto sigue el mismo
+patrón: un archivo por tabla, enums inline con `mysqlEnum`, FKs vía
+`.references(() => otraTabla.columna)`). La referencia circular
+`usuario.rol_id` ↔ `rol.permisos_actualizado_por` se resuelve con un
+import circular entre `usuario.schema.ts` y `rol.schema.ts` más la
+anotación `(): AnyMySqlColumn => ...` en el lado de `rol` (TypeScript no
+puede inferir el tipo solo con el callback lazy en un ciclo).
 
 Migraciones: `pnpm --filter @cotizapp/infrastructure db:generate` genera el
 SQL a partir del schema de Drizzle; `db:migrate` lo aplica contra
-`DATABASE_URL`.
+`DATABASE_URL`. La migración `0001_tense_next_avengers.sql` crea las 20
+tablas restantes sobre la base que dejó `0000_blue_spirit.sql` (`categoria`).
 
 ## Pagos
 

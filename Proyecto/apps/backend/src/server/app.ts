@@ -8,7 +8,7 @@ import { registerRoutes } from "../routes/index.js";
 export async function buildApp(env: Env) {
   const app = Fastify({ logger: false });
 
-  await app.register(cors, { origin: env.CORS_ORIGIN });
+  await app.register(cors, { origin: env.CORS_ORIGINS });
 
   // Composition root: se arman los adaptadores de infraestructura y se
   // conectan a los casos de uso de @cotizapp/application. Sin service-locator:
