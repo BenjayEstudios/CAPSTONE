@@ -1,0 +1,64 @@
+# Deploy al droplet al hacer push a dev (KAN-161). PREPARADO PERO DESACTIVADO:
+# el job solo corre si existe la variable de repositorio DEPLOY_ENABLED=true
+# (Settings → Secrets and variables → Actions → Variables). Secrets que
+# necesita y cómo prepararlo: Proyecto/infra/README.md (sección CI/CD).
+name: Deploy dev
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+# Nunca se cancela un deploy a medias; el siguiente espera su turno.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy al droplet
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 20
+    steps:
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Deja el clon del droplet exactamente en el commit pusheado, reconstruye
+      # y levanta el stack, y espera a que /api/health-check responda.
+      # TODO(KAN-161): construir las imágenes en el runner y publicarlas en
+      # GHCR en vez de buildear en el droplet, y correr las migraciones.
+      # TODO(KAN-159): con HTTPS, el health-check debe ir por https.
+      - name: Desplegar
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/cotizapp' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_PATH" "$GITHUB_SHA" <<'EOF'
+          set -euo pipefail
+          cd "$1"
+          git fetch --prune origin dev
+          git checkout --force --detach "$2"
+          cd Proyecto/infra
+          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          docker image prune -f
+          for _ in $(seq 1 30); do
+            if curl -fsS http://localhost/api/health-check; then exit 0; fi
+            sleep 5
+          done
+          echo "El backend no respondió /api/health-check tras el deploy" >&2
+          exit 1
+          EOF

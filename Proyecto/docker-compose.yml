@@ -18,6 +18,42 @@ services:
       timeout: 5s
       retries: 10
 
+  # Los contenedores de desarrollo corren con TU usuario (DEV_UID/DEV_GID,
+  # default 1000:1000), no como root: todo lo que escriben en el bind mount
+  # (packages/*/dist, .angular/cache, .turbo, .pnpm-store) queda a tu nombre
+  # y un `pnpm build` local no choca con archivos de root. Si `id -u` no es
+  # 1000, agrega DEV_UID y DEV_GID a Proyecto/.env (ver infra/README.md).
+  #
+  # Docker crea los volumenes de node_modules como root la primera vez, asi
+  # que este servicio de un solo uso les cambia el dueno antes de que
+  # arranquen los demas (solo toca lo que no es del usuario: rapido).
+  fix-permissions:
+    image: node:22-alpine
+    user: root
+    volumes:
+      - backend-root-node-modules:/v/backend-root-node-modules
+      - backend-app-node-modules:/v/backend-app-node-modules
+      - backend-ecommerce-node-modules:/v/backend-ecommerce-node-modules
+      - backend-domain-node-modules:/v/backend-domain-node-modules
+      - backend-application-node-modules:/v/backend-application-node-modules
+      - backend-infrastructure-node-modules:/v/backend-infrastructure-node-modules
+      - backend-shared-config-node-modules:/v/backend-shared-config-node-modules
+      - ecommerce-root-node-modules:/v/ecommerce-root-node-modules
+      - ecommerce-app-node-modules:/v/ecommerce-app-node-modules
+      - ecommerce-backend-node-modules:/v/ecommerce-backend-node-modules
+      - ecommerce-domain-node-modules:/v/ecommerce-domain-node-modules
+      - ecommerce-application-node-modules:/v/ecommerce-application-node-modules
+      - ecommerce-infrastructure-node-modules:/v/ecommerce-infrastructure-node-modules
+      - ecommerce-shared-config-node-modules:/v/ecommerce-shared-config-node-modules
+      - admin-site-root-node-modules:/v/admin-site-root-node-modules
+      - admin-site-app-node-modules:/v/admin-site-app-node-modules
+      - admin-site-backend-node-modules:/v/admin-site-backend-node-modules
+      - admin-site-domain-node-modules:/v/admin-site-domain-node-modules
+      - admin-site-application-node-modules:/v/admin-site-application-node-modules
+      - admin-site-infrastructure-node-modules:/v/admin-site-infrastructure-node-modules
+      - admin-site-shared-config-node-modules:/v/admin-site-shared-config-node-modules
+    command: sh -c "find /v ! -user ${DEV_UID:-1000} -exec chown -h ${DEV_UID:-1000}:${DEV_GID:-1000} {} +"
+
   # Contenedores de desarrollo: montan el repo como bind mount y corren
   # `pnpm dev` con hot-reload (tsx watch / ng serve). Fijan node:22-alpine
   # (pnpm@11.17.0, el que declara el package.json raiz, requiere Node >=22.13)
@@ -28,12 +64,16 @@ services:
     image: node:22-alpine
     container_name: cotizapp-backend
     working_dir: /repo
+    user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
     env_file:
       - ./apps/backend/.env
     environment:
       # Overrides sobre el .env: dentro del contenedor hay que escuchar en
       # todas las interfaces.
       HOST: 0.0.0.0
+      # Sin root, el HOME por defecto puede no ser escribible; corepack guarda
+      # ahi la descarga de pnpm.
+      HOME: /tmp
       # DATABASE_URL comentado a proposito: mientras esta linea existe, pisa
       # lo que pongas en apps/backend/.env (apunte a Aiven o a lo que sea).
       # Descomentar y apuntar a mysql:3306 (nombre del servicio) para volver
@@ -58,17 +98,22 @@ services:
     # infrastructure, que compilan en modo watch) para que un cambio ahi
     # tambien reinicie el server. Un `pnpm --filter @cotizapp/backend dev` a
     # secas no lo haria.
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm exec turbo run dev --filter=@cotizapp/backend..."
+    command: sh -c "mkdir -p /tmp/bin && corepack enable --install-directory /tmp/bin && export PATH=/tmp/bin:$$PATH && pnpm install --frozen-lockfile && pnpm exec turbo run dev --filter=@cotizapp/backend..."
     depends_on:
       mysql:
         condition: service_healthy
+      fix-permissions:
+        condition: service_completed_successfully
 
   ecommerce:
     image: node:22-alpine
     container_name: cotizapp-ecommerce
     working_dir: /repo
+    user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
     env_file:
       - ./apps/ecommerce/.env
+    environment:
+      HOME: /tmp
     ports:
       - "4200:4200"
     volumes:
@@ -80,16 +125,22 @@ services:
       - ecommerce-application-node-modules:/repo/packages/application/node_modules
       - ecommerce-infrastructure-node-modules:/repo/packages/infrastructure/node_modules
       - ecommerce-shared-config-node-modules:/repo/packages/shared-config/node_modules
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/ecommerce exec ng serve --host 0.0.0.0 --port 4200"
+    command: sh -c "mkdir -p /tmp/bin && corepack enable --install-directory /tmp/bin && export PATH=/tmp/bin:$$PATH && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/ecommerce exec ng serve --host 0.0.0.0 --port 4200"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      fix-permissions:
+        condition: service_completed_successfully
 
   admin-site:
     image: node:22-alpine
     container_name: cotizapp-admin-site
     working_dir: /repo
+    user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
     env_file:
       - ./apps/admin-site/.env
+    environment:
+      HOME: /tmp
     ports:
       - "4300:4300"
     volumes:
@@ -101,9 +152,12 @@ services:
       - admin-site-application-node-modules:/repo/packages/application/node_modules
       - admin-site-infrastructure-node-modules:/repo/packages/infrastructure/node_modules
       - admin-site-shared-config-node-modules:/repo/packages/shared-config/node_modules
-    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/admin-site exec ng serve --host 0.0.0.0 --port 4300"
+    command: sh -c "mkdir -p /tmp/bin && corepack enable --install-directory /tmp/bin && export PATH=/tmp/bin:$$PATH && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/admin-site exec ng serve --host 0.0.0.0 --port 4300"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      fix-permissions:
+        condition: service_completed_successfully
 
 volumes:
   cotizapp-mysql-data:
