@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppColors.tinta (lib/core/theme/app_theme.dart): fondo del splash de
+         Flutter, para que la pantalla nativa de lanzamiento no destelle en blanco. -->
+    <color name="tinta">#1E1B3A</color>
+</resources>
