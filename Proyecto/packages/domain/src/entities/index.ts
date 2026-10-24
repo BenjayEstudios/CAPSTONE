@@ -9,3 +9,4 @@ export * from "./usuario.entity.js";
 export * from "./producto.entity.js";
 export * from "./proveedor.entity.js";
 export * from "./proveedor-documento.entity.js";
+export * from "./auditoria.entity.js";

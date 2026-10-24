@@ -1,0 +1,16 @@
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.cabecera h2 { font-size: 34px; margin: 0; }
+.acciones { display: flex; gap: 8px; }
+.meta { font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); margin: 0 0 12px; }
+.tabla-wrap { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla th, .tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--color-divider); vertical-align: middle; }
+.tabla thead th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 2px solid var(--color-text); }
+.tabla small { display: block; font-size: 11px; font-weight: normal; letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--color-text) 65%, transparent); }
+.permiso { font-weight: 600; min-width: 220px; }
+td.modificada { background: var(--color-accent-2-100); box-shadow: inset 3px 0 0 var(--color-accent-2); }
+.confirmacion { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; margin-bottom: 14px; border: 1px solid var(--color-text); }
+.confirmacion p { flex: 1 1 100%; margin: 0; font-size: 14px; }
+.estado { padding: 24px 0; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.ok { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent); background: var(--color-accent-100); color: var(--color-accent-800); }
+.mensaje { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }

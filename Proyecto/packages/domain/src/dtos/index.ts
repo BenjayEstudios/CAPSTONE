@@ -6,3 +6,5 @@ export * from "./auth.dto.js";
 export * from "./common.dto.js";
 export * from "./producto.dto.js";
 export * from "./proveedor.dto.js";
+export * from "./rol.dto.js";
+export * from "./auditoria.dto.js";

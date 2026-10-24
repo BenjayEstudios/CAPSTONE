@@ -19,3 +19,5 @@ export * from "./listar-proveedores.use-case.js";
 export * from "./obtener-proveedor.use-case.js";
 export * from "./revisar-documento-proveedor.use-case.js";
 export * from "./cambiar-estado-proveedor.use-case.js";
+export * from "./roles.use-cases.js";
+export * from "./auditoria.use-cases.js";
