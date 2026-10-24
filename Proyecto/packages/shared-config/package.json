@@ -1,0 +1,18 @@
+{
+  "name": "@cotizapp/shared-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./typescript/base": "./typescript/base.json",
+    "./eslint/base": "./eslint/base.js"
+  },
+  "files": [
+    "typescript",
+    "eslint"
+  ],
+  "dependencies": {
+    "@eslint/js": "^9.17.0",
+    "typescript-eslint": "^8.18.0"
+  }
+}
