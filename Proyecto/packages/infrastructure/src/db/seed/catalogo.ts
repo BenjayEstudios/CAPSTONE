@@ -90,7 +90,7 @@ export const roles = [
     codigo: "admin_general",
     nombre: "Administrador general",
     descripcion: "Acceso total al panel de administración",
-    esSistema: true,
+    esSistema: 1,
     permisos: matriz(Object.fromEntries(PERMISOS.map((p) => [p, "total"])))
   },
   {
@@ -98,7 +98,7 @@ export const roles = [
     codigo: "editor_catalogo",
     nombre: "Editor de catálogo",
     descripcion: "Crea y edita fichas de producto del catálogo maestro",
-    esSistema: true,
+    esSistema: 1,
     permisos: matriz({ crear_producto: "total", cargar_imagenes: "total", ver_auditoria: "parcial" })
   },
   {
@@ -106,7 +106,7 @@ export const roles = [
     codigo: "soporte",
     nombre: "Soporte",
     descripcion: "Atiende órdenes, reembolsos y altas de proveedor",
-    esSistema: true,
+    esSistema: 1,
     permisos: matriz({
       aprobar_proveedor: "total",
       ver_todas_ordenes: "total",
@@ -119,7 +119,7 @@ export const roles = [
     codigo: "proveedor",
     nombre: "Proveedor",
     descripcion: "Distribuidor: publica precio y stock, ve sus propias órdenes",
-    esSistema: true,
+    esSistema: 1,
     permisos: matriz({ ver_ordenes_propias: "total", publicar_precio_stock: "total", cargar_imagenes: "parcial" })
   },
   {
@@ -127,7 +127,7 @@ export const roles = [
     codigo: "comprador",
     nombre: "Comprador",
     descripcion: "Cliente: compara, arma carro multiproveedor y paga",
-    esSistema: true,
+    esSistema: 1,
     permisos: matriz({ ver_ordenes_propias: "total" })
   }
 ];

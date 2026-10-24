@@ -16,7 +16,8 @@ Ingeniería en Informática.
 - **Monorepo**: pnpm workspaces + Turborepo.
 
 La arquitectura de capas (domain → application → infrastructure) y las
-decisiones de diseño están documentadas en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+decisiones de diseño están documentadas en [docs/arquitectura/](docs/arquitectura/README.md);
+toda la documentación del proyecto (cambios, épicas, decisiones) parte en [docs/](docs/README.md).
 El modelo de datos completo (DBML) vive en [DataBase/dbDiagram.sql](DataBase/dbDiagram.sql).
 
 ## Requisitos

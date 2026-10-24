@@ -1,0 +1,64 @@
+<main class="login">
+  <div class="regla"></div>
+  <p class="meta">{{ brand.producto }}</p>
+  <div class="regla fina"></div>
+
+  <h1 class="marca">{{ brand.nombre }}</h1>
+  <p class="sub">Ingresa con tu cuenta del equipo Cotizapp.</p>
+
+  @if (enMfa()) {
+  <form class="form" (ngSubmit)="verificar()" novalidate>
+    <p class="sub">Enviamos un código de 6 dígitos a tu correo. Vence en 5 minutos.</p>
+    @if (aviso()) {
+      <p class="mensaje aviso" role="status">{{ aviso() }}</p>
+    }
+    @if (error()) {
+      <p class="mensaje error" role="alert">{{ error() }}</p>
+    }
+    <div class="field">
+      <label for="codigo">Código de verificación</label>
+      <input #inputCodigo id="codigo" class="input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+        autocomplete="one-time-code" [formControl]="codigo" />
+      @if (codigo.touched && codigo.invalid) {
+        <span class="ayuda">Ingresa los 6 dígitos del código.</span>
+      }
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
+      {{ cargando() ? "Verificando..." : "Verificar" }}
+    </button>
+    <button type="button" class="btn btn-secondary btn-block" (click)="reenviar()" [disabled]="cargando() || enfriamiento() > 0">
+      {{ enfriamiento() > 0 ? "Reenviar código (" + enfriamiento() + " s)" : "Reenviar código" }}
+    </button>
+    <button type="button" class="btn btn-secondary btn-block" (click)="volverAEmpezar()">Volver</button>
+  </form>
+  } @else {
+  <form class="form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    @if (aviso()) {
+      <p class="mensaje aviso" role="status">{{ aviso() }}</p>
+    }
+    @if (error()) {
+      <p class="mensaje error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="field">
+      <label for="email">Correo electrónico</label>
+      <input id="email" class="input" type="email" formControlName="email" autocomplete="username" />
+      @if (form.controls.email.touched && form.controls.email.invalid) {
+        <span class="ayuda">Ingresa un correo válido.</span>
+      }
+    </div>
+
+    <div class="field">
+      <label for="clave">Clave</label>
+      <input id="clave" class="input" type="password" formControlName="clave" autocomplete="current-password" />
+      @if (form.controls.clave.touched && form.controls.clave.invalid) {
+        <span class="ayuda">Ingresa tu clave.</span>
+      }
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
+      {{ cargando() ? "Ingresando..." : "Ingresar" }}
+    </button>
+  </form>
+  }
+</main>

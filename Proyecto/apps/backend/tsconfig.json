@@ -9,5 +9,6 @@
     { "path": "../../packages/application" },
     { "path": "../../packages/infrastructure" }
   ],
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

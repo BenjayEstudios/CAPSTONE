@@ -12,7 +12,9 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@cotizapp/domain": "workspace:*"
+    "@cotizapp/domain": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "image-size": "^2.0.4"
   },
   "devDependencies": {
     "@cotizapp/shared-config": "workspace:*",

@@ -1,11 +1,22 @@
-import { mysqlTable, bigint, varchar, decimal, smallint, time, int, boolean, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import {
+  mysqlTable,
+  bigint,
+  varchar,
+  mysqlEnum,
+  decimal,
+  smallint,
+  time,
+  int,
+  tinyint,
+  datetime,
+  index
+} from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { direccion } from "./direccion.schema.js";
 
-// FUSION: incluye lo que antes era la tabla proveedor (relacion 1:1). Las
-// columnas marcadas "solo proveedor" quedan NULL cuando tipo IN
-// ('cliente','interna'). Empresa compradora, proveedor o equipo interno;
-// concentra los datos legales.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table organizacion. Las columnas
+// "solo proveedor" son nullable (quedan NULL si tipo = cliente | interna).
+// tinyint(1) -> tinyint; "int unsigned" -> int({ unsigned: true }).
 export const organizacion = mysqlTable(
   "organizacion",
   {
@@ -24,14 +35,12 @@ export const organizacion = mysqlTable(
     plazoFueraRegionHoras: smallint("plazo_fuera_region_horas"),
     horaCorte: time("hora_corte"),
     despachoGratisDesde: int("despacho_gratis_desde", { unsigned: true }),
-    ofreceDespacho: boolean("ofrece_despacho"),
-    ofreceRetiro: boolean("ofrece_retiro"),
+    ofreceDespacho: tinyint("ofrece_despacho"),
+    ofreceRetiro: tinyint("ofrece_retiro"),
     entregasATiempoPct: decimal("entregas_a_tiempo_pct", { precision: 5, scale: 2 }),
     banco: varchar("banco", { length: 60 }),
     cuentaBancaria: varchar("cuenta_bancaria", { length: 40 }),
-    creadaEn: datetime("creada_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    creadaEn: datetime("creada_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [index("ix_organizacion_tipo").on(table.tipo)]
+  (t) => [index("organizacion_tipo_idx").on(t.tipo)]
 );

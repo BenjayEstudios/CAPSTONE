@@ -2,6 +2,8 @@ import 'package:cotizapp_mobile/features/auth/data/auth_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/data/auth_fake_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/data/sesion_local_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/presentation/auth_providers.dart';
+import 'package:cotizapp_mobile/features/catalogo/data/catalogo_fake_datasource.dart';
+import 'package:cotizapp_mobile/features/catalogo/presentation/catalogo_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +29,7 @@ class SesionEnMemoria implements SesionLocalDatasource {
 List<Override> overridesDePrueba({SesionLocalDatasource? local, AuthDatasource? auth}) => [
       sesionLocalDatasourceProvider.overrideWithValue(local ?? SesionEnMemoria()),
       authDatasourceProvider.overrideWithValue(auth ?? const AuthFakeDatasource(latencia: Duration.zero)),
+      catalogoDatasourceProvider.overrideWithValue(const CatalogoFakeDatasource(latencia: Duration.zero)),
     ];
 
 // La superficie por defecto de flutter test es 800x600; con esto las

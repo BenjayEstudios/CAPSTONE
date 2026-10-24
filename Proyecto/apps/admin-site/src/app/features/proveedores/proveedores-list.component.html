@@ -1,0 +1,63 @@
+<header class="cabecera">
+  <h2>Proveedores</h2>
+</header>
+
+<div class="filtros">
+  <div class="field grow">
+    <label for="f-q">Buscar por razón social, nombre o RUT</label>
+    <input id="f-q" class="input" type="search" [value]="q()" (input)="onBusqueda($any($event.target).value)" />
+  </div>
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onEstado($any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ etiquetas[e] }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (error()) {
+  <p class="mensaje" role="alert">
+    {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+  </p>
+} @else if (cargando() && items().length === 0) {
+  <p class="estado" role="status">Cargando proveedores…</p>
+} @else if (items().length === 0) {
+  <p class="estado">No hay proveedores que coincidan con los filtros.</p>
+} @else {
+  <div class="tabla-wrap" [class.cargando]="cargando()">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Proveedor</th><th>RUT</th><th>Estado</th><th class="num">Comisión</th><th>Documentos</th><th>Fecha de alta</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of items(); track p.id) {
+          <tr>
+            <td>
+              <a [routerLink]="[p.id]">{{ p.razonSocial }}</a>
+              @if (p.nombreFantasia) { <br /><small>{{ p.nombreFantasia }}</small> }
+            </td>
+            <td>{{ p.rut }}</td>
+            <td><span class="badge" [class]="'badge ' + p.estado">{{ etiquetas[p.estado] }}</span></td>
+            <td class="num">{{ formatearComision(p.comisionPct) }}</td>
+            <td>
+              {{ p.documentos.aprobados }}/{{ p.documentos.total }} aprobados
+              @if (p.documentos.pendientes > 0) { <small class="pend">· {{ p.documentos.pendientes }} pendientes</small> }
+            </td>
+            <td>{{ p.creadaEn | date: "dd-MM-yyyy" }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="paginacion" aria-label="Paginación">
+    <span>{{ total() }} proveedores · página {{ pagina() }} de {{ totalPaginas() }}</span>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+  </nav>
+}

@@ -52,17 +52,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # --continue: si algo falla, igual corre el resto y muestra todos los errores juntos.
-      - name: check-types, lint y build
-        run: pnpm exec turbo run check-types lint build --continue
-
-      - name: test (paquetes Node, vitest)
-        run: pnpm exec turbo run test --continue --filter='!@cotizapp/ecommerce' --filter='!@cotizapp/admin-site'
-
-      # `ng test` abre Chrome con interfaz por defecto; en el runner tiene que
-      # ser headless. El flag se agrega acá para no depender de que cada app
-      # lo tenga en su script (ubuntu-latest ya trae Google Chrome).
-      - name: test (Angular, ChromeHeadless)
-        run: pnpm --filter @cotizapp/ecommerce --filter @cotizapp/admin-site run test --browsers=ChromeHeadless
+      # Los `ng test` de ecommerce y admin-site ya corren en ChromeHeadless
+      # desde su script (ubuntu-latest trae Google Chrome).
+      - name: check-types, lint, test y build
+        run: pnpm exec turbo run check-types lint test build --continue
 
   changes:
     name: Detectar cambios en mobile

@@ -2,8 +2,8 @@ import { mysqlTable, bigint, smallint, varchar, int, uniqueIndex } from "drizzle
 import { organizacion } from "./organizacion.schema.js";
 import { comuna } from "./comuna.schema.js";
 
-// Donde despacha el proveedor y a que costo; comuna_id NULL = toda la
-// region (identificada por region_codigo).
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table proveedor_cobertura.
+// comuna_id NULL = toda la region (region_codigo).
 export const proveedorCobertura = mysqlTable(
   "proveedor_cobertura",
   {
@@ -16,11 +16,5 @@ export const proveedorCobertura = mysqlTable(
     costoDespacho: int("costo_despacho", { unsigned: true }).notNull(),
     plazoHoras: smallint("plazo_horas")
   },
-  (table) => [
-    uniqueIndex("ux_proveedor_cobertura_proveedor_region_comuna").on(
-      table.proveedorId,
-      table.regionCodigo,
-      table.comunaId
-    )
-  ]
+  (t) => [uniqueIndex("proveedor_cobertura_prov_region_comuna_uq").on(t.proveedorId, t.regionCodigo, t.comunaId)]
 );

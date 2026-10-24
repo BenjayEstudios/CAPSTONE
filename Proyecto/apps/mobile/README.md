@@ -48,7 +48,10 @@ restart) sin reinstalar.
 |---|---|---|
 | 1 | Abrir la app | Splash con el logo de Cotizapp y luego el login |
 | 2 | Tocar la tarjeta **Comprador · El Fogón** | Llena `compras@elfogon.test` / `Cotizapp.2026` e ingresa |
-| 3 | Recorrer **Inicio, Carro, Pedidos** | Saludo "Hola, El Fogón" y las secciones del comprador (catálogo, carro y pedidos llegan en KAN-127 a 132) |
+| 3 | En **Inicio**, tocar la categoría **Abarrotes** | Listado con 4 productos, cada uno con precio desde, proveedores, plazo y ahorro |
+| 3a | Tocar **Aceite vegetal maravilla** | Ficha con comparador: Los Andes ($12.490, ★ 4,7, 24 h) vs Valle Central ($12.890, ★ 3,8, 48 h), insignias "Más bajo / Más rápido / Mejor calificado"; cambiar el orden a **Calificación** |
+| 3b | Volver al inicio, tocar el buscador y escribir `queso` | 2 resultados mientras se escribe; probar **Filtros** (categoría, plazo 24/48 h, caja chica, orden) y el botón de balanza para ver precio por kg / L |
+| 3c | Recorrer **Carro** y **Pedidos** | Secciones en construcción (KAN-130 a 132) |
 | 4 | **Cuenta** | Perfil del usuario, organización y rol |
 | 5 | Cuenta → **Diagnóstico de conexión** | A qué API apunta la app; sin backend muestra "Sin conexión con el backend" y aclara que la app sigue con datos de prueba |
 | 6 | Volver → **Cerrar sesión** | Vuelve al login |
