@@ -1,13 +1,13 @@
 import type { RouteOptions } from "fastify";
 import { crearProducto } from "@cotizapp/application";
 import { DrizzleCategoriaRepository, DrizzleProductoRepository } from "@cotizapp/infrastructure";
-import { requireAuth, requireRol } from "../../plugins/auth.js";
+import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 // Solo la administracion crea productos.
 export const createProductoRoute: RouteOptions = {
   method: "POST",
   url: "/productos",
-  preHandler: [requireAuth, requireRol("administrador")],
+  preHandler: [requireAuth, requirePermiso("crear_producto")],
   handler: async (request, reply) => {
     const db = request.server.db;
     const producto = await crearProducto({

@@ -2,22 +2,23 @@ import type { FastifyReply, FastifyRequest, RouteOptions } from "fastify";
 import { listarCategoriasQuerySchema } from "@cotizapp/domain";
 import { listarCategorias } from "@cotizapp/application";
 import { DrizzleCategoriaRepository } from "@cotizapp/infrastructure";
-import { requireAuth, requireRol } from "../../plugins/auth.js";
+import { REQUISITOS_LECTURA_CATALOGO, requireAuth, requirePermiso } from "../../plugins/auth.js";
 
-// Solo el administrador puede pedir ?incluirOcultas=true; sin ese parametro
+// Solo quien gestiona el catalogo (ver REQUISITOS_LECTURA_CATALOGO) puede pedir ?incluirOcultas=true; sin ese parametro
 // la ruta sigue siendo publica (el catalogo se ve sin login).
-async function exigirAdminSiIncluyeOcultas(request: FastifyRequest, reply: FastifyReply) {
+async function exigirPermisoSiIncluyeOcultas(request: FastifyRequest, reply: FastifyReply) {
   const { incluirOcultas } = listarCategoriasQuerySchema.parse(request.query);
   if (!incluirOcultas) return;
   await requireAuth(request, reply);
   if (reply.sent) return;
-  await requireRol("administrador")(request, reply);
+  // Si falla, lanza ErrorAplicacion y lo serializa lib/error-handler.ts.
+  await requirePermiso(...REQUISITOS_LECTURA_CATALOGO)(request);
 }
 
 export const listCategoriasRoute: RouteOptions = {
   method: "GET",
   url: "/categorias",
-  preHandler: [exigirAdminSiIncluyeOcultas],
+  preHandler: [exigirPermisoSiIncluyeOcultas],
   handler: async (request) => {
     const categoriaRepository = new DrizzleCategoriaRepository(request.server.db);
     const query = listarCategoriasQuerySchema.parse(request.query);

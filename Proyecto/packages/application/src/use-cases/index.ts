@@ -13,3 +13,5 @@ export * from "./obtener-producto.use-case.js";
 export * from "./crear-producto.use-case.js";
 export * from "./actualizar-producto.use-case.js";
 export * from "./reemplazar-imagenes-producto.use-case.js";
+export * from "./verificar-permisos.use-case.js";
+export * from "./subir-imagen-producto.use-case.js";

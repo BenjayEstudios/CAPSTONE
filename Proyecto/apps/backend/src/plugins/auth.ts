@@ -1,5 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import jwt from "jsonwebtoken";
+import { verificarPermisos, type RequisitoPermiso } from "@cotizapp/application";
+import { DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 
 export interface AuthClaims {
   sub: string; // id del usuario
@@ -47,3 +49,28 @@ export function requireRol(...rolesPermitidos: string[]) {
     }
   };
 }
+
+// Guard de permisos: compone despues de requireAuth. Lee rol y estado
+// vigentes desde la DB (NO del JWT) para respetar cambios de la matriz
+// rol.permisos y usuarios suspendidos. Basta cumplir UNO de los requisitos
+// (OR). Acepta codigos ("crear_producto" = parcial o total) o
+// { codigo, minimo: "total" }. 401 si el usuario no existe / no esta activo;
+// 403 FORBIDDEN si el nivel es "ninguno" o ausente. Los errores los
+// serializa lib/error-handler.ts.
+export function requirePermiso(...requisitos: Array<string | RequisitoPermiso>) {
+  const reqs: RequisitoPermiso[] = requisitos.map((r) => (typeof r === "string" ? { codigo: r } : r));
+  return async (request: FastifyRequest) => {
+    const usuarioRepository = new DrizzleUsuarioRepository(request.server.db);
+    await verificarPermisos({ usuarioRepository })(Number(request.auth?.sub), reqs);
+  };
+}
+
+// Lectura del catalogo de administracion (listar/ver productos, categorias
+// ocultas): crear_producto (parcial o total) o cargar_imagenes en "total".
+// cargar_imagenes "parcial" (proveedor: solo sus productos, sin modelo de
+// pertenencia todavia) NO alcanza para ver/escribir el catalogo global.
+export const REQUISITOS_LECTURA_CATALOGO: RequisitoPermiso[] = [
+  { codigo: "crear_producto" },
+  { codigo: "cargar_imagenes", minimo: "total" }
+];
+export const REQUISITO_CARGAR_IMAGENES: RequisitoPermiso = { codigo: "cargar_imagenes", minimo: "total" };

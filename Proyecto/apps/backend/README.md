@@ -46,3 +46,42 @@ pnpm build && pnpm start
 
 `app.ts` registra un `setErrorHandler` centralizado que devuelve
 `{ error: { code, message } }` con el status HTTP correspondiente.
+
+## Autorizacion por permisos
+
+`requirePermiso(...requisitos)` (`src/plugins/auth.ts`) se compone despues de
+`requireAuth`. Lee el rol y el estado del usuario desde la DB en cada request
+(no del JWT) y evalua la matriz `rol.permisos`. 401 si el usuario no existe o
+no esta activo; 403 `FORBIDDEN` si el nivel es `ninguno`/ausente. Acepta
+`"codigo"` (parcial o total) o `{ codigo, minimo: "total" }`; basta cumplir uno.
+
+| Ruta | Requisito |
+| --- | --- |
+| POST/PATCH `/productos`, POST/PATCH `/categorias` | `crear_producto` |
+| GET `/productos`, GET `/productos/:id`, GET `/categorias?incluirOcultas=true` | `crear_producto` o `cargar_imagenes` en `total` |
+| PUT `/productos/:id/imagenes`, POST `/productos/:id/imagenes/archivo` | `cargar_imagenes` en `total` |
+
+`cargar_imagenes: parcial` (rol proveedor) no basta: no hay modelo de
+pertenencia producto-proveedor todavia.
+
+## Subida de imagenes de producto
+
+`POST /productos/:id/imagenes/archivo` (multipart, un archivo): valida firma
+binaria JPG/PNG, tamano maximo y ancho minimo 1200 px; genera el nombre en el
+servidor y responde `201 { url, clave, ancho, alto }`. No registra la imagen:
+el cliente llama despues a `PUT /productos/:id/imagenes` con esos metadatos.
+Los archivos se sirven (solo lectura, sin listado) en `/uploads/...`.
+
+Variables de entorno:
+
+| Variable | Default | Descripcion |
+| --- | --- | --- |
+| `STORAGE_DRIVER` | `local` | Adaptador de `AlmacenArchivos`. Hoy solo `local`. |
+| `UPLOADS_DIR` | `./uploads` | Directorio de archivos (docker-compose: `/data/uploads`, volumen `backend-uploads`). |
+| `UPLOADS_MAX_MB` | `5` | Tamano maximo por archivo. |
+| `PUBLIC_BASE_URL` | `http://localhost:8000` | Base absoluta de las URL devueltas. |
+
+Extension a DigitalOcean Spaces (no implementado): crear `AlmacenSpaces`
+(S3-compatible) en `packages/infrastructure` que implemente `AlmacenArchivos`
+(`packages/domain/src/services`), agregar `spaces` a `STORAGE_DRIVER` y un
+`case` en `src/lib/storage.ts`.
