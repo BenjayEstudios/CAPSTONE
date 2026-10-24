@@ -1,9 +1,9 @@
-import { mysqlTable, bigint, date, int, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, int, mysqlEnum, date, datetime, index } from "drizzle-orm/mysql-core";
 import { organizacion } from "./organizacion.schema.js";
 
-// Corte semanal por proveedor (lo entregado y confirmado la semana
-// anterior; se liquida los martes). El detalle por envio no vive en una
-// tabla aparte: se obtiene con orden_envio WHERE liquidacion_id = liquidacion.id.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table liquidacion. Corte semanal
+// por proveedor; el detalle es orden_envio WHERE liquidacion_id = liquidacion.id.
+// proveedor_id debe ser una organizacion con tipo = proveedor (aplicacion).
 export const liquidacion = mysqlTable(
   "liquidacion",
   {
@@ -11,13 +11,13 @@ export const liquidacion = mysqlTable(
     proveedorId: bigint("proveedor_id", { mode: "number" })
       .notNull()
       .references(() => organizacion.id),
-    periodoDesde: date("periodo_desde").notNull(),
-    periodoHasta: date("periodo_hasta").notNull(),
+    periodoDesde: date("periodo_desde", { mode: "string" }).notNull(),
+    periodoHasta: date("periodo_hasta", { mode: "string" }).notNull(),
     montoBruto: int("monto_bruto", { unsigned: true }).notNull(),
     comision: int("comision", { unsigned: true }).notNull(),
     montoNeto: int("monto_neto", { unsigned: true }).notNull(),
     estado: mysqlEnum("estado", ["pendiente", "pagada"]).notNull().default("pendiente"),
-    pagadaEn: datetime("pagada_en", { mode: "date" })
+    pagadaEn: datetime("pagada_en")
   },
-  (table) => [index("ix_liquidacion_estado").on(table.estado)]
+  (t) => [index("liquidacion_estado_idx").on(t.estado)]
 );

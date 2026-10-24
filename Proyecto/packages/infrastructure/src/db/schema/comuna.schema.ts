@@ -1,8 +1,6 @@
 import { mysqlTable, smallint, varchar, index } from "drizzle-orm/mysql-core";
 
-// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table comuna.
-// FUSION: incluye lo que antes era la tabla region (catalogo chico y
-// estatico de 16 regiones de Chile, sin necesidad de tabla propia).
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table comuna (incluye region).
 export const comuna = mysqlTable(
   "comuna",
   {
@@ -13,5 +11,5 @@ export const comuna = mysqlTable(
     regionNombre: varchar("region_nombre", { length: 80 }).notNull(),
     regionOrden: smallint("region_orden")
   },
-  (table) => [index("ix_comuna_nombre").on(table.nombre), index("ix_comuna_region_codigo").on(table.regionCodigo)]
+  (t) => [index("comuna_nombre_idx").on(t.nombre), index("comuna_region_codigo_idx").on(t.regionCodigo)]
 );

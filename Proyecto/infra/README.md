@@ -160,20 +160,18 @@ Un push nuevo cancela la corrida anterior de la misma rama/PR.
 
 | Job | Qué corre |
 |---|---|
-| **Node** | pnpm (versión de `packageManager`), Node 22, caché de pnpm y de Turborepo. `pnpm install --frozen-lockfile` → `turbo run check-types lint build` → `turbo run test` (paquetes Node, vitest) → `ng test --browsers=ChromeHeadless` de ecommerce y admin-site. |
+| **Node** | pnpm (versión de `packageManager`), Node 22, caché de pnpm y de Turborepo. `pnpm install --frozen-lockfile` → `turbo run check-types lint test build` (vitest en backend/packages; angular-eslint y karma en ChromeHeadless en ecommerce y admin-site). |
 | **Flutter** | Solo si el PR/push toca `Proyecto/apps/mobile/**` (o el propio `ci.yml`). Flutter 3.47.5 stable: `flutter pub get`, `flutter analyze`, `flutter test`. Si no corre aparece como *skipped*, que GitHub cuenta como éxito. |
 
-Los tests de Angular van en un paso aparte solo para agregarles
-`--browsers=ChromeHeadless` (sin pantalla en el runner). Si las apps agregan
-ese flag a su script `test`, el paso se puede fusionar con el de turbo.
+El script `test` de las apps Angular es `ng test --watch=false
+--browsers=ChromeHeadless`: corre igual en local y en el runner (necesita
+Chrome o Chromium instalado; si no está en el PATH, exportar `CHROME_BIN`).
 
 Reproducir en local lo mismo que el job Node (desde `Proyecto/`):
 
 ```bash
 CI=true pnpm install --frozen-lockfile
-pnpm exec turbo run check-types lint build --continue
-pnpm exec turbo run test --continue --filter='!@cotizapp/ecommerce' --filter='!@cotizapp/admin-site'
-pnpm --filter @cotizapp/ecommerce --filter @cotizapp/admin-site run test --browsers=ChromeHeadless
+pnpm exec turbo run check-types lint test build --continue
 ```
 
 Validar la sintaxis de los workflows (desde la raíz del repo):

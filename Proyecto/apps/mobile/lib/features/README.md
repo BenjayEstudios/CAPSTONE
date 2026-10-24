@@ -32,7 +32,7 @@ La app sirve a los dos perfiles del marketplace (epic KAN-87):
 |---|---|---|---|
 | `conexion` — diagnóstico de API / health-check (ejemplo de referencia) | ambos | KAN-125 | listo (API real) |
 | `auth` — login, sesión persistida, cuenta y navegación según perfil | ambos | KAN-126 | listo (fake: `POST /auth/login`) |
-| `catalogo` — home, categorías, búsqueda, listado con filtros, ficha con comparador | comprador | KAN-127/128/129 | pendiente |
+| `catalogo` — inicio, categorías, búsqueda, listado con filtros, ficha con comparador | comprador | KAN-127/128/129 | listo (fake: `GET /productos`, `GET /productos/:id`) |
 | `carro` — carro multiproveedor | comprador | KAN-130 | pendiente |
 | `checkout` — checkout y pago | comprador | KAN-131 | pendiente |
 | `pedidos` — mis pedidos | comprador | KAN-132 | pendiente |

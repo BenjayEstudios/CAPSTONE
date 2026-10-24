@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import { oferta } from "./oferta.schema.js";
 import { usuario } from "./usuario.schema.js";
 
-// SOLO INSERCION. Bitacora de cambios de precio y stock de una oferta.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table oferta_precio_historial.
+// SOLO INSERCION: bitacora de cambios de precio y stock de una oferta.
 export const ofertaPrecioHistorial = mysqlTable(
   "oferta_precio_historial",
   {
@@ -17,9 +18,7 @@ export const ofertaPrecioHistorial = mysqlTable(
     cajasNuevas: int("cajas_nuevas", { unsigned: true }),
     motivo: varchar("motivo", { length: 120 }),
     cambiadoPor: bigint("cambiado_por", { mode: "number" }).references(() => usuario.id),
-    cambiadoEn: datetime("cambiado_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    cambiadoEn: datetime("cambiado_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [index("ix_oferta_precio_historial_cambiado_en").on(table.cambiadoEn)]
+  (t) => [index("oferta_precio_historial_cambiado_en_idx").on(t.cambiadoEn)]
 );

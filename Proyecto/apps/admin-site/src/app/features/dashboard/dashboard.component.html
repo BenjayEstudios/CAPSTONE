@@ -1,0 +1,121 @@
+<header class="cabecera">
+  <h2>Dashboard</h2>
+  @if (puedeVer()) {
+    <div class="field">
+      <label for="d-mes">Mes</label>
+      <input id="d-mes" class="input" type="month" [max]="mesMax" [value]="resumen()?.mes ?? mesMax" (change)="onMes($any($event.target).value)" />
+    </div>
+  }
+</header>
+
+@if (!puedeVer()) {
+  <section class="bienvenida" aria-label="Bienvenida">
+    <h3>Bienvenido{{ nombre() ? ", " + nombre() : "" }}</h3>
+    <p>Usa el menú lateral para acceder a los módulos disponibles para tu cuenta.</p>
+  </section>
+} @else if (error()) {
+  <p class="mensaje" role="alert">
+    {{ error() }} <button type="button" class="btn btn-secondary" (click)="cargar()">Reintentar</button>
+  </p>
+} @else if (!resumen()) {
+  <p class="estado" role="status">Cargando dashboard…</p>
+} @else {
+  @let r = resumen()!;
+  <div [class.cargando]="cargando()" [attr.aria-busy]="cargando()">
+    <p class="sub">Resumen de {{ etiquetaMes(r.mes) }} · comparado con {{ etiquetaMes(r.mesAnterior) }}</p>
+    @if (sinActividad()) {
+      <p class="vacio" role="status">No hay órdenes pagadas en {{ etiquetaMes(r.mes) }}. Los indicadores se muestran en cero.</p>
+    }
+
+    <section class="kpis" aria-label="Indicadores del mes">
+      @for (t of tarjetas(); track t.id) {
+        <article class="kpi">
+          <h3>{{ t.titulo }}</h3>
+          <p class="valor">{{ valorKpi(t) }}</p>
+          <p class="var" [class]="'var ' + claseVar(t.kpi.variacionPct)">
+            {{ variacion(t.kpi.variacionPct) }}
+            <span class="previo">(mes anterior: {{ t.moneda ? clp(t.kpi.anterior) : t.kpi.anterior }})</span>
+          </p>
+        </article>
+      }
+    </section>
+
+    <section class="panel" aria-labelledby="t-semanas">
+      <h3 id="t-semanas">Monto transado por semana</h3>
+      @let g = grafico();
+      <svg class="grafico" [attr.viewBox]="'0 0 ' + g.ancho + ' ' + g.alto" role="img" aria-labelledby="g-titulo g-desc">
+        <title id="g-titulo">Monto transado por semana, {{ etiquetaMes(r.mes) }}</title>
+        <desc id="g-desc">Gráfico de barras con {{ r.semanas.length }} semanas. La tabla siguiente detalla los valores.</desc>
+        @for (t of g.ticks; track t.y) {
+          <line [attr.x1]="78" [attr.x2]="g.ancho - 12" [attr.y1]="t.y" [attr.y2]="t.y" class="grilla" />
+          <text [attr.x]="72" [attr.y]="t.y + 4" text-anchor="end" class="eje">{{ clp(t.valor) }}</text>
+        }
+        <line [attr.x1]="78" [attr.x2]="g.ancho - 12" [attr.y1]="g.base" [attr.y2]="g.base" class="eje-x" />
+        @for (b of g.barras; track b.etiqueta) {
+          <rect [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.ancho" [attr.height]="b.alto" class="barra">
+            <title>{{ b.etiqueta }}: {{ clp(b.monto) }}</title>
+          </rect>
+          <text [attr.x]="b.x + b.ancho / 2" [attr.y]="g.base + 16" text-anchor="middle" class="eje">{{ b.etiqueta }}</text>
+          @if (b.monto > 0) {
+            <text [attr.x]="b.x + b.ancho / 2" [attr.y]="b.y - 4" text-anchor="middle" class="valor-barra">{{ clp(b.monto) }}</text>
+          }
+        }
+      </svg>
+      <table class="tabla tabla-alt">
+        <caption class="sr-only">Monto transado por semana</caption>
+        <thead><tr><th scope="col">Semana</th><th scope="col" class="num">Monto</th></tr></thead>
+        <tbody>
+          @for (s of r.semanas; track s.inicio) {
+            <tr><td>{{ etiquetaSemana(s) }}</td><td class="num">{{ clp(s.monto) }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <div class="dos-col">
+      <section class="panel" aria-labelledby="t-prov">
+        <h3 id="t-prov">Proveedores por volumen</h3>
+        @if (r.proveedoresPorVolumen.length === 0) {
+          <p class="estado">Sin ventas de proveedores en el mes.</p>
+        } @else {
+          <div class="tabla-wrap">
+            <table class="tabla">
+              <thead>
+                <tr><th scope="col">Proveedor</th><th scope="col" class="num">SKU</th><th scope="col" class="num">Órdenes</th><th scope="col" class="num">Monto</th></tr>
+              </thead>
+              <tbody>
+                @for (p of r.proveedoresPorVolumen; track p.proveedorId) {
+                  <tr><td>{{ p.nombre }}</td><td class="num">{{ p.skus }}</td><td class="num">{{ p.ordenes }}</td><td class="num">{{ clp(p.monto) }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="panel" aria-labelledby="t-salud">
+        <h3 id="t-salud">Salud del catálogo</h3>
+        <ul class="contadores">
+          <li><strong>{{ r.saludCatalogo.sinImagen }}</strong> sin imagen</li>
+          <li><strong>{{ r.saludCatalogo.sinOfertas }}</strong> sin ofertas</li>
+          <li><strong>{{ r.saludCatalogo.duplicadas }}</strong> posibles duplicadas</li>
+        </ul>
+        @if (r.saludCatalogo.detalle.length === 0) {
+          <p class="estado">Sin problemas detectados en el catálogo.</p>
+        } @else {
+          <ul class="detalle">
+            @for (d of r.saludCatalogo.detalle; track d.productoId + d.problema) {
+              <li>
+                <a [routerLink]="['/catalogo-maestro', d.productoId]">{{ d.producto }}</a>
+                <span class="badge">{{ etiquetaProblema[d.problema] }}</span>
+              </li>
+            }
+          </ul>
+          @if (totalSalud() > r.saludCatalogo.detalle.length) {
+            <p class="nota">Se muestran las primeras {{ r.saludCatalogo.detalle.length }} fichas afectadas.</p>
+          }
+        }
+      </section>
+    </div>
+  </div>
+}

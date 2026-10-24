@@ -30,6 +30,10 @@ apps/mobile/.pub/
 apps/mobile/**/android/.gradle
 apps/mobile/**/ios/Pods/
 
+# Archivos subidos (STORAGE_DRIVER=local)
+apps/backend/uploads/
+uploads/
+
 # Drizzle
 apps/backend/drizzle/
 *.log
