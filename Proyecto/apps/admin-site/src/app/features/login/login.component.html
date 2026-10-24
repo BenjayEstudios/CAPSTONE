@@ -4,8 +4,34 @@
   <div class="regla fina"></div>
 
   <h1 class="marca">{{ brand.nombre }}</h1>
-  <p class="sub">Ingresa con tu cuenta de administrador.</p>
+  <p class="sub">Ingresa con tu cuenta del equipo Cotizapp.</p>
 
+  @if (enMfa()) {
+  <form class="form" (ngSubmit)="verificar()" novalidate>
+    <p class="sub">Enviamos un código de 6 dígitos a tu correo. Vence en 5 minutos.</p>
+    @if (aviso()) {
+      <p class="mensaje aviso" role="status">{{ aviso() }}</p>
+    }
+    @if (error()) {
+      <p class="mensaje error" role="alert">{{ error() }}</p>
+    }
+    <div class="field">
+      <label for="codigo">Código de verificación</label>
+      <input #inputCodigo id="codigo" class="input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+        autocomplete="one-time-code" autofocus [formControl]="codigo" />
+      @if (codigo.touched && codigo.invalid) {
+        <span class="ayuda">Ingresa los 6 dígitos del código.</span>
+      }
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
+      {{ cargando() ? "Verificando..." : "Verificar" }}
+    </button>
+    <button type="button" class="btn btn-secondary btn-block" (click)="reenviar()" [disabled]="cargando() || enfriamiento() > 0">
+      {{ enfriamiento() > 0 ? "Reenviar código (" + enfriamiento() + " s)" : "Reenviar código" }}
+    </button>
+    <button type="button" class="btn btn-secondary btn-block" (click)="volverAEmpezar()">Volver</button>
+  </form>
+  } @else {
   <form class="form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
     @if (aviso()) {
       <p class="mensaje aviso" role="status">{{ aviso() }}</p>
@@ -34,4 +60,5 @@
       {{ cargando() ? "Ingresando..." : "Ingresar" }}
     </button>
   </form>
+  }
 </main>

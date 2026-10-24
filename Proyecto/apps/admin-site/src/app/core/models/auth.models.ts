@@ -20,6 +20,14 @@ export interface LoginResponse {
   usuario: UsuarioSesion;
 }
 
+// Paso 1 con 2FA activo: no hay token, solo un desafio firmado de 5 min.
+export interface MfaRequeridoResponse {
+  mfaRequerido: true;
+  desafio: string;
+}
+
+export type LoginRespuesta = LoginResponse | MfaRequeridoResponse;
+
 export interface MeResponse {
   usuario: UsuarioSesion;
 }

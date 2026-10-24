@@ -28,3 +28,10 @@
   .sidebar.abierto { display: flex; }
   .contenido { padding: 20px 16px 40px; }
 }
+
+.aviso-sin-secciones {
+  margin: 2rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid currentColor;
+  max-width: 40rem;
+}

@@ -21,7 +21,11 @@
       }
     </nav>
     <main class="contenido">
-      <router-outlet />
+      @if (sinSecciones()) {
+        <p class="aviso-sin-secciones" role="status">Tu rol no tiene secciones habilitadas. Pide a un administrador que revise tus permisos.</p>
+      } @else {
+        <router-outlet />
+      }
     </main>
   </div>
 </div>

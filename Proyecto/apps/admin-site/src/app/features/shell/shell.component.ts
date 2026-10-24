@@ -23,6 +23,8 @@ export class ShellComponent {
   readonly usuario = this.session.usuario;
   readonly menuAbierto = signal(false);
   readonly modulos = computed(() => MODULOS.filter((m) => m.permiso === null || this.session.tienePermiso(m.permiso)));
+  /** Sin ninguna seccion con permiso (solo queda el Dashboard, que es siempre visible). */
+  readonly sinSecciones = computed(() => this.modulos().every((m) => m.permiso === null));
   readonly fecha = new Date().toLocaleDateString("es-CL", {
     weekday: "long",
     day: "numeric",

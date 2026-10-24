@@ -1,0 +1,193 @@
+<header class="cabecera">
+  <h2>Moderación</h2>
+</header>
+
+<div class="filtros">
+  <div class="field">
+    <label for="f-tipo">Tipo</label>
+    <select id="f-tipo" class="input" (change)="onTipo($any($event.target).value)">
+      <option value="" [selected]="tipo() === ''">Todos</option>
+      @for (t of tipos; track t) {
+        <option [value]="t" [selected]="tipo() === t">{{ etiquetaTipo[t] }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onEstado($any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ etiquetaEstado[e] }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-asig">Asignado a</label>
+    <select id="f-asig" class="input" (change)="onAsignado($any($event.target).value)">
+      <option value="" [selected]="asignado() === ''">Todos</option>
+      <option value="mi" [selected]="asignado() === 'mi'">Asignados a mí</option>
+      <option value="sin_asignar" [selected]="asignado() === 'sin_asignar'">Sin asignar</option>
+    </select>
+  </div>
+</div>
+
+<div class="layout" [class.con-detalle]="seleccionadoId() !== null">
+  <section class="lista" aria-label="Cola de casos">
+    @if (error()) {
+      <p class="mensaje" role="alert">
+        {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+      </p>
+    } @else if (cargando() && items().length === 0) {
+      <p class="estado" role="status">Cargando casos…</p>
+    } @else if (items().length === 0) {
+      <p class="estado">No hay casos que coincidan con los filtros.</p>
+    } @else {
+      <div class="tabla-wrap" [class.cargando]="cargando()">
+        <table class="tabla">
+          <thead>
+            <tr><th>Caso</th><th>Tipo</th><th>Estado</th><th>Asignado a</th><th>Creado</th></tr>
+          </thead>
+          <tbody>
+            @for (c of items(); track c.id) {
+              <tr [class.activa]="c.id === seleccionadoId()">
+                <td>
+                  <button type="button" class="link" (click)="seleccionar(c.id)">#{{ c.id }}</button>
+                  @if (c.detalle) { <br /><small>{{ c.detalle }}</small> }
+                </td>
+                <td>{{ etiquetaTipo[c.tipo] }}</td>
+                <td><span class="badge" [class]="'badge ' + c.estado">{{ etiquetaEstado[c.estado] }}</span></td>
+                <td>{{ c.asignadoA ? c.asignadoA.nombre : "Sin asignar" }}</td>
+                <td>{{ c.creadoEn | date: "dd-MM-yyyy HH:mm" }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación">
+        <span>{{ total() }} casos · página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+      </nav>
+    }
+  </section>
+
+  @if (seleccionadoId() !== null) {
+    <aside class="panel" aria-label="Detalle del caso">
+      <div class="panel-cab">
+        <h3>Caso #{{ seleccionadoId() }}</h3>
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+
+      @if (errorDetalle()) {
+        <p class="mensaje" role="alert">
+          {{ errorDetalle() }} <button type="button" class="btn btn-secondary" (click)="reintentarDetalle()">Reintentar</button>
+        </p>
+      } @else if (cargandoDetalle() && !detalle()) {
+        <p class="estado" role="status">Cargando detalle…</p>
+      }
+      @if (!errorDetalle() && detalle(); as d) {
+        <dl class="datos">
+          <dt>Tipo</dt><dd>{{ etiquetaTipo[d.tipo] }}</dd>
+          <dt>Estado</dt><dd><span class="badge" [class]="'badge ' + d.estado">{{ etiquetaEstado[d.estado] }}</span></dd>
+          <dt>Detalle</dt><dd>{{ d.detalle || "—" }}</dd>
+          <dt>Entidad</dt>
+          <dd>
+            @if (d.entidadReferenciada; as ent) {
+              @if (rutaEntidad(d.entidad, d.entidadId); as ruta) {
+                <a [routerLink]="ruta">{{ ent.etiqueta || d.entidad + " #" + d.entidadId }}</a>
+              } @else {
+                {{ ent.etiqueta || d.entidad + " #" + d.entidadId }}
+              }
+            } @else {
+              {{ d.entidad }} #{{ d.entidadId }} (no disponible)
+            }
+          </dd>
+          <dt>Asignado a</dt>
+          <dd>
+            {{ d.asignadoA ? d.asignadoA.nombre : "Sin asignar" }}
+            @if (d.asignadoA && d.asignadoPor) { <small>(por {{ d.asignadoPor.nombre }})</small> }
+          </dd>
+          <dt>Creado</dt><dd>{{ d.creadoEn | date: "dd-MM-yyyy HH:mm" }}</dd>
+          @if (d.cierre) {
+            <dt>{{ etiquetaOperacion[d.cierre.operacion] || "Cierre" }}</dt>
+            <dd>
+              {{ d.cierre.usuario?.nombre || "Sistema" }} · {{ d.cierre.creadoEn | date: "dd-MM-yyyy HH:mm" }}
+              @if (d.cierre.nota) { <br />{{ d.cierre.nota }} }
+            </dd>
+          }
+        </dl>
+
+        @if (aviso()) { <p class="aviso" role="status">{{ aviso() }}</p> }
+        @if (errorAccion()) { <p class="mensaje" role="alert">{{ errorAccion() }}</p> }
+
+        @if (acciones(); as ac) {
+          @if (ac.asignar && modo() === null) {
+            <div class="botones">
+              <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="asignarme()">Asignarme</button>
+              <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="abrirModo('asignar')">Asignar a…</button>
+              @if (d.asignadoA) {
+                <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="desasignar()">Quitar asignación</button>
+              }
+              <button type="button" class="btn btn-primary" (click)="abrirModo('resolver')">Resolver</button>
+              <button type="button" class="btn btn-secondary" (click)="abrirModo('descartar')">Descartar</button>
+            </div>
+          }
+
+          @if (modo() === 'asignar') {
+            <div class="accion">
+              <label for="a-dest">Asignar a</label>
+              <select id="a-dest" class="input" (change)="destino.set($any($event.target).value)">
+                <option value="">Elige un usuario…</option>
+                @for (u of internos(); track u.id) {
+                  <option [value]="u.id">{{ u.nombre }} ({{ u.rol }})</option>
+                }
+              </select>
+              @if (errorTexto()) { <p class="mensaje" role="alert">{{ errorTexto() }}</p> }
+              <div class="botones">
+                <button type="button" class="btn btn-primary" [disabled]="enCurso()" (click)="aplicarAsignacion()">Asignar</button>
+                <button type="button" class="btn btn-secondary" (click)="cancelar()">Cancelar</button>
+              </div>
+            </div>
+          }
+
+          @if (modo() === 'resolver' || modo() === 'descartar') {
+            <div class="accion">
+              <label for="a-txt">{{ modo() === 'resolver' ? "Nota de resolución" : "Motivo del descarte" }} (obligatorio)</label>
+              <textarea id="a-txt" class="input" rows="3" [attr.maxlength]="maxTexto" [disabled]="confirmando()"
+                [value]="texto()" (input)="texto.set($any($event.target).value)"></textarea>
+              @if (errorTexto()) { <p class="mensaje" role="alert">{{ errorTexto() }}</p> }
+              @if (!confirmando()) {
+                <div class="botones">
+                  <button type="button" class="btn btn-primary" (click)="revisar()">Continuar</button>
+                  <button type="button" class="btn btn-secondary" (click)="cancelar()">Cancelar</button>
+                </div>
+              } @else {
+                <p class="confirma" role="alert">
+                  ¿Confirmas {{ modo() === 'resolver' ? "resolver" : "descartar" }} el caso #{{ d.id }}? Esta acción no se puede deshacer.
+                </p>
+                <div class="botones">
+                  <button type="button" class="btn btn-primary" [disabled]="enCurso()" (click)="confirmar()">Sí, confirmar</button>
+                  <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="volverAEditar()">Volver</button>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        @if (d.historial.length > 0) {
+          <h4>Historial</h4>
+          <ul class="historial">
+            @for (h of d.historial; track $index) {
+              <li>
+                <strong>{{ etiquetaOperacion[h.operacion] || h.operacion }}</strong>
+                · {{ h.usuario?.nombre || "Sistema" }} · {{ h.creadoEn | date: "dd-MM-yyyy HH:mm" }}
+                @if (h.nota) { <br /><small>{{ h.nota }}</small> }
+              </li>
+            }
+          </ul>
+        }
+      }
+    </aside>
+  }
+</div>

@@ -1,0 +1,214 @@
+<header class="cabecera">
+  <h2>Usuarios</h2>
+  @if (puedeEscribir()) {
+    <button type="button" class="btn btn-primary" (click)="abrirCrear()">Crear usuario</button>
+  }
+</header>
+
+@if (resultado(); as r) {
+  <section class="clave-box" role="alert" aria-labelledby="t-resultado">
+    <h3 id="t-resultado">Usuario {{ r.usuario.email }} creado</h3>
+    @if (r.claveTemporal) {
+      <p>
+        <strong>Esta clave temporal se muestra una sola vez.</strong> Cópiala ahora y entrégala por un canal seguro: no se puede
+        volver a consultar. La persona debe usarla para ingresar al panel.
+      </p>
+      <code>{{ r.claveTemporal }}</code>
+      <div class="botones">
+        <button type="button" class="btn btn-secondary" (click)="copiarClave()">{{ copiado() ? "Copiada" : "Copiar clave" }}</button>
+        <button type="button" class="btn btn-primary" (click)="cerrarResultado()">Ya la guardé, cerrar</button>
+      </div>
+    } @else {
+      @if (r.correoEnviado) {
+        <p>Se envió una invitación con la clave temporal a {{ r.usuario.email }}.</p>
+      } @else {
+        <p>
+          El usuario se creó, pero <strong>no se pudo enviar el correo de invitación</strong>. Revisa la configuración de correo del
+          servidor.
+        </p>
+      }
+      <div class="botones"><button type="button" class="btn btn-primary" (click)="cerrarResultado()">Cerrar</button></div>
+    }
+  </section>
+}
+
+@if (errorAccion()) {
+  <p class="mensaje" role="alert">{{ errorAccion() }}</p>
+}
+
+@if (panel(); as p) {
+  <section class="panel" aria-labelledby="t-panel">
+    <h3 id="t-panel">{{ p === "crear" ? "Nuevo usuario" : "Editar usuario" }}</h3>
+    @if (errorForm()) { <p class="mensaje" role="alert">{{ errorForm() }}</p> }
+    <div class="grid">
+      <div class="field">
+        <label for="u-nombre">Nombre</label>
+        <input id="u-nombre" class="input" maxlength="120" [value]="fNombre()" (input)="fNombre.set($any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="u-email">Email</label>
+        <input id="u-email" class="input" type="email" maxlength="160" [disabled]="p !== 'crear'" [value]="fEmail()" (input)="fEmail.set($any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="u-rol">Rol</label>
+        <select id="u-rol" class="input" [disabled]="p !== 'crear' && esPropio(p)" (change)="fRol.set($any($event.target).value)">
+          <option value="" [selected]="fRol() === ''">Selecciona…</option>
+          @for (r of opciones().roles; track r.id) {
+            <option [value]="r.id" [selected]="fRol() === '' + r.id">{{ r.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="u-org">Organización</label>
+        <select id="u-org" class="input" [disabled]="p !== 'crear' && esPropio(p)" (change)="fOrg.set($any($event.target).value)">
+          <option value="" [selected]="fOrg() === ''">Selecciona…</option>
+          @for (o of opciones().organizaciones; track o.id) {
+            <option [value]="o.id" [selected]="fOrg() === '' + o.id">{{ o.razonSocial }} ({{ o.tipo }})</option>
+          }
+        </select>
+      </div>
+      @if (p === "crear") {
+        <div class="field">
+          <label for="u-rut">RUT (opcional)</label>
+          <input id="u-rut" class="input" maxlength="12" [value]="fRut()" (input)="fRut.set($any($event.target).value)" />
+        </div>
+      }
+      <div class="field">
+        <label for="u-tel">Teléfono (opcional)</label>
+        <input id="u-tel" class="input" maxlength="24" [value]="fTelefono()" (input)="fTelefono.set($any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="u-mfa">Segundo factor (2FA)</label>
+        <select id="u-mfa" class="input" (change)="fMfa.set($any($event.target).value)">
+          @if (p === "crear") {
+            <option value="" [selected]="fMfa() === ''">Desactivado</option>
+            <option value="opcional" [selected]="fMfa() === 'opcional'">Opcional</option>
+            <option value="activo" [selected]="fMfa() === 'activo'">Obligatorio</option>
+          } @else {
+            @for (m of mfaEstados; track m) {
+              <option [value]="m" [selected]="fMfa() === m">{{ etiquetasMfa[m] }}</option>
+            }
+          }
+        </select>
+      </div>
+    </div>
+    @if (p === "crear") {
+      <fieldset class="opciones-modo">
+        <legend>Entrega de la clave temporal</legend>
+        <label><input type="radio" name="modo" [checked]="fModo() === 'invitacion'" (change)="fModo.set('invitacion')" /> Enviar invitación por correo</label>
+        <label><input type="radio" name="modo" [checked]="fModo() === 'clave_temporal'" (change)="fModo.set('clave_temporal')" /> Mostrar la clave temporal una sola vez</label>
+      </fieldset>
+    } @else {
+      <p class="estado">Si el usuario tiene 2FA “Activo”, no podrá ingresar hasta que el segundo factor esté implementado.</p>
+    }
+    <div class="botones">
+      <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardar()">
+        {{ guardando() ? "Guardando…" : p === "crear" ? "Crear usuario" : "Guardar cambios" }}
+      </button>
+      <button type="button" class="btn btn-secondary" [disabled]="guardando()" (click)="cerrarPanel()">Cancelar</button>
+    </div>
+  </section>
+}
+
+<div class="filtros">
+  <div class="field grow">
+    <label for="f-q">Buscar por nombre o email</label>
+    <input id="f-q" class="input" type="search" [value]="q()" (input)="onBusqueda($any($event.target).value)" />
+  </div>
+  <div class="field">
+    <label for="f-rol">Rol</label>
+    <select id="f-rol" class="input" (change)="onFiltro('rolId', $any($event.target).value)">
+      <option value="" [selected]="rolId() === ''">Todos</option>
+      @for (r of opciones().roles; track r.id) {
+        <option [value]="r.id" [selected]="rolId() === '' + r.id">{{ r.nombre }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-org">Organización</label>
+    <select id="f-org" class="input" (change)="onFiltro('organizacionId', $any($event.target).value)">
+      <option value="" [selected]="organizacionId() === ''">Todas</option>
+      @for (o of opciones().organizaciones; track o.id) {
+        <option [value]="o.id" [selected]="organizacionId() === '' + o.id">{{ o.razonSocial }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onFiltro('estado', $any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ etiquetasEstado[e] }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (error()) {
+  <p class="mensaje" role="alert">
+    {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+  </p>
+} @else if (cargando() && items().length === 0) {
+  <p class="estado" role="status">Cargando usuarios…</p>
+} @else if (items().length === 0) {
+  <p class="estado">No hay usuarios que coincidan con los filtros.</p>
+} @else {
+  <div class="tabla-wrap" [class.cargando]="cargando()">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Usuario</th><th>Rol</th><th>Organización</th><th>Último acceso</th><th>2FA</th><th>Estado</th>
+          @if (puedeEscribir()) { <th>Acciones</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of items(); track u.id) {
+          <tr>
+            <td>{{ u.nombre }}<br /><small>{{ u.email }}</small></td>
+            <td>{{ u.rol.nombre }}</td>
+            <td>{{ u.organizacion.razonSocial }}</td>
+            <td>{{ u.ultimoAcceso ? (u.ultimoAcceso | date: "dd-MM-yyyy HH:mm") : "Nunca" }}</td>
+            <td>{{ etiquetasMfa[u.mfaEstado] }}</td>
+            <td><span [class]="'badge ' + u.estado">{{ etiquetasEstado[u.estado] }}</span></td>
+            @if (puedeEscribir()) {
+              <td>
+                @if (confirmacion(); as c) {
+                  @if (c.id === u.id) {
+                    <span class="acciones confirma" role="group" [attr.aria-label]="'Confirmar acción sobre ' + u.nombre">
+                      ¿{{ c.accion === "suspender" ? "Suspender" : "Reactivar" }} a {{ u.nombre }}?
+                      <button type="button" class="btn btn-primary" [disabled]="procesandoId() !== null" (click)="confirmar(u)">
+                        {{ procesandoId() === u.id ? "Procesando…" : "Confirmar" }}
+                      </button>
+                      <button type="button" class="btn btn-secondary" [disabled]="procesandoId() !== null" (click)="cancelarConfirmacion()">Cancelar</button>
+                    </span>
+                  } @else {
+                    <ng-container *ngTemplateOutlet="botones; context: { u: u }" />
+                  }
+                } @else {
+                  <ng-container *ngTemplateOutlet="botones; context: { u: u }" />
+                }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="paginacion" aria-label="Paginación">
+    <span>{{ total() }} usuarios · página {{ pagina() }} de {{ totalPaginas() }}</span>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+  </nav>
+}
+
+<ng-template #botones let-u="u">
+  <span class="acciones">
+    <button type="button" class="btn btn-secondary" (click)="abrirEditar(u)">Editar</button>
+    @if (u.estado === "suspendido") {
+      <button type="button" class="btn btn-secondary" (click)="pedirConfirmacion(u, 'reactivar')">Reactivar</button>
+    } @else if (!esPropio(u)) {
+      <button type="button" class="btn btn-secondary" (click)="pedirConfirmacion(u, 'suspender')">Suspender</button>
+    }
+  </span>
+</ng-template>

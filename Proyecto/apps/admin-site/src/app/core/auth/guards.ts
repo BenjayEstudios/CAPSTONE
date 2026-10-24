@@ -4,9 +4,11 @@ import { RUTA_INICIO } from "../navigation/modulos.config";
 import { SessionState } from "../state/session.state";
 import { AuthService } from "./auth.service";
 
-// Solo entra quien tenga sesion valida de administrador. Al arrancar con un
+// Entra quien tenga sesion valida: el backend ya valida organizacion interna
+// y estado al hacer login; que ve cada rol lo deciden permisoGuard y el menu.
+// Al arrancar con un
 // token guardado, espera a que GET /auth/me confirme la sesion.
-export const adminGuard: CanActivateFn = async (_route, state) => {
+export const sesionInternaGuard: CanActivateFn = async (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (await auth.restaurar()) return true;

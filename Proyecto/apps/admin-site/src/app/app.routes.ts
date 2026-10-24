@@ -1,5 +1,5 @@
 import { Routes } from "@angular/router";
-import { adminGuard, guestGuard, permisoGuard } from "./core/auth/guards";
+import { sesionInternaGuard, guestGuard, permisoGuard } from "./core/auth/guards";
 import { BRAND } from "./core/config/brand";
 import { MODULOS } from "./core/navigation/modulos.config";
 
@@ -7,7 +7,7 @@ import { MODULOS } from "./core/navigation/modulos.config";
 // lazy. Por ahora todas cargan el placeholder "En construccion"; al
 // implementar un feature, reemplazar su `loadComponent` por un
 // `loadChildren` hacia features/<modulo>/<modulo>.routes.ts.
-const RUTAS_PROPIAS = ["catalogo-maestro", "categorias", "proveedores", "roles-permisos", "auditoria"];
+const RUTAS_PROPIAS = ["catalogo-maestro", "categorias", "proveedores", "roles-permisos", "auditoria", "moderacion", "usuarios", "ordenes", "liquidaciones", "dashboard", "reembolsos"];
 
 export const routes: Routes = [
   {
@@ -18,10 +18,15 @@ export const routes: Routes = [
   },
   {
     path: "",
-    canActivate: [adminGuard],
+    canActivate: [sesionInternaGuard],
     loadComponent: () => import("./features/shell/shell.component").then((m) => m.ShellComponent),
     children: [
       { path: "", pathMatch: "full", redirectTo: "dashboard" },
+      {
+        path: "dashboard",
+        title: `Dashboard · ${BRAND.nombre}`,
+        loadChildren: () => import("./features/dashboard/dashboard.routes").then((m) => m.DASHBOARD_ROUTES)
+      },
       {
         path: "catalogo-maestro",
         title: `Catálogo maestro · ${BRAND.nombre}`,
@@ -51,6 +56,36 @@ export const routes: Routes = [
         title: `Auditoría · ${BRAND.nombre}`,
         canActivate: [permisoGuard("ver_auditoria")],
         loadChildren: () => import("./features/auditoria/auditoria.routes").then((m) => m.AUDITORIA_ROUTES)
+      },
+      {
+        path: "moderacion",
+        title: `Moderación · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("aprobar_proveedor")],
+        loadChildren: () => import("./features/moderacion/moderacion.routes").then((m) => m.MODERACION_ROUTES)
+      },
+      {
+        path: "usuarios",
+        title: `Usuarios · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("crear_usuario")],
+        loadChildren: () => import("./features/usuarios/usuarios.routes").then((m) => m.USUARIOS_ROUTES)
+      },
+      {
+        path: "ordenes",
+        title: `Órdenes · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("ver_todas_ordenes")],
+        loadChildren: () => import("./features/ordenes/ordenes.routes").then((m) => m.ORDENES_ROUTES)
+      },
+      {
+        path: "liquidaciones",
+        title: `Liquidaciones · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("liquidar_proveedor")],
+        loadChildren: () => import("./features/liquidaciones/liquidaciones.routes").then((m) => m.LIQUIDACIONES_ROUTES)
+      },
+      {
+        path: "reembolsos",
+        title: `Reembolsos · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("emitir_reembolso")],
+        loadChildren: () => import("./features/reembolsos/reembolsos.routes").then((m) => m.REEMBOLSOS_ROUTES)
       },
       // catalogo-maestro y categorias ya tienen rutas reales arriba.
       ...MODULOS.filter((m) => !RUTAS_PROPIAS.includes(m.path)).map((m) => ({

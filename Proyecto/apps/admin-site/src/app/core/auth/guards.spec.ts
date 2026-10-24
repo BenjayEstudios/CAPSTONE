@@ -5,7 +5,7 @@ import { ActivatedRouteSnapshot, CanActivateFn, provideRouter, Router, RouterSta
 import { environment } from "../../../environments/environment";
 import { UsuarioSesion } from "../models/auth.models";
 import { SessionState, TOKEN_STORAGE_KEY } from "../state/session.state";
-import { adminGuard, guestGuard, permisoGuard } from "./guards";
+import { sesionInternaGuard, guestGuard, permisoGuard } from "./guards";
 
 const usuario = (rol = "administrador", permisos: UsuarioSesion["permisos"] = {}): UsuarioSesion => ({
   id: "1",
@@ -42,21 +42,21 @@ describe("guards", () => {
     localStorage.clear();
   });
 
-  it("adminGuard redirige a /login con returnUrl si no hay token", async () => {
+  it("sesionInternaGuard redirige a /login con returnUrl si no hay token", async () => {
     setup();
-    const res = (await run(adminGuard)) as UrlTree;
+    const res = (await run(sesionInternaGuard)) as UrlTree;
     expect(router.serializeUrl(res)).toBe("/login?returnUrl=%2Fordenes");
   });
 
-  it("adminGuard deja pasar con sesion de administrador en memoria", async () => {
+  it("sesionInternaGuard deja pasar con sesion de administrador en memoria", async () => {
     setup();
     session.iniciar("t", usuario());
-    expect(await run(adminGuard)).toBeTrue();
+    expect(await run(sesionInternaGuard)).toBeTrue();
   });
 
-  it("adminGuard valida el token guardado con GET /auth/me", async () => {
+  it("sesionInternaGuard valida el token guardado con GET /auth/me", async () => {
     setup("tok");
-    const p = run(adminGuard);
+    const p = run(sesionInternaGuard);
     const req = ctrl.expectOne(`${environment.apiUrl}/auth/me`);
     req.flush({ usuario: usuario() });
     expect(await p).toBeTrue();
@@ -64,20 +64,20 @@ describe("guards", () => {
     expect(session.validando()).toBeFalse();
   });
 
-  it("adminGuard rechaza si /auth/me responde 401", async () => {
+  it("sesionInternaGuard rechaza si /auth/me responde 401", async () => {
     setup("tok");
-    const p = run(adminGuard);
+    const p = run(sesionInternaGuard);
     ctrl.expectOne(`${environment.apiUrl}/auth/me`).flush({}, { status: 401, statusText: "Unauthorized" });
     expect(await p).toBeInstanceOf(UrlTree);
     expect(session.validando()).toBeFalse();
   });
 
-  it("adminGuard rechaza si el rol no es administrador", async () => {
+  it("sesionInternaGuard deja pasar a un rol interno no administrador (editor_catalogo)", async () => {
     setup("tok");
-    const p = run(adminGuard);
-    ctrl.expectOne(`${environment.apiUrl}/auth/me`).flush({ usuario: usuario("cliente") });
-    expect(await p).toBeInstanceOf(UrlTree);
-    expect(session.token()).toBeNull();
+    const p = run(sesionInternaGuard);
+    ctrl.expectOne(`${environment.apiUrl}/auth/me`).flush({ usuario: usuario("editor_catalogo") });
+    expect(await p).toBeTrue();
+    expect(session.usuario()?.rol).toBe("editor_catalogo");
   });
 
   it("guestGuard deja ver /login sin sesion y redirige con sesion", async () => {
