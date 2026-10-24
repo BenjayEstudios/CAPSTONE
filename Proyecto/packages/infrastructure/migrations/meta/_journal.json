@@ -15,6 +15,34 @@
       "when": 1792712102484,
       "tag": "0001_tense_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1792806576521,
+      "tag": "0002_calificacion",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1792807106887,
+      "tag": "0003_indices_restricciones",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1792809078684,
+      "tag": "0004_particion_evento_analitico",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1792810221816,
+      "tag": "0005_indices_analitica",
+      "breakpoints": true
     }
   ]
 }

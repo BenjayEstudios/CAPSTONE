@@ -43,5 +43,9 @@ export const orden = mysqlTable(
       .default(sql`CURRENT_TIMESTAMP`),
     pagadoEn: datetime("pagado_en", { mode: "date" })
   },
-  (table) => [index("ix_orden_estado").on(table.estado), index("ix_orden_estado_pago").on(table.estadoPago)]
+  (table) => [
+    index("ix_orden_estado").on(table.estado),
+    // (estado_pago, creada_en): KPIs de la plataforma por rango de fechas (KAN-143).
+    index("ix_orden_estado_pago").on(table.estadoPago, table.creadaEn)
+  ]
 );

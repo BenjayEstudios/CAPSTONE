@@ -22,6 +22,7 @@ export * from "./carro.schema.js";
 export * from "./orden.schema.js";
 export * from "./orden-envio.schema.js";
 export * from "./orden-linea.schema.js";
+export * from "./calificacion.schema.js";
 // 5.7 SII y liquidaciones
 export * from "./documento-tributario.schema.js";
 export * from "./liquidacion.schema.js";

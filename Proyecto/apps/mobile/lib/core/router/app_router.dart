@@ -6,6 +6,10 @@ import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/saludo.dart';
 import '../../features/auth/presentation/sesion_controller.dart';
 import '../../features/auth/presentation/splash_page.dart';
+import '../../features/catalogo/domain/catalogo_repository.dart';
+import '../../features/catalogo/presentation/inicio_comprador_page.dart';
+import '../../features/catalogo/presentation/listado_page.dart';
+import '../../features/catalogo/presentation/producto_page.dart';
 import '../../features/conexion/presentation/conexion_page.dart';
 import '../widgets/pantalla_pendiente.dart';
 import 'perfil_shell.dart';
@@ -65,8 +69,32 @@ final _shellComprador = StatefulShellRoute.indexedStack(
   ),
   branches: [
     StatefulShellBranch(routes: [
-      _pendiente(Rutas.comprador, 'Inicio', 'KAN-127', 'Categorías, búsqueda y catálogo', Icons.search_rounded,
-          saludo: true),
+      // Catálogo y ficha cuelgan del inicio: la barra inferior sigue visible
+      // y Atrás vuelve por el mismo camino.
+      GoRoute(
+        path: Rutas.comprador,
+        builder: (context, state) => const InicioCompradorPage(),
+        routes: [
+          GoRoute(
+            path: 'catalogo',
+            builder: (context, state) {
+              final q = state.uri.queryParameters;
+              return ListadoPage(
+                categoriaId: int.tryParse(q['categoriaId'] ?? ''),
+                texto: q['q'],
+                enfocarBusqueda: q['buscar'] == '1',
+              );
+            },
+          ),
+          GoRoute(
+            path: 'producto/:id',
+            builder: (context, state) => ProductoPage(
+              productoId: int.parse(state.pathParameters['id']!),
+              origen: OrigenVista.values.asNameMap()[state.uri.queryParameters['origen']] ?? OrigenVista.directo,
+            ),
+          ),
+        ],
+      ),
     ]),
     StatefulShellBranch(routes: [
       _pendiente(Rutas.compradorCarro, 'Tu carro', 'KAN-130', 'Carro multiproveedor', Icons.shopping_cart_rounded),

@@ -34,9 +34,11 @@ export const producto = mysqlTable(
       .default(sql`CURRENT_TIMESTAMP`)
   },
   (table) => [
-    // DBML pide FULLTEXT sobre "nombre"; Drizzle no soporta ese tipo de
-    // indice nativamente, generar el DDL adicional a mano si se necesita.
-    index("ix_producto_nombre").on(table.nombre),
+    // FULLTEXT ix_producto_nombre_fulltext (nombre) para la busqueda del
+    // catalogo: Drizzle no soporta ese tipo de indice, se crea a mano en
+    // migrations/0003_indices_restricciones.sql (KAN-140). drizzle-kit no lo
+    // ve, asi que generate no lo toca; NO usar drizzle-kit push, que lo
+    // borraria al comparar contra la base.
     index("ix_producto_estado").on(table.estado)
   ]
 );

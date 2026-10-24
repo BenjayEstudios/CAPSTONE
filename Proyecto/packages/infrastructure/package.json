@@ -8,10 +8,11 @@
   "scripts": {
     "dev": "tsc -b --watch --preserveWatchOutput",
     "build": "tsc -b",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --noEmit -p test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed/run.ts",
+    "db:particiones": "tsx src/db/particiones/run.ts",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {

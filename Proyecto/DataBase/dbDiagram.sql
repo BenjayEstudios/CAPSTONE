@@ -312,7 +312,7 @@ Table producto {
   creado_en                 datetime [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
-    nombre [name: 'ix_producto_nombre_fulltext', note: 'Crear como FULLTEXT en MySQL: DBML no soporta el tipo fulltext nativamente, generar el DDL con ALTER TABLE ... ADD FULLTEXT']
+    nombre [name: 'ix_producto_nombre_fulltext', note: 'FULLTEXT en MySQL (DBML no soporta el tipo): creado a mano en la migración 0003 con ALTER TABLE ... ADD FULLTEXT (KAN-140)']
     estado
   }
 
@@ -394,7 +394,7 @@ Table oferta {
 
   indexes {
     (producto_id, proveedor_id) [unique]
-    (producto_id, precio_unitario) [name: 'ix_oferta_comparador']
+    (producto_id, precio_unitario) [name: 'ix_oferta_comparador', note: 'verificado con EXPLAIN (KAN-140): ref const por producto_id y orden por precio sin filesort']
     estado
   }
 
@@ -508,8 +508,8 @@ Table orden_envio {
     El tramo de cada proveedor dentro de una orden; es lo único que el
     proveedor ve en su panel. punto_retiro_id se exige si modalidad =
     retiro; direccion_entrega_id si modalidad = despacho; nunca ambos.
-    Aplicar CHECK (MySQL 8.0.16+) o validación en aplicación para la
-    exclusión mutua. FUSIÓN: incluye lo que antes era la tabla
+    Lo garantiza el CHECK ck_orden_envio_destino (KAN-140, migración
+    0003). FUSIÓN: incluye lo que antes era la tabla
     liquidacion_detalle (liquidacion_id + montos liquidados), ya que un
     envío se liquida una sola vez (relación 1:1 real con liquidacion).
   '''
@@ -532,6 +532,38 @@ Table orden_linea {
     después no altere órdenes ya emitidas. Se mantiene como tabla propia
     (no JSON) porque el panel proveedor necesita agregarla por
     producto/semana para "productos más vendidos". FK ON DELETE CASCADE.
+  '''
+}
+
+Table calificacion {
+  id             bigint [pk, increment]
+  orden_envio_id bigint [unique, not null, ref: - orden_envio.id, note: 'una calificación por envío (1:1)']
+  usuario_id     bigint [not null, ref: > usuario.id, note: 'quién califica: usuario de la organización que hizo la orden']
+  puntaje        "tinyint unsigned" [not null, note: 'CHECK (puntaje BETWEEN 1 AND 5)']
+  comentario     varchar(500)
+  creada_en      datetime [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: '''
+    Calificación que el cliente deja al proveedor por un envío ENTREGADO
+    (KAN-142). Cuelga del envío y no de la orden porque cada tramo es de
+    un proveedor distinto; el proveedor calificado se obtiene por
+    orden_envio.proveedor_id (no se duplica aquí). Que el envío esté
+    entregado y que el usuario sea de la organización compradora cruza
+    tablas y no cabe en un CHECK: lo garantiza el INSERT ... SELECT del
+    repositorio (DrizzleCalificacionRepository.registrar).
+
+    DECISIÓN: el promedio y la cantidad por proveedor que usa el
+    comparador se CALCULAN con una consulta (AVG/COUNT agrupando por
+    orden_envio.proveedor_id, entrando por el índice
+    (proveedor_id, estado) de orden_envio y el UNIQUE de esta tabla),
+    en vez de guardar columnas agregadas en organizacion. Con el volumen
+    esperado (cientos o pocos miles de calificaciones por proveedor) la
+    consulta es barata, y así no hay que mantener sincronizado un
+    agregado con triggers o en cada caso de uso, ni corregir promedios
+    descuadrados si se modera o borra una calificación. Si el comparador
+    llegara a necesitarlo en cada request con mucho volumen, se puede
+    agregar después promedio_calificacion/cantidad_calificaciones en
+    organizacion como caché recalculada, sin cambiar esta tabla.
   '''
 }
 
@@ -600,13 +632,13 @@ Table liquidacion {
 // =======================================================================
 
 Table evento_analitico {
-  id           bigint [pk, increment]
+  id           bigint [increment, not null]
   tipo_evento  evento_tipo [not null]
-  producto_id  bigint [ref: > producto.id, note: 'usado en vista_producto y click_oferta']
-  oferta_id    bigint [ref: > oferta.id, note: 'usado solo en click_oferta']
-  usuario_id   bigint [ref: > usuario.id, note: 'NULL si anónimo']
+  producto_id  bigint [note: '-> producto.id, SIN FK (tabla particionada); usado en vista_producto y click_oferta']
+  oferta_id    bigint [note: '-> oferta.id, SIN FK; usado solo en click_oferta']
+  usuario_id   bigint [note: '-> usuario.id, SIN FK; NULL si anónimo']
   sesion_id    char(36) [not null]
-  comuna_id    smallint [ref: > comuna.id]
+  comuna_id    smallint [note: '-> comuna.id, SIN FK']
   origen       evento_origen [note: 'usado solo en vista_producto']
   convirtio    tinyint(1) [note: 'usado solo en click_oferta']
   termino      varchar(160) [note: 'usado solo en busqueda']
@@ -615,6 +647,7 @@ Table evento_analitico {
   creado_en    datetime [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
+    (id, creado_en) [pk, note: 'la columna de partición debe estar en toda PK/UNIQUE']
     tipo_evento
     sesion_id
     creado_en
@@ -630,7 +663,22 @@ Table evento_analitico {
     proveedor; búsquedas con resultados = 0 siguen indicando huecos de
     catálogo. Trade-off: se pierde algo de tipado estricto por columna
     a cambio de una sola tabla con un solo set de índices que mantener.
-    Particionar por mes (creado_en).
+
+    PARTICIONADA por mes (KAN-140, migración 0004): PARTITION BY RANGE
+    COLUMNS(creado_en), una partición pAAAAMM por mes + pmax (MAXVALUE)
+    de resguardo para que un insert nunca falle. `pnpm db:particiones`
+    crea los meses siguientes (correrlo una vez al mes). DBML no expresa
+    particiones: el DDL está en la migración.
+
+    TRADE-OFF: InnoDB no admite foreign keys en tablas particionadas y
+    exige la columna de partición en toda PK/UNIQUE. Por eso la PK es
+    (id, creado_en) y producto_id, oferta_id, usuario_id y comuna_id son
+    referencias lógicas SIN FK: el backend valida que existan al
+    registrar el evento. Se acepta porque es telemetría de solo
+    inserción y producto/oferta nunca se borran (se archivan/pausan).
+    A cambio: las consultas por rango de fechas leen solo las
+    particiones del rango (pruning, verificado con EXPLAIN) y la
+    retención se aplica con DROP PARTITION en vez de un DELETE masivo.
   '''
 }
 
@@ -717,6 +765,7 @@ TableGroup "5.6 Carro y órdenes" {
   orden
   orden_envio
   orden_linea
+  calificacion
 }
 
 TableGroup "5.7 SII y liquidaciones" {

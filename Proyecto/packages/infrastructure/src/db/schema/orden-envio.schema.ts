@@ -1,4 +1,4 @@
-import { mysqlTable, bigint, smallint, int, decimal, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, smallint, int, decimal, datetime, mysqlEnum, index, check } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { orden } from "./orden.schema.js";
 import { organizacion } from "./organizacion.schema.js";
@@ -8,8 +8,9 @@ import { liquidacion } from "./liquidacion.schema.js";
 
 // El tramo de cada proveedor dentro de una orden; es lo unico que el
 // proveedor ve en su panel. punto_retiro_id se exige si modalidad = retiro;
-// direccion_entrega_id si modalidad = despacho; nunca ambos (validar en
-// aplicacion). FUSION: incluye lo que antes era liquidacion_detalle.
+// direccion_entrega_id si modalidad = despacho; nunca ambos (CHECK
+// ck_orden_envio_destino, KAN-140). FUSION: incluye lo que antes era
+// liquidacion_detalle.
 export const ordenEnvio = mysqlTable(
   "orden_envio",
   {
@@ -47,5 +48,12 @@ export const ordenEnvio = mysqlTable(
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [index("ix_orden_envio_proveedor_estado").on(table.proveedorId, table.estado)]
+  (table) => [
+    index("ix_orden_envio_proveedor_estado").on(table.proveedorId, table.estado),
+    check(
+      "ck_orden_envio_destino",
+      sql`(${table.modalidad} = 'retiro' AND ${table.puntoRetiroId} IS NOT NULL AND ${table.direccionEntregaId} IS NULL)
+        OR (${table.modalidad} = 'despacho' AND ${table.direccionEntregaId} IS NOT NULL AND ${table.puntoRetiroId} IS NULL)`
+    )
+  ]
 );

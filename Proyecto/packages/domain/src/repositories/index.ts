@@ -2,3 +2,5 @@
 // "categoria" es el ejemplo de referencia; el resto (OrdenRepository,
 // ProductoRepository...) se agrega siguiendo el mismo patron.
 export * from "./categoria.repository.js";
+export * from "./calificacion.repository.js";
+export * from "./analitica.repository.js";

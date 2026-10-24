@@ -23,3 +23,11 @@ String formatearPlazo(int horas) {
 // Requieren initializeDateFormatting('es_CL') (se llama en main.dart).
 String formatearFecha(DateTime fecha) => _fecha.format(fecha.toLocal());
 String formatearFechaHora(DateTime fecha) => _fechaHora.format(fecha.toLocal());
+
+final _unDecimal = NumberFormat('0.0', 'es_CL');
+
+// 2498, 'L' -> "$2.498/L"
+String formatearPrecioPorUnidad(int precio, String abreviatura) => '${formatearClp(precio)}/$abreviatura';
+
+// 4.666 -> "4,7"
+String formatearPromedio(double promedio) => _unDecimal.format(promedio);
