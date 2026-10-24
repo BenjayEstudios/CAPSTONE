@@ -20,6 +20,18 @@ export const routes: Routes = [
     loadComponent: () => import("./features/shell/shell.component").then((m) => m.ShellComponent),
     children: [
       { path: "", pathMatch: "full", redirectTo: "dashboard" },
+      {
+        path: "catalogo-maestro",
+        title: `Catálogo maestro · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("crear_producto")],
+        loadChildren: () => import("./features/catalogo/catalogo.routes").then((m) => m.CATALOGO_ROUTES)
+      },
+      {
+        path: "categorias",
+        title: `Categorías · ${BRAND.nombre}`,
+        canActivate: [permisoGuard("crear_producto")],
+        loadChildren: () => import("./features/categorias/categorias.routes").then((m) => m.CATEGORIAS_ROUTES)
+      },
       ...MODULOS.map((m) => ({
         path: m.path,
         title: `${m.label} · ${BRAND.nombre}`,
