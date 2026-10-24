@@ -1,6 +1,7 @@
 import { reemplazarImagenesSchema, type ProductoImagen, type ProductoRepository } from "@cotizapp/domain";
 import { ErrorAplicacion } from "../errors.js";
 import { validar } from "../validacion.js";
+import { auditoriaEditarProducto } from "./producto-auditoria.js";
 import { validarImagenes } from "./producto-reglas.js";
 
 // Reemplaza la lista de imagenes (solo metadatos; no hay subida de archivos
@@ -42,7 +43,11 @@ export function reemplazarImagenesProducto(deps: {
       throw new ErrorAplicacion(400, "PUBLICACION_INCOMPLETA", "Un producto publicado necesita una imagen principal");
     }
 
-    const actualizado = await deps.productoRepository.actualizar(id, { imagenes: nuevas });
+    const actualizado = await deps.productoRepository.actualizar(
+      id,
+      { imagenes: nuevas },
+      auditoriaEditarProducto(usuarioId, producto, { imagenes: nuevas }, "editar_imagenes_producto")
+    );
     return actualizado.imagenes;
   };
 }

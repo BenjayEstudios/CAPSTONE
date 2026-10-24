@@ -14,6 +14,6 @@ export const updateProductoRoute: RouteOptions = {
     return actualizarProducto({
       productoRepository: new DrizzleProductoRepository(db),
       categoriaRepository: new DrizzleCategoriaRepository(db)
-    })(id, request.body);
+    })(id, request.body, Number(request.auth?.sub));
   }
 };

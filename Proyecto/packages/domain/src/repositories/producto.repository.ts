@@ -1,4 +1,5 @@
 import type { Producto, ProductoEstado, ProductoImagen, ProductoListado, ResumenOfertas } from "../entities/producto.entity.js";
+import type { RegistroAuditoria } from "./proveedor.repository.js";
 import type { CrearProductoDto, ActualizarProductoDto } from "../dtos/producto.dto.js";
 
 export interface FiltrosProductos {
@@ -28,6 +29,7 @@ export interface ProductoRepository {
   buscarPorSku(sku: string): Promise<Producto | null>;
   buscarPorEan(ean: string): Promise<Producto | null>;
   resumenOfertas(productoId: number): Promise<ResumenOfertas>;
-  crear(input: NuevoProducto): Promise<Producto>;
-  actualizar(id: number, cambios: CambiosProducto): Promise<Producto>;
+  /** `auditoria` (si viene) se inserta en auditoria_log en la MISMA transaccion; recibe el producto creado. */
+  crear(input: NuevoProducto, auditoria?: (creado: Producto) => RegistroAuditoria): Promise<Producto>;
+  actualizar(id: number, cambios: CambiosProducto, auditoria?: RegistroAuditoria): Promise<Producto>;
 }

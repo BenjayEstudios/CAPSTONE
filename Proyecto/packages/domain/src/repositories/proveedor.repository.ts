@@ -11,7 +11,7 @@ export interface FiltrosProveedores {
 // Fila de auditoria_log (solo insercion). La escribe el repositorio en la
 // MISMA transaccion que el cambio.
 export interface RegistroAuditoria {
-  usuarioId: number;
+  usuarioId: number | null;
   entidad: string;
   entidadId: number;
   accion: "crear" | "editar" | "eliminar" | "aprobar" | "suspender" | "reembolsar";

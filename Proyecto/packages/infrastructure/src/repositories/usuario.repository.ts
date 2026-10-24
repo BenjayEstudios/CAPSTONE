@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { PermisosRol, Rol, Usuario, UsuarioConContexto, UsuarioRepository } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
@@ -54,5 +54,7 @@ export class DrizzleUsuarioRepository implements UsuarioRepository {
 
   async registrarUltimoAcceso(id: number, fecha: Date): Promise<void> {
     await this.db.update(usuario).set({ ultimoAcceso: fecha }).where(eq(usuario.id, id));
+    // Primer acceso exitoso de un usuario invitado: pasa a activo.
+    await this.db.update(usuario).set({ estado: "activo" }).where(and(eq(usuario.id, id), eq(usuario.estado, "invitado")));
   }
 }

@@ -1,4 +1,4 @@
-import type { AlmacenArchivos } from "@cotizapp/domain";
+import type { AlmacenArchivos, ServicioCorreo } from "@cotizapp/domain";
 import type { DbClient } from "@cotizapp/infrastructure";
 
 declare module "fastify" {
@@ -6,5 +6,7 @@ declare module "fastify" {
     db: DbClient;
     almacenArchivos: AlmacenArchivos;
     uploadsMaxBytes: number;
+    servicioCorreo: ServicioCorreo;
+    adminSiteUrl: string;
   }
 }

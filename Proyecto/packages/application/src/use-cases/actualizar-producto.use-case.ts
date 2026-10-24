@@ -2,13 +2,14 @@ import { actualizarProductoSchema, type CategoriaRepository, type ProductoReposi
 import { ErrorAplicacion } from "../errors.js";
 import { validar } from "../validacion.js";
 import { armarFicha } from "./obtener-producto.use-case.js";
+import { auditoriaEditarProducto } from "./producto-auditoria.js";
 import { exigirCategoria, validarCoherenciaPrecios, validarPublicable } from "./producto-reglas.js";
 
 export function actualizarProducto(deps: {
   productoRepository: ProductoRepository;
   categoriaRepository: CategoriaRepository;
 }) {
-  return async (id: number, input: unknown) => {
+  return async (id: number, input: unknown, usuarioId: number | null = null) => {
     const repo = deps.productoRepository;
     const cambios = validar(actualizarProductoSchema, input);
 
@@ -36,7 +37,7 @@ export function actualizarProducto(deps: {
     validarCoherenciaPrecios(resultante);
     if (resultante.estado === "publicado") validarPublicable(resultante);
 
-    const actualizado = await repo.actualizar(id, cambios);
+    const actualizado = await repo.actualizar(id, cambios, auditoriaEditarProducto(usuarioId, actual, cambios));
     return armarFicha(deps, actualizado);
   };
 }

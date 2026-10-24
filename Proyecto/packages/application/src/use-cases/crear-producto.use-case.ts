@@ -2,6 +2,7 @@ import { crearProductoSchema, type CategoriaRepository, type ProductoRepository 
 import { ErrorAplicacion } from "../errors.js";
 import { validar } from "../validacion.js";
 import { armarFicha } from "./obtener-producto.use-case.js";
+import { auditoriaCrearProducto } from "./producto-auditoria.js";
 import { exigirCategoria, validarCoherenciaPrecios, validarPublicable } from "./producto-reglas.js";
 
 // Solo administracion (la ruta aplica requireRol). creadoPor = id del usuario.
@@ -35,7 +36,7 @@ export function crearProducto(deps: {
       });
     }
 
-    const producto = await repo.crear({ ...data, creadoPor });
+    const producto = await repo.crear({ ...data, creadoPor }, auditoriaCrearProducto(creadoPor));
     return armarFicha(deps, producto);
   };
 }

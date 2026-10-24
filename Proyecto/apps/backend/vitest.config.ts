@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: { testTimeout: 20000 }
+  test: { testTimeout: 20000, hookTimeout: 60000 }
 });

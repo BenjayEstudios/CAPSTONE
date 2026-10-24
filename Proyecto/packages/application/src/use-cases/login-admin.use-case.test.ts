@@ -46,8 +46,8 @@ describe("loginAdmin", () => {
     const r = await loginAdmin({ usuarioRepository: repo, firmarToken, ahora: () => fecha })({
       email: "Admin@Test.cl", clave: CLAVE
     });
-    expect(JSON.parse(r.token)).toEqual({ sub: "7", organizacionId: 3, rol: "administrador" });
-    expect(r.usuario).toEqual({
+    expect(JSON.parse((r as { token: string }).token)).toEqual({ sub: "7", organizacionId: 3, rol: "administrador" });
+    expect((r as { usuario: unknown }).usuario).toEqual({
       id: 7, nombre: "Admin", email: "admin@test.cl", organizacionId: 3,
       rol: "administrador", permisos: { crear_producto: "total" }
     });
@@ -79,7 +79,7 @@ describe("loginAdmin", () => {
       .rejects.toMatchObject({ statusCode: 401 });
   });
 
-  it("mfa activo -> 403 MFA_NO_IMPLEMENTADO", async () => {
+  it("mfa activo sin dependencias mfa -> 403 MFA_NO_IMPLEMENTADO", async () => {
     const { repo } = repoEnMemoria(crearCtx({ usuario: { mfaEstado: "activo" } }));
     await expect(loginAdmin({ usuarioRepository: repo, firmarToken })({ email: "admin@test.cl", clave: CLAVE }))
       .rejects.toMatchObject({ statusCode: 403, code: "MFA_NO_IMPLEMENTADO" });
@@ -101,5 +101,14 @@ describe("obtenerSesionUsuario", () => {
     const { repo } = repoEnMemoria(crearCtx({ usuario: { estado: "suspendido" } }));
     await expect(obtenerSesionUsuario({ usuarioRepository: repo })(7)).rejects.toMatchObject({ statusCode: 401 });
     await expect(obtenerSesionUsuario({ usuarioRepository: repo })(99)).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
+
+describe("loginAdmin con usuario invitado", () => {
+  it("acepta estado invitado con su clave temporal", async () => {
+    const { repo, accesos } = repoEnMemoria(crearCtx({ usuario: { estado: "invitado" } }));
+    const r = await loginAdmin({ usuarioRepository: repo, firmarToken })({ email: "admin@test.cl", clave: CLAVE });
+    expect(JSON.parse((r as { token: string }).token).sub).toBe("7");
+    expect(accesos).toHaveLength(1);
   });
 });

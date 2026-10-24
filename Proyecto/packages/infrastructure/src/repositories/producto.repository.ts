@@ -8,9 +8,11 @@ import type {
   ProductoImagen,
   ProductoListado,
   ProductoRepository,
+  RegistroAuditoria,
   ResumenOfertas
 } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
+import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
 import { categoria } from "../db/schema/categoria.schema.js";
 import { oferta } from "../db/schema/oferta.schema.js";
 import { producto } from "../db/schema/producto.schema.js";
@@ -171,8 +173,9 @@ export class DrizzleProductoRepository implements ProductoRepository {
     };
   }
 
-  async crear(input: NuevoProducto): Promise<Producto> {
-    const [{ id }] = await this.db
+  async crear(input: NuevoProducto, auditoria?: (creado: Producto) => RegistroAuditoria): Promise<Producto> {
+    const id = await this.db.transaction(async (tx) => {
+      const [{ id }] = await tx
       .insert(producto)
       .values({
         categoriaId: input.categoriaId,
@@ -191,17 +194,26 @@ export class DrizzleProductoRepository implements ProductoRepository {
         creadoPor: input.creadoPor
       })
       .$returningId();
+      if (auditoria) {
+        const [fila] = await tx.select().from(producto).where(eq(producto.id, id)).limit(1);
+        await tx.insert(auditoriaLog).values(auditoria(toEntity(fila)));
+      }
+      return id;
+    });
     const creado = await this.buscarPorId(id);
     if (!creado) throw new Error("Producto recien creado no encontrado");
     return creado;
   }
 
-  async actualizar(id: number, cambios: CambiosProducto): Promise<Producto> {
+  async actualizar(id: number, cambios: CambiosProducto, auditoria?: RegistroAuditoria): Promise<Producto> {
     const { imagenes, contenido, ...resto } = cambios;
     const set: Partial<typeof producto.$inferInsert> = { ...resto };
     if (contenido !== undefined) set.contenido = contenido === null ? null : String(contenido);
     if (imagenes !== undefined) set.imagenes = imagenes.map(imagenToJson);
-    await this.db.update(producto).set(set).where(eq(producto.id, id));
+    await this.db.transaction(async (tx) => {
+      await tx.update(producto).set(set).where(eq(producto.id, id));
+      if (auditoria) await tx.insert(auditoriaLog).values(auditoria);
+    });
     const actualizado = await this.buscarPorId(id);
     if (!actualizado) throw new Error("Producto actualizado no encontrado");
     return actualizado;

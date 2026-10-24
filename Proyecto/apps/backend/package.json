@@ -8,7 +8,8 @@
     "build": "tsc -b",
     "start": "node dist/server/index.js",
     "check-types": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "job:liquidaciones": "tsx src/jobs/liquidaciones.ts"
   },
   "dependencies": {
     "@cotizapp/application": "workspace:*",

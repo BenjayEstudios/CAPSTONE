@@ -41,6 +41,9 @@ services:
       STORAGE_DRIVER: local
       UPLOADS_DIR: /data/uploads
       PUBLIC_BASE_URL: http://localhost:8000
+      # Correo en dev: no se envia; cada mensaje (ej. codigo 2FA) queda como archivo.
+      MAIL_DRIVER: consola
+      MAIL_OUT_DIR: /data/outbox
     ports:
       - "8000:8000"
     volumes:

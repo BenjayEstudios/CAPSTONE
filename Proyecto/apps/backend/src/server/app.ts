@@ -8,6 +8,7 @@ import { errorHandler } from "../lib/error-handler.js";
 import { createDbClient } from "@cotizapp/infrastructure";
 import type { Env } from "../config/env.js";
 import { crearAlmacenArchivos } from "../lib/storage.js";
+import { crearServicioCorreo } from "../lib/mail.js";
 import { logger } from "../lib/logger.js";
 import { registerRoutes } from "../routes/index.js";
 
@@ -31,6 +32,8 @@ export async function buildApp(env: Env) {
   const uploadsMaxBytes = Math.floor(env.UPLOADS_MAX_MB * 1024 * 1024);
   app.decorate("uploadsMaxBytes", uploadsMaxBytes);
   app.decorate("almacenArchivos", crearAlmacenArchivos(env));
+  app.decorate("servicioCorreo", crearServicioCorreo(env));
+  app.decorate("adminSiteUrl", env.ADMIN_SITE_URL);
   await app.register(multipart, { limits: { fileSize: uploadsMaxBytes, files: 1, fields: 5 } });
   // Solo lectura y sin listado de directorios. (Con STORAGE_DRIVER=spaces
   // esto no aplica: las URL apuntan al CDN.)

@@ -32,7 +32,8 @@ export function errorHandler(error: FastifyError, request: FastifyRequest, reply
   return reply.status(error.statusCode ?? 500).send({
     error: {
       code: error.code ?? "INTERNAL_ERROR",
-      message: error.message
+      message: error.message,
+      ...((error as { detalle?: unknown }).detalle !== undefined ? { detalle: (error as { detalle?: unknown }).detalle } : {})
     }
   });
 }
