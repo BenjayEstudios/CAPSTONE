@@ -1,3 +1,5 @@
+import { HttpErrorResponse } from "@angular/common/http";
+
 export type ModoReembolso = "total" | "parcial";
 
 export interface ValidacionReembolso {
@@ -19,7 +21,8 @@ export function validarReembolso(modo: ModoReembolso, montoTexto: string, motivo
   return { monto, errorMotivo };
 }
 
-export function mensajeErrorReembolsos(e: any): string {
+export function mensajeErrorReembolsos(err: unknown): string {
+  const e = err as HttpErrorResponse;
   const status = e?.status;
   const code = e?.error?.error?.code as string | undefined;
   const msg = e?.error?.error?.message as string | undefined;

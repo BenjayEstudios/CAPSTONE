@@ -18,7 +18,7 @@
     <div class="field">
       <label for="codigo">Código de verificación</label>
       <input #inputCodigo id="codigo" class="input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-        autocomplete="one-time-code" autofocus [formControl]="codigo" />
+        autocomplete="one-time-code" [formControl]="codigo" />
       @if (codigo.touched && codigo.invalid) {
         <span class="ayuda">Ingresa los 6 dígitos del código.</span>
       }

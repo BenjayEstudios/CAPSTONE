@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import {
   EstadoProveedor, ProveedorFicha, ProveedorListadoItem, ResultadoEstado, TipoDocumento
 } from "../../core/models/proveedores.models";
@@ -75,7 +76,8 @@ const MENSAJES: Record<string, string> = {
   VALIDACION: "Los datos enviados no son válidos. Revisa los campos."
 };
 
-export function mensajeErrorProveedor(e: any): string {
+export function mensajeErrorProveedor(err: unknown): string {
+  const e = err as HttpErrorResponse;
   const status = e?.status;
   const code = e?.error?.error?.code as string | undefined;
   const msg = e?.error?.error?.message as string | undefined;

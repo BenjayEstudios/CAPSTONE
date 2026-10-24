@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import { EnvioEstado, EnvioOrden, MedioPago, OrdenEstado } from "../../core/models/ordenes.models";
 
 const fmtCLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
@@ -58,7 +59,8 @@ export function totalesEnvios(envios: EnvioOrden[]): { comision: number; aLiquid
   };
 }
 
-export function mensajeErrorOrdenes(e: any): string {
+export function mensajeErrorOrdenes(err: unknown): string {
+  const e = err as HttpErrorResponse;
   const status = e?.status;
   const msg = e?.error?.error?.message as string | undefined;
   if (status === 403) return "No tienes permiso para ver las órdenes.";

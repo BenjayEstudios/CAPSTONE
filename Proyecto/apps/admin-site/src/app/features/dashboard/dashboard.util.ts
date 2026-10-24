@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import { ProblemaCatalogo, SemanaDashboard } from "../../core/models/dashboard.models";
 
 export { formatoClp } from "../ordenes/ordenes.util";
@@ -84,7 +85,8 @@ export function mesLocalActual(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function mensajeErrorDashboard(e: any): string {
+export function mensajeErrorDashboard(err: unknown): string {
+  const e = err as HttpErrorResponse;
   const msg = e?.error?.error?.message as string | undefined;
   if (e?.status === 403) return "No tienes permiso para ver el dashboard.";
   if (e?.status === 0) return "No hay conexión con el servidor.";
