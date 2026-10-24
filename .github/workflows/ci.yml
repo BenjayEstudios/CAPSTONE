@@ -1,0 +1,112 @@
+# CI de Cotizapp (KAN-161). El código vive en Proyecto/, por eso todos los
+# `run` corren ahí. Documentación: Proyecto/infra/README.md (sección CI/CD).
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: ["dev-*"]
+
+# Un push nuevo a la misma rama/PR cancela la corrida anterior.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Proyecto
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  node:
+    name: Node (check-types, lint, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # Instala la versión de pnpm del campo "packageManager" de Proyecto/package.json.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: Proyecto/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: Proyecto/pnpm-lock.yaml
+
+      - name: Caché de Turborepo
+        uses: actions/cache@v6
+        with:
+          path: Proyecto/.turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+
+      # --continue: si algo falla, igual corre el resto y muestra todos los errores juntos.
+      - name: check-types, lint y build
+        run: pnpm exec turbo run check-types lint build --continue
+
+      - name: test (paquetes Node, vitest)
+        run: pnpm exec turbo run test --continue --filter='!@cotizapp/ecommerce' --filter='!@cotizapp/admin-site'
+
+      # `ng test` abre Chrome con interfaz por defecto; en el runner tiene que
+      # ser headless. El flag se agrega acá para no depender de que cada app
+      # lo tenga en su script (ubuntu-latest ya trae Google Chrome).
+      - name: test (Angular, ChromeHeadless)
+        run: pnpm --filter @cotizapp/ecommerce --filter @cotizapp/admin-site run test --browsers=ChromeHeadless
+
+  changes:
+    name: Detectar cambios en mobile
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            mobile:
+              - 'Proyecto/apps/mobile/**'
+              - '.github/workflows/ci.yml'
+
+  flutter:
+    name: Flutter (analyze, test)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: Proyecto/apps/mobile
+    steps:
+      - uses: actions/checkout@v7
+
+      # Misma versión que usa el equipo en local; actualizarla acá al subir de versión.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - name: flutter test
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "::notice::apps/mobile todavía no tiene carpeta test/"
+          fi
