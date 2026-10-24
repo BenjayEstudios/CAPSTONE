@@ -1,10 +1,8 @@
-import { mysqlTable, bigint, smallint, varchar, char, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, smallint, varchar, char, mysqlEnum, datetime, index } from "drizzle-orm/mysql-core";
 import { organizacion } from "./organizacion.schema.js";
 import { rol } from "./rol.schema.js";
 
-// Cuenta de acceso: una organizacion, un rol. Referencia circular con rol
-// (rol.permisos_actualizado_por -> usuario.id) resuelta via import circular
-// + callback lazy en .references(), igual que en rol.schema.ts.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table usuario.
 export const usuario = mysqlTable(
   "usuario",
   {
@@ -21,8 +19,8 @@ export const usuario = mysqlTable(
     telefono: varchar("telefono", { length: 24 }),
     hashClave: char("hash_clave", { length: 60 }).notNull(),
     mfaEstado: mysqlEnum("mfa_estado", ["activo", "pendiente", "opcional", "inactivo"]).notNull().default("inactivo"),
-    ultimoAcceso: datetime("ultimo_acceso", { mode: "date" }),
+    ultimoAcceso: datetime("ultimo_acceso"),
     estado: mysqlEnum("estado", ["activo", "invitado", "suspendido"]).notNull().default("invitado")
   },
-  (table) => [index("ix_usuario_estado").on(table.estado)]
+  (t) => [index("usuario_estado_idx").on(t.estado)]
 );

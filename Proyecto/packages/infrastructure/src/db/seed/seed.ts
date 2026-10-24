@@ -5,6 +5,11 @@ import { categorias, comunaId, comunas, productos, ROL, roles } from "./catalogo
 
 type Db = MySql2Database<typeof schema>;
 
+// Columnas `date` (sin hora) del schema: Drizzle las tipa como string "AAAA-MM-DD".
+function soloFecha(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 // Clave comun de TODOS los usuarios de prueba (solo para desarrollo local).
 // Documentada tambien en packages/infrastructure/README.md.
 export const CLAVE_PRUEBA = "Cotizapp.2026";
@@ -131,8 +136,8 @@ export async function seed(db: Db) {
     plazoFueraRegionHoras: PROVEEDOR[id].plazoHoras * 3,
     horaCorte,
     despachoGratisDesde: PROVEEDOR[id].gratisDesde,
-    ofreceDespacho: true,
-    ofreceRetiro,
+    ofreceDespacho: 1,
+    ofreceRetiro: ofreceRetiro ? 1 : 0,
     entregasATiempoPct,
     banco,
     cuentaBancaria: `00-${String(id).padStart(3, "0")}-48213-0${id}`
@@ -192,7 +197,7 @@ export async function seed(db: Db) {
       proveedorId,
       tipo,
       url: `https://storage.cotizapp.test/proveedores/${proveedorId}/${tipo}.pdf`,
-      venceEn: tipo === "resolucion_sanitaria" ? new Date(venceSanitaria) : null,
+      venceEn: tipo === "resolucion_sanitaria" ? venceSanitaria : null,
       estado: tipo === "resolucion_sanitaria" && new Date(venceSanitaria) < new Date("2026-12-31") ? ("por_vencer" as const) : ("al_dia" as const),
       revisadoPor: revisado ? USR.soporte : null
     }));
@@ -232,9 +237,9 @@ export async function seed(db: Db) {
   await db.insert(schema.eventoAnalitico).values([
     { ...sesionFogon, tipoEvento: "busqueda", termino: "aceite", resultados: 2, creadoEn: new Date("2026-10-06T10:02:00") },
     { ...sesionFogon, tipoEvento: "vista_producto", productoId: 1, origen: "busqueda", creadoEn: new Date("2026-10-06T10:03:00") },
-    { ...sesionFogon, tipoEvento: "click_oferta", productoId: 1, ofertaId: ofertaDe(1, ORG.losAndes).id, convirtio: true, creadoEn: new Date("2026-10-06T10:05:00") },
+    { ...sesionFogon, tipoEvento: "click_oferta", productoId: 1, ofertaId: ofertaDe(1, ORG.losAndes).id, convirtio: 1, creadoEn: new Date("2026-10-06T10:05:00") },
     { ...sesionAnonima, tipoEvento: "vista_producto", productoId: 5, origen: "catalogo", creadoEn: new Date("2026-10-08T15:20:00") },
-    { ...sesionAnonima, tipoEvento: "click_oferta", productoId: 5, ofertaId: ofertaDe(5, ORG.valleCentral).id, convirtio: false, creadoEn: new Date("2026-10-08T15:21:00") },
+    { ...sesionAnonima, tipoEvento: "click_oferta", productoId: 5, ofertaId: ofertaDe(5, ORG.valleCentral).id, convirtio: 0, creadoEn: new Date("2026-10-08T15:21:00") },
     { tipoEvento: "busqueda", sesionId: "9e8d7c6b-5a49-4382-9170-6f5e4d3c0003", termino: "harina integral", resultados: 0, creadoEn: new Date("2026-10-09T09:40:00") }
   ]);
   const sinteticos = eventosSinteticos();
@@ -517,7 +522,7 @@ async function seedOrdenes(db: Db) {
       costoDespachoTotal: despachoOrden,
       comisionTotal: comisionOrden,
       total: subtotalOrden + despachoOrden,
-      requiereFactura: cliente.requiereFactura,
+      requiereFactura: cliente.requiereFactura ? 1 : 0,
       estado: o.estado,
       medioPago: o.medioPago,
       estadoPago: "pagado",
@@ -561,8 +566,8 @@ async function seedOrdenes(db: Db) {
       return {
         id,
         proveedorId: c.proveedorId,
-        periodoDesde: c.desde,
-        periodoHasta: new Date(c.desde.getTime() + 6 * DIA),
+        periodoDesde: soloFecha(c.desde),
+        periodoHasta: soloFecha(new Date(c.desde.getTime() + 6 * DIA)),
         montoBruto,
         comision,
         montoNeto: montoBruto - comision,
@@ -673,7 +678,7 @@ function eventosSinteticos(): (typeof schema.eventoAnalitico.$inferInsert)[] {
         const delProducto = publicadas.filter((o) => o.productoId === productoId).sort((a, b) => a.precioUnitario - b.precioUnitario);
         if (delProducto.length === 0 || azar() >= 0.35) continue;
         const oferta = azar() < 0.6 ? delProducto[0]! : elegir(delProducto);
-        evento({ tipoEvento: "click_oferta", productoId, ofertaId: oferta.id, convirtio: azar() < 0.2 });
+        evento({ tipoEvento: "click_oferta", productoId, ofertaId: oferta.id, convirtio: azar() < 0.2 ? 1 : 0 });
       }
     }
   }

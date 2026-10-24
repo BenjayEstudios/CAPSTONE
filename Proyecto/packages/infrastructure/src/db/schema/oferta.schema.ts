@@ -1,12 +1,21 @@
-import { mysqlTable, bigint, smallint, int, varchar, datetime, mysqlEnum, index, uniqueIndex } from "drizzle-orm/mysql-core";
+import {
+  mysqlTable,
+  bigint,
+  int,
+  smallint,
+  varchar,
+  mysqlEnum,
+  datetime,
+  index,
+  uniqueIndex
+} from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { producto } from "./producto.schema.js";
 import { organizacion } from "./organizacion.schema.js";
 
-// Una fila por producto x proveedor. Precio VIGENTE (sin versionado
-// desde/hasta). El comparador lee precio_unitario directo usando el
-// indice (producto_id, precio_unitario). Los cambios de precio/stock se
-// registran en oferta_precio_historial.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table oferta. proveedor_id debe
+// ser una organizacion con tipo = proveedor (validado en aplicacion).
+// Notas "unsigned" del DBML -> smallint({ unsigned: true }).
 export const oferta = mysqlTable(
   "oferta",
   {
@@ -18,21 +27,19 @@ export const oferta = mysqlTable(
       .notNull()
       .references(() => organizacion.id),
     precioUnitario: int("precio_unitario", { unsigned: true }).notNull(),
-    unidadesPorCaja: smallint("unidades_por_caja"),
+    unidadesPorCaja: smallint("unidades_por_caja", { unsigned: true }),
     cajasDisponibles: int("cajas_disponibles", { unsigned: true }),
     cajasIniciales: int("cajas_iniciales", { unsigned: true }),
-    minimoCompra: smallint("minimo_compra"),
+    minimoCompra: smallint("minimo_compra", { unsigned: true }),
     plazoHoras: smallint("plazo_horas"),
     modalidadEntrega: mysqlEnum("modalidad_entrega", ["despacho", "retiro", "ambos"]).notNull(),
     notasCliente: varchar("notas_cliente", { length: 240 }),
     estado: mysqlEnum("estado", ["borrador", "publicada", "pausada"]).notNull().default("borrador"),
-    actualizadaEn: datetime("actualizada_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    actualizadaEn: datetime("actualizada_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [
-    uniqueIndex("ux_oferta_producto_proveedor").on(table.productoId, table.proveedorId),
-    index("ix_oferta_comparador").on(table.productoId, table.precioUnitario),
-    index("ix_oferta_estado").on(table.estado)
+  (t) => [
+    uniqueIndex("oferta_producto_proveedor_uq").on(t.productoId, t.proveedorId),
+    index("ix_oferta_comparador").on(t.productoId, t.precioUnitario),
+    index("oferta_estado_idx").on(t.estado)
   ]
 );

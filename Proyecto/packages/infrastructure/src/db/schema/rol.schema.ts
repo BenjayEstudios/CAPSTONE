@@ -1,20 +1,17 @@
-import { mysqlTable, smallint, bigint, varchar, json, datetime, boolean, type AnyMySqlColumn } from "drizzle-orm/mysql-core";
-import { usuario } from "./usuario.schema.js";
+import { mysqlTable, smallint, varchar, tinyint, json, bigint, datetime } from "drizzle-orm/mysql-core";
 
-// FUSION: reemplaza las tablas permiso + rol_permiso. "permisos" guarda la
-// matriz completa como JSON (ver nota en DataBase/dbDiagram.sql); se
-// lee/escribe el objeto completo y se filtra en la aplicacion.
-// Referencia circular con usuario (usuario.rol_id <-> rol.permisos_actualizado_por):
-// se resuelve con el callback lazy de .references(), estandar en Drizzle.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table rol. permisos es un objeto
+// { "codigo_permiso": "ninguno|parcial|total" } (catalogo validado en app).
+// permisos_actualizado_por no lleva referencia declarada aca a proposito
+// (rol <-> usuario es circular: usuario.rol_id -> rol.id); mismo criterio que
+// categoria.padreId, la integridad se valida en el caso de uso.
 export const rol = mysqlTable("rol", {
   id: smallint("id").autoincrement().primaryKey(),
   codigo: varchar("codigo", { length: 40 }).notNull().unique(),
   nombre: varchar("nombre", { length: 80 }).notNull(),
   descripcion: varchar("descripcion", { length: 240 }),
-  esSistema: boolean("es_sistema").notNull().default(false),
+  esSistema: tinyint("es_sistema").notNull().default(0),
   permisos: json("permisos").notNull(),
-  permisosActualizadoPor: bigint("permisos_actualizado_por", { mode: "number" }).references(
-    (): AnyMySqlColumn => usuario.id
-  ),
-  permisosActualizadoEn: datetime("permisos_actualizado_en", { mode: "date" })
+  permisosActualizadoPor: bigint("permisos_actualizado_por", { mode: "number" }),
+  permisosActualizadoEn: datetime("permisos_actualizado_en")
 });

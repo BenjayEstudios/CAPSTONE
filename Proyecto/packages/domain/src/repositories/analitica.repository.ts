@@ -1,7 +1,7 @@
 import type {
   EmbudoProducto,
   KpisPlataforma,
-  RangoFechas,
+  RangoFechasAnalitica,
   TerminoSinResultados,
   VentaProducto,
   VentaSemanal
@@ -13,10 +13,10 @@ import type {
 // @cotizapp/infrastructure.
 export interface AnaliticaRepository {
   // Panel proveedor
-  ventasPorSemana(proveedorId: number, rango: RangoFechas): Promise<VentaSemanal[]>;
-  ventasPorProducto(proveedorId: number, rango: RangoFechas, limite?: number): Promise<VentaProducto[]>;
-  embudoPorProducto(proveedorId: number, rango: RangoFechas): Promise<EmbudoProducto[]>;
+  ventasPorSemana(proveedorId: number, rango: RangoFechasAnalitica): Promise<VentaSemanal[]>;
+  ventasPorProducto(proveedorId: number, rango: RangoFechasAnalitica, limite?: number): Promise<VentaProducto[]>;
+  embudoPorProducto(proveedorId: number, rango: RangoFechasAnalitica): Promise<EmbudoProducto[]>;
   // Panel admin
-  kpisPlataforma(rango: RangoFechas): Promise<KpisPlataforma>;
-  terminosSinResultados(rango: RangoFechas, limite?: number): Promise<TerminoSinResultados[]>;
+  kpisPlataforma(rango: RangoFechasAnalitica): Promise<KpisPlataforma>;
+  terminosSinResultados(rango: RangoFechasAnalitica, limite?: number): Promise<TerminoSinResultados[]>;
 }

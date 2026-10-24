@@ -1,4 +1,4 @@
-import { mysqlTable, bigint, smallint, int, decimal, datetime, mysqlEnum, index, check } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, int, smallint, decimal, mysqlEnum, datetime, index } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { orden } from "./orden.schema.js";
 import { organizacion } from "./organizacion.schema.js";
@@ -6,11 +6,10 @@ import { puntoRetiro } from "./punto-retiro.schema.js";
 import { direccion } from "./direccion.schema.js";
 import { liquidacion } from "./liquidacion.schema.js";
 
-// El tramo de cada proveedor dentro de una orden; es lo unico que el
-// proveedor ve en su panel. punto_retiro_id se exige si modalidad = retiro;
-// direccion_entrega_id si modalidad = despacho; nunca ambos (CHECK
-// ck_orden_envio_destino, KAN-140). FUSION: incluye lo que antes era
-// liquidacion_detalle.
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table orden_envio. Incluye
+// liquidacion_detalle fusionado (liquidacion_id + montos liquidados).
+// punto_retiro_id si modalidad = retiro; direccion_entrega_id si despacho;
+// nunca ambos (validado en aplicacion). proveedor_id debe ser tipo proveedor.
 export const ordenEnvio = mysqlTable(
   "orden_envio",
   {
@@ -39,21 +38,11 @@ export const ordenEnvio = mysqlTable(
     ])
       .notNull()
       .default("por_despachar"),
-    // Se completa cuando este envio entra en un corte semanal.
     liquidacionId: bigint("liquidacion_id", { mode: "number" }).references(() => liquidacion.id),
     montoBrutoLiquidado: int("monto_bruto_liquidado", { unsigned: true }),
     comisionLiquidada: int("comision_liquidada", { unsigned: true }),
     montoNetoLiquidado: int("monto_neto_liquidado", { unsigned: true }),
-    actualizadoEn: datetime("actualizado_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    actualizadoEn: datetime("actualizado_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [
-    index("ix_orden_envio_proveedor_estado").on(table.proveedorId, table.estado),
-    check(
-      "ck_orden_envio_destino",
-      sql`(${table.modalidad} = 'retiro' AND ${table.puntoRetiroId} IS NOT NULL AND ${table.direccionEntregaId} IS NULL)
-        OR (${table.modalidad} = 'despacho' AND ${table.direccionEntregaId} IS NOT NULL AND ${table.puntoRetiroId} IS NULL)`
-    )
-  ]
+  (t) => [index("orden_envio_proveedor_estado_idx").on(t.proveedorId, t.estado)]
 );

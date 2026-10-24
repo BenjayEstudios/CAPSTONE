@@ -46,6 +46,12 @@ Enum proveedor_documento_tipo {
   vigencia
 }
 
+Enum proveedor_documento_revision {
+  pendiente
+  aprobado
+  rechazado
+}
+
 Enum proveedor_documento_estado {
   al_dia
   por_vencer
@@ -363,14 +369,23 @@ Table proveedor_documento {
   tipo         proveedor_documento_tipo [not null]
   url          varchar(300) [not null]
   vence_en     date
-  estado       proveedor_documento_estado [not null, default: 'al_dia']
+  estado       proveedor_documento_estado [not null, default: 'al_dia', note: 'VIGENCIA del documento (no su revision)']
+  revision_estado proveedor_documento_revision [not null, default: 'pendiente', note: 'revision manual del admin']
   revisado_por bigint [ref: > usuario.id]
+  revisado_en  datetime
+  motivo_rechazo varchar(240) [note: 'obligatorio al rechazar']
 
   indexes {
     vence_en
   }
 
-  Note: 'Carpeta tributaria, resolución sanitaria, vigencia.'
+  Note: '''
+    Carpeta tributaria, resolución sanitaria, vigencia.
+    Los documentos se aprueban o rechazan manualmente desde admin
+    (revision_estado, con motivo al rechazar); "estado" es solo vigencia.
+    Para aprobar un proveedor, el documento más reciente (id mayor) de cada
+    tipo debe estar en revision_estado = 'aprobado'.
+  '''
 }
 
 // =======================================================================

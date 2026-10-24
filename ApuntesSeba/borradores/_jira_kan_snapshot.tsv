@@ -1,0 +1,100 @@
+KAN-85	Por hacer	None	Epic	Ecommerce web (cliente y proveedor)
+KAN-86	Por hacer	None	Epic	Página administradora
+KAN-87	Por hacer	None	Epic	App mobile (cliente y distribuidor)
+KAN-88	Por hacer	None	Epic	Plataforma (API, BD, infraestructura, pagos, QA)
+KAN-89	Por hacer	Benjamín González	Historia	[Cliente] Home del ecommerce
+KAN-90	Por hacer	Benjamín González	Historia	[Cliente] Catálogo por categoría con filtros
+KAN-91	Por hacer	Benjamín González	Historia	[Cliente] Búsqueda de productos
+KAN-92	Por hacer	Benjamín González	Historia	[Cliente] Ficha de producto con comparador de proveedores
+KAN-93	Por hacer	Benjamín González	Historia	[Cliente] Comparación lado a lado
+KAN-94	Por hacer	Benjamín González	Historia	[Cliente] Carro multiproveedor
+KAN-95	Por hacer	Benjamín González	Historia	[Cliente] Checkout único
+KAN-96	Por hacer	Benjamín González	Historia	[Cliente] Confirmación y detalle de compra consolidado
+KAN-97	Por hacer	Benjamín González	Historia	[Cliente] Registro e inicio de sesión de comprador
+KAN-98	Por hacer	Benjamín González	Historia	[Cliente] Mis pedidos y seguimiento
+KAN-99	Por hacer	Benjamín González	Historia	[Cliente] Calificar proveedor tras la entrega
+KAN-100	Por hacer	Benjamín González	Historia	[Proveedor] Registro y alta de proveedor
+KAN-101	Por hacer	Benjamín González	Historia	[Proveedor] Dashboard de ventas
+KAN-102	Por hacer	Benjamín González	Historia	[Proveedor] Asignarme un producto (publicar oferta)
+KAN-103	Por hacer	Benjamín González	Historia	[Proveedor] Mis productos publicados
+KAN-104	Por hacer	Benjamín González	Historia	[Proveedor] Cómo se compara tu precio
+KAN-105	Por hacer	Benjamín González	Historia	[Proveedor] Órdenes de venta
+KAN-106	Por hacer	Benjamín González	Historia	[Proveedor] Tus clientes
+KAN-107	Por hacer	Benjamín González	Historia	[Proveedor] Demanda y cobertura (analítica)
+KAN-108	Por hacer	Benjamín González	Historia	[Proveedor] Perfil de empresa
+KAN-109	Por hacer	Benjamín González	Historia	[Proveedor] Cobertura de despacho y puntos de retiro
+KAN-110	Por hacer	Benjamín González	Historia	[Proveedor] Documentos del proveedor
+KAN-111	Por hacer	Benjamín González	Historia	[Proveedor] Liquidaciones
+KAN-112	En curso	sebamax097	Historia	[Admin] Acceso al panel de administración
+KAN-113	Por hacer	sebamax097	Historia	[Admin] Dashboard estado de la plataforma
+KAN-114	Por hacer	sebamax097	Historia	[Admin] Cola de moderación
+KAN-115	Por hacer	sebamax097	Historia	[Admin] Aprobación y suspensión de proveedores
+KAN-116	En curso	sebamax097	Historia	[Admin] Catálogo maestro: listado
+KAN-117	En curso	sebamax097	Historia	[Admin] Crear y editar ficha de producto
+KAN-118	En curso	sebamax097	Historia	[Admin] Gestión de categorías
+KAN-119	Por hacer	sebamax097	Historia	[Admin] Órdenes de la plataforma
+KAN-120	Por hacer	sebamax097	Historia	[Admin] Reembolsos
+KAN-121	Por hacer	sebamax097	Historia	[Admin] Gestión de usuarios
+KAN-122	Por hacer	sebamax097	Historia	[Admin] Roles y permisos (matriz)
+KAN-123	Por hacer	sebamax097	Historia	[Admin] Liquidaciones a proveedores
+KAN-124	Por hacer	sebamax097	Historia	[Admin] Registro de auditoría
+KAN-125	En curso	Samuel Alarcon	Historia	[Mobile] Estructura base de la app
+KAN-126	En curso	Samuel Alarcon	Historia	[Mobile] Login y navegación según perfil
+KAN-127	En curso	Samuel Alarcon	Historia	[Mobile Cliente] Home, categorías y búsqueda
+KAN-128	En curso	Samuel Alarcon	Historia	[Mobile Cliente] Listado con filtros
+KAN-129	Por hacer	Samuel Alarcon	Historia	[Mobile Cliente] Ficha con comparador de proveedores
+KAN-130	Por hacer	Samuel Alarcon	Historia	[Mobile Cliente] Carro multiproveedor
+KAN-131	Por hacer	Samuel Alarcon	Historia	[Mobile Cliente] Checkout y pago
+KAN-132	Por hacer	Samuel Alarcon	Historia	[Mobile Cliente] Mis pedidos
+KAN-133	Por hacer	Samuel Alarcon	Historia	[Mobile Distribuidor] Estadísticas de venta
+KAN-134	Por hacer	Samuel Alarcon	Historia	[Mobile Distribuidor] Visitas y conversión
+KAN-135	Por hacer	Samuel Alarcon	Historia	[Mobile Distribuidor] Calificaciones recibidas
+KAN-136	Por hacer	Samuel Alarcon	Historia	[Mobile Distribuidor] Órdenes vigentes
+KAN-137	Por hacer	Samuel Alarcon	Historia	[Mobile Distribuidor] Alertas que requieren atención
+KAN-138	Por hacer	Samuel Alarcon	Historia	[Mobile] Build de release para la demo
+KAN-139	En curso	Samuel Alarcon	Historia	[BD] Migraciones Drizzle del modelo completo
+KAN-140	Por hacer	Samuel Alarcon	Historia	[BD] Índices y restricciones especiales
+KAN-141	En curso	Samuel Alarcon	Historia	[BD] Datos semilla y de prueba
+KAN-142	Por hacer	Samuel Alarcon	Historia	[BD] Modelo de calificaciones
+KAN-143	Por hacer	Samuel Alarcon	Historia	[BD] Consultas de analítica para los paneles
+KAN-144	Por hacer	Benjamín González	Historia	[API] Autenticación, roles y 2FA
+KAN-145	Por hacer	Benjamín González	Historia	[API] Catálogo, búsqueda y comparador
+KAN-146	En curso	Benjamín González	Historia	[API] Ofertas del proveedor
+KAN-147	Por hacer	sebamax097	Historia	[API] Carro y creación de orden con split por proveedor
+KAN-148	Por hacer	sebamax097	Historia	[Pagos] Integración con pasarela (Webpay/MercadoPago sandbox)
+KAN-149	Por hacer	sebamax097	Historia	[API] Órdenes y estados de envío
+KAN-150	Por hacer	sebamax097	Historia	[API] Proveedores: perfil, cobertura, retiro y documentos
+KAN-151	Por hacer	sebamax097	Historia	[API] Usuarios, roles y permisos
+KAN-152	Por hacer	sebamax097	Historia	[API] Liquidaciones semanales
+KAN-153	Por hacer	sebamax097	Historia	[API] Documentos tributarios simulados (SII)
+KAN-154	Por hacer	sebamax097	Historia	[API] Ingesta de eventos analíticos
+KAN-155	Por hacer	sebamax097	Historia	[API] Auditoría y moderación automáticas
+KAN-156	Por hacer	sebamax097	Historia	[API] Correos transaccionales
+KAN-157	En curso	Samuel Alarcon	Historia	[Infra] Almacenamiento de imágenes y documentos
+KAN-158	En curso	Samuel Alarcon	Historia	[Infra] Servir el build de apps/ecommerce en producción
+KAN-159	Por hacer	Samuel Alarcon	Historia	[Infra] HTTPS con Let's Encrypt
+KAN-160	Por hacer	Samuel Alarcon	Historia	[Infra] Respaldos automáticos de MySQL
+KAN-161	Por hacer	Samuel Alarcon	Historia	[Infra] Pipeline de despliegue (CI/CD)
+KAN-162	Por hacer	Samuel Alarcon	Historia	[Infra] Hardening y control de accesos del droplet
+KAN-163	Por hacer	Samuel Alarcon	Historia	[Infra] Monitoreo y logs
+KAN-164	Por hacer	Benjamín González	Historia	[QA] Pruebas end-to-end del flujo de compra
+KAN-165	Por hacer	Benjamín González	Historia	[QA] Pruebas de usabilidad con usuarios piloto
+KAN-166	En curso	sebamax097	Historia	[Admin-site] Estructura base de la app
+KAN-167	En curso	sebamax097	Historia	[Admin-site] Shell y navegación del panel
+KAN-168	Por hacer	Samuel Alarcon	Historia	[Infra] Servir el build de apps/admin-site en producción
+KAN-169	Finalizado	sebamax097	Tarea	[Backend] Decidir Fastify vs Express
+KAN-170	En curso	None	Epic	Documentación Evaluación 2 - Fase 2
+KAN-171	Por hacer	Benjamín González	Tarea	[Docs] Diario de Reflexión Fase 2 - Benjamín
+KAN-172	En revisión	Samuel Alarcon	Tarea	[Docs] Diario de Reflexión Fase 2 - Samuel
+KAN-173	En curso	sebamax097	Tarea	[Docs] Diario de Reflexión Fase 2 - Sebastián
+KAN-174	En revisión	Samuel Alarcon	Tarea	[Docs] 2.4 Desarrollo Proyecto - Secc. 1 Resumen de avance
+KAN-175	En revisión	Samuel Alarcon	Tarea	[Docs] 2.4 Desarrollo Proyecto - Secc. 2 Monitoreo del plan de trabajo
+KAN-176	En revisión	Samuel Alarcon	Tarea	[Docs] 2.4 Desarrollo Proyecto - Secc. 3 Ajustes a partir del monitore
+KAN-177	En revisión	Samuel Alarcon	Tarea	[Docs] 2.6 Informe Final - Datos generales, Secc. 1 Relevancia y 2 Obj
+KAN-178	En revisión	Samuel Alarcon	Tarea	[Docs] 2.6 Informe Final - Secc. 3 Metodología y 4 Desarrollo
+KAN-179	En revisión	Samuel Alarcon	Tarea	[Docs] 2.6 Informe Final - Secc. 5 Evidencias y 6 Intereses y proyecci
+KAN-180	En revisión	Samuel Alarcon	Tarea	[Diseño] 1. Documento de requerimientos
+KAN-181	En revisión	Samuel Alarcon	Tarea	[Diseño] 2. Diagrama de casos de uso
+KAN-182	En revisión	Samuel Alarcon	Tarea	[Diseño] 3. Diagrama de clases
+KAN-183	En revisión	Samuel Alarcon	Tarea	[Diseño] 4. Diagrama de actividad
+KAN-184	En revisión	Samuel Alarcon	Tarea	[Diseño] 5. Modelo de BDD

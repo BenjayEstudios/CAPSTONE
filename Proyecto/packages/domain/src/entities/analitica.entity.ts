@@ -3,7 +3,7 @@
 
 // Intervalo [desde, hasta): desde inclusive, hasta exclusivo. Las fechas se
 // comparan en UTC, que es como se guardan los datetime.
-export interface RangoFechas {
+export interface RangoFechasAnalitica {
   desde: Date;
   hasta: Date;
 }

@@ -1,11 +1,9 @@
-import { mysqlTable, bigint, json, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, mysqlEnum, json, datetime, index } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { usuario } from "./usuario.schema.js";
 
-// Carro unico del cliente; mezcla ofertas de proveedores distintos.
-// FUSION: incluye lo que antes era carro_linea, ahora como columna JSON
-// "items" (array [{oferta_id, cantidad, precio_visto}]; unicidad por
-// oferta_id validada en aplicacion).
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table carro.
+// items: array [{oferta_id, cantidad, precio_visto}]; unicidad por oferta_id validada en aplicacion.
 export const carro = mysqlTable(
   "carro",
   {
@@ -15,9 +13,7 @@ export const carro = mysqlTable(
       .references(() => usuario.id),
     estado: mysqlEnum("estado", ["abierto", "convertido", "abandonado"]).notNull().default("abierto"),
     items: json("items").notNull(),
-    actualizadoEn: datetime("actualizado_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    actualizadoEn: datetime("actualizado_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [index("ix_carro_estado").on(table.estado)]
+  (t) => [index("carro_estado_idx").on(t.estado)]
 );

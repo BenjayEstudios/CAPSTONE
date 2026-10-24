@@ -3,7 +3,7 @@ import type {
   AnaliticaRepository,
   EmbudoProducto,
   KpisPlataforma,
-  RangoFechas,
+  RangoFechasAnalitica,
   TerminoSinResultados,
   VentaProducto,
   VentaSemanal
@@ -29,7 +29,7 @@ function lunesUtc(fecha: Date): Date {
 
 // Que cuenta como venta: envio no cancelado de una orden pagada, fechado
 // por orden.creada_en. Compartido por las consultas del panel proveedor.
-const ventaDelProveedor = (proveedorId: number, rango: RangoFechas) => sql`
+const ventaDelProveedor = (proveedorId: number, rango: RangoFechasAnalitica) => sql`
   oe.proveedor_id = ${proveedorId}
   AND oe.estado <> 'cancelado'
   AND o.estado_pago = 'pagado'
@@ -42,7 +42,7 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
   constructor(private readonly db: DbClient) {}
 
   // Plan: ix_orden_envio_proveedor_estado -> orden por PRIMARY.
-  async ventasPorSemana(proveedorId: number, rango: RangoFechas): Promise<VentaSemanal[]> {
+  async ventasPorSemana(proveedorId: number, rango: RangoFechasAnalitica): Promise<VentaSemanal[]> {
     const filas = await consultar<{ semana: string; envios: number; ventas: string; despacho: string; comision: string }>(
       this.db,
       sql`
@@ -73,7 +73,7 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
 
   // Plan: ix_orden_envio_proveedor_estado -> orden por PRIMARY -> orden_linea
   // por su FK (orden_envio_id) -> producto por PRIMARY.
-  async ventasPorProducto(proveedorId: number, rango: RangoFechas, limite = 10): Promise<VentaProducto[]> {
+  async ventasPorProducto(proveedorId: number, rango: RangoFechasAnalitica, limite = 10): Promise<VentaProducto[]> {
     const filas = await consultar<{ productoId: number; nombre: string; unidades: string; ventas: string }>(
       this.db,
       sql`
@@ -96,7 +96,7 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
   // vistas con ix_evento_analitico_producto_id (producto_id, tipo_evento,
   // creado_en), clicks/conversiones con ix_evento_analitico_oferta_id
   // (oferta_id, creado_en, convirtio). El rango de fechas poda particiones.
-  async embudoPorProducto(proveedorId: number, rango: RangoFechas): Promise<EmbudoProducto[]> {
+  async embudoPorProducto(proveedorId: number, rango: RangoFechasAnalitica): Promise<EmbudoProducto[]> {
     const filas = await consultar<{ productoId: number; nombre: string; vistas: number; clicks: number; conversiones: number }>(
       this.db,
       sql`
@@ -128,7 +128,7 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
   // Dos consultas: ventas (ix_orden_estado_pago (estado_pago, creada_en))
   // y eventos (recorre solo las particiones del rango, que es lo que hay que
   // leer para contar todo).
-  async kpisPlataforma(rango: RangoFechas): Promise<KpisPlataforma> {
+  async kpisPlataforma(rango: RangoFechasAnalitica): Promise<KpisPlataforma> {
     const [ventas] = await consultar<{ ordenes: number; gmv: string; comisiones: string; clientes: number; proveedores: number }>(
       this.db,
       sql`
@@ -177,7 +177,7 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
 
   // Plan: range scan en ix_evento_analitico_tipo_evento (tipo_evento,
   // creado_en) sobre las particiones del rango.
-  async terminosSinResultados(rango: RangoFechas, limite = 10): Promise<TerminoSinResultados[]> {
+  async terminosSinResultados(rango: RangoFechasAnalitica, limite = 10): Promise<TerminoSinResultados[]> {
     const filas = await consultar<{ termino: string; veces: number }>(
       this.db,
       sql`

@@ -8,13 +8,16 @@
     "build": "tsc -b",
     "start": "node dist/server/index.js",
     "check-types": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "job:liquidaciones": "tsx src/jobs/liquidaciones.ts"
   },
   "dependencies": {
     "@cotizapp/application": "workspace:*",
     "@cotizapp/domain": "workspace:*",
     "@cotizapp/infrastructure": "workspace:*",
     "@fastify/cors": "^10.0.0",
+    "@fastify/multipart": "^10.1.6",
+    "@fastify/static": "^10.1.7",
     "dotenv": "^16.4.0",
     "fastify": "^5.5.0",
     "jsonwebtoken": "^9.0.3",

@@ -12,6 +12,10 @@ services:
       - "3306:3306"
     volumes:
       - cotizapp-mysql-data:/var/lib/mysql
+      # Esquema + datos semilla de desarrollo. MySQL ejecuta en orden alfabetico
+      # los .sql de esta carpeta, pero SOLO cuando el volumen de datos esta
+      # vacio (primer arranque o despues de `docker compose down -v`).
+      - ./DataBase/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ucotizapp", "-pcotizapp"]
       interval: 5s
@@ -74,15 +78,20 @@ services:
       # Sin root, el HOME por defecto puede no ser escribible; corepack guarda
       # ahi la descarga de pnpm.
       HOME: /tmp
-      # DATABASE_URL comentado a proposito: mientras esta linea existe, pisa
-      # lo que pongas en apps/backend/.env (apunte a Aiven o a lo que sea).
-      # Descomentar y apuntar a mysql:3306 (nombre del servicio) para volver
-      # a usar el MySQL local de este mismo docker-compose.yml.
-      # DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
+      DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
+      # Imagenes subidas (STORAGE_DRIVER=local): volumen propio para que
+      # persistan entre recreaciones del contenedor y no ensucien el repo.
+      STORAGE_DRIVER: local
+      UPLOADS_DIR: /data/uploads
+      PUBLIC_BASE_URL: http://localhost:8000
+      # Correo en dev: no se envia; cada mensaje (ej. codigo 2FA) queda como archivo.
+      MAIL_DRIVER: consola
+      MAIL_OUT_DIR: /data/outbox
     ports:
       - "8000:8000"
     volumes:
       - .:/repo
+      - backend-uploads:/data/uploads
       # node_modules propios del contenedor: si no se aislan con volumenes,
       # el `pnpm install` de adentro pisaria el node_modules del host (que
       # puede tener binarios nativos de otro SO/arquitectura).
@@ -104,6 +113,16 @@ services:
         condition: service_healthy
       fix-permissions:
         condition: service_completed_successfully
+    # Healthy cuando el puerto ya acepta conexiones, es decir, cuando el
+    # `pnpm install` inicial termino y el server arranco. Permite encadenar
+    # los servicios en secuencia (evita varios installs a la vez sobre el
+    # bind mount, que dan ERR_PNPM_EIO / disk I/O error).
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(8000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 90
 
   ecommerce:
     image: node:22-alpine
@@ -128,9 +147,19 @@ services:
     command: sh -c "mkdir -p /tmp/bin && corepack enable --install-directory /tmp/bin && export PATH=/tmp/bin:$$PATH && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/ecommerce exec ng serve --host 0.0.0.0 --port 4200"
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       fix-permissions:
         condition: service_completed_successfully
+    # Healthy cuando el puerto ya acepta conexiones, es decir, cuando el
+    # `pnpm install` inicial termino y el server arranco. Permite encadenar
+    # los servicios en secuencia (evita varios installs a la vez sobre el
+    # bind mount, que dan ERR_PNPM_EIO / disk I/O error).
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(4200,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 90
 
   admin-site:
     image: node:22-alpine
@@ -154,13 +183,14 @@ services:
       - admin-site-shared-config-node-modules:/repo/packages/shared-config/node_modules
     command: sh -c "mkdir -p /tmp/bin && corepack enable --install-directory /tmp/bin && export PATH=/tmp/bin:$$PATH && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/admin-site exec ng serve --host 0.0.0.0 --port 4300"
     depends_on:
-      backend:
-        condition: service_started
+      ecommerce:
+        condition: service_healthy
       fix-permissions:
         condition: service_completed_successfully
 
 volumes:
   cotizapp-mysql-data:
+  backend-uploads:
   backend-root-node-modules:
   backend-app-node-modules:
   backend-ecommerce-node-modules:

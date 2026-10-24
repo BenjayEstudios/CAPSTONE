@@ -1,12 +1,24 @@
-import { mysqlTable, bigint, smallint, varchar, text, decimal, int, json, datetime, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import {
+  mysqlTable,
+  bigint,
+  smallint,
+  varchar,
+  decimal,
+  mysqlEnum,
+  text,
+  int,
+  json,
+  datetime,
+  index
+} from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { categoria } from "./categoria.schema.js";
 import { usuario } from "./usuario.schema.js";
 
-// La ficha compartida. Solo la crea administracion. contenido + unidad
-// permiten normalizar precio por kg/L entre formatos distintos de
-// distintos proveedores. FUSION: incluye lo que antes era producto_imagen,
-// ahora como columna JSON "imagenes".
+// Traduccion 1:1 de DataBase/dbDiagram.sql -> Table producto.
+// imagenes: JSON [{url, texto_alt, orden, es_principal, subida_por, subida_en}].
+// El indice FULLTEXT ix_producto_nombre_fulltext sobre nombre NO se puede
+// declarar en Drizzle; se agrega a mano al final de la migracion (ALTER TABLE).
 export const producto = mysqlTable(
   "producto",
   {
@@ -24,21 +36,10 @@ export const producto = mysqlTable(
     descripcion: text("descripcion"),
     precioReferencia: int("precio_referencia", { unsigned: true }),
     topeSobreReferenciaPct: smallint("tope_sobre_referencia_pct"),
-    // array [{url, texto_alt, orden, es_principal, subida_por, subida_en}];
-    // una sola con es_principal=true validado en aplicacion.
     imagenes: json("imagenes"),
     estado: mysqlEnum("estado", ["borrador", "publicado", "archivado"]).notNull().default("borrador"),
     creadoPor: bigint("creado_por", { mode: "number" }).references(() => usuario.id),
-    creadoEn: datetime("creado_en", { mode: "date" })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`)
+    creadoEn: datetime("creado_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (table) => [
-    // FULLTEXT ix_producto_nombre_fulltext (nombre) para la busqueda del
-    // catalogo: Drizzle no soporta ese tipo de indice, se crea a mano en
-    // migrations/0003_indices_restricciones.sql (KAN-140). drizzle-kit no lo
-    // ve, asi que generate no lo toca; NO usar drizzle-kit push, que lo
-    // borraria al comparar contra la base.
-    index("ix_producto_estado").on(table.estado)
-  ]
+  (t) => [index("producto_estado_idx").on(t.estado)]
 );
