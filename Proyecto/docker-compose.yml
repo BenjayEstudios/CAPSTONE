@@ -12,6 +12,10 @@ services:
       - "3306:3306"
     volumes:
       - cotizapp-mysql-data:/var/lib/mysql
+      # Esquema + datos semilla de desarrollo. MySQL ejecuta en orden alfabetico
+      # los .sql de esta carpeta, pero SOLO cuando el volumen de datos esta
+      # vacio (primer arranque o despues de `docker compose down -v`).
+      - ./DataBase/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ucotizapp", "-pcotizapp"]
       interval: 5s
@@ -68,6 +72,16 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    # Healthy cuando el puerto ya acepta conexiones, es decir, cuando el
+    # `pnpm install` inicial termino y el server arranco. Permite encadenar
+    # los servicios en secuencia (evita varios installs a la vez sobre el
+    # bind mount, que dan ERR_PNPM_EIO / disk I/O error).
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(8000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 90
 
   ecommerce:
     image: node:22-alpine
@@ -88,7 +102,18 @@ services:
       - ecommerce-shared-config-node-modules:/repo/packages/shared-config/node_modules
     command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/ecommerce exec ng serve --host 0.0.0.0 --port 4200"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    # Healthy cuando el puerto ya acepta conexiones, es decir, cuando el
+    # `pnpm install` inicial termino y el server arranco. Permite encadenar
+    # los servicios en secuencia (evita varios installs a la vez sobre el
+    # bind mount, que dan ERR_PNPM_EIO / disk I/O error).
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(4200,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 90
 
   admin-site:
     image: node:22-alpine
@@ -109,7 +134,8 @@ services:
       - admin-site-shared-config-node-modules:/repo/packages/shared-config/node_modules
     command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm --filter @cotizapp/admin-site exec ng serve --host 0.0.0.0 --port 4300"
     depends_on:
-      - backend
+      ecommerce:
+        condition: service_healthy
 
 volumes:
   cotizapp-mysql-data:
