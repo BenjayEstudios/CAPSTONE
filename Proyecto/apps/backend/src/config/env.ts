@@ -4,7 +4,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   HOST: z.string().default("0.0.0.0"),
   DATABASE_URL: z.string().min(1),
-  CORS_ORIGIN: z.string().default("http://localhost:4200"),
+  // Uno o varios origenes separados por coma (ej. "http://a,http://b").
+  CORS_ORIGIN: z
+    .string()
+    .default("http://localhost:4200,http://localhost:4300")
+    .transform((v) => v.split(",").map((o) => o.trim()).filter(Boolean)),
   JWT_SECRET: z.string().min(1),
   // Almacenamiento de archivos. Hoy solo "local"; "spaces" (DigitalOcean
   // Spaces) es el punto de extension para produccion (ver lib/storage.ts).

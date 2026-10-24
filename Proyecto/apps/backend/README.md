@@ -76,6 +76,7 @@ Variables de entorno:
 
 | Variable | Default | Descripcion |
 | --- | --- | --- |
+| `CORS_ORIGIN` | `http://localhost:4200,http://localhost:4300` | Origenes permitidos por CORS; admite una lista separada por comas (se toleran espacios). |
 | `STORAGE_DRIVER` | `local` | Adaptador de `AlmacenArchivos`. Hoy solo `local`. |
 | `UPLOADS_DIR` | `./uploads` | Directorio de archivos (docker-compose: `/data/uploads`, volumen `backend-uploads`). |
 | `UPLOADS_MAX_MB` | `5` | Tamano maximo por archivo. |
