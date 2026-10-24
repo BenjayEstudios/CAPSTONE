@@ -15,3 +15,7 @@ export * from "./actualizar-producto.use-case.js";
 export * from "./reemplazar-imagenes-producto.use-case.js";
 export * from "./verificar-permisos.use-case.js";
 export * from "./subir-imagen-producto.use-case.js";
+export * from "./listar-proveedores.use-case.js";
+export * from "./obtener-proveedor.use-case.js";
+export * from "./revisar-documento-proveedor.use-case.js";
+export * from "./cambiar-estado-proveedor.use-case.js";

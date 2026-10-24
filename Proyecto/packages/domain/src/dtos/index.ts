@@ -5,3 +5,4 @@ export * from "./categoria.dto.js";
 export * from "./auth.dto.js";
 export * from "./common.dto.js";
 export * from "./producto.dto.js";
+export * from "./proveedor.dto.js";

@@ -13,3 +13,6 @@ export * from "./oferta.schema.js";
 export * from "./oferta-precio-historial.schema.js";
 export * from "./moderacion-caso.schema.js";
 export * from "./auditoria-log.schema.js";
+export * from "./proveedor-documento.schema.js";
+export * from "./proveedor-cobertura.schema.js";
+export * from "./punto-retiro.schema.js";
