@@ -12,7 +12,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@cotizapp/domain": "workspace:*"
+    "@cotizapp/domain": "workspace:*",
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
     "@cotizapp/shared-config": "workspace:*",

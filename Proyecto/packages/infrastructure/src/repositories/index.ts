@@ -3,3 +3,4 @@
 // ejemplo de referencia; el resto (DrizzleOrdenRepository...) se agrega
 // siguiendo el mismo patron.
 export * from "./categoria.repository.js";
+export * from "./usuario.repository.js";

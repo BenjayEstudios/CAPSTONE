@@ -5,3 +5,5 @@
 // patron.
 export * from "./listar-categorias.use-case.js";
 export * from "./crear-categoria.use-case.js";
+export * from "./login-admin.use-case.js";
+export * from "./obtener-sesion-usuario.use-case.js";
