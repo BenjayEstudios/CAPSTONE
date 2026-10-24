@@ -1,0 +1,112 @@
+<header class="cabecera">
+  <h2>{{ esNuevo() ? "Nuevo producto" : "Ficha de producto" }}</h2>
+  <a class="btn btn-secondary" routerLink="/catalogo-maestro">Volver al listado</a>
+</header>
+
+@if (cargando()) {
+  <p class="estado" role="status">Cargando producto…</p>
+} @else {
+  @if (errorGeneral()) { <p class="mensaje" role="alert">{{ errorGeneral() }}</p> }
+  @if (faltantes().length) {
+    <p class="mensaje" role="alert">Para publicar falta: {{ faltantes().join(", ") }}.</p>
+  }
+  @if (aviso()) { <p class="ok" role="status">{{ aviso() }}</p> }
+
+  <form class="grid" (submit)="$event.preventDefault(); guardarBorrador()" novalidate>
+    <div class="field span2">
+      <label for="p-nombre">Nombre *</label>
+      <input id="p-nombre" class="input" [value]="form().nombre" (input)="set('nombre', $any($event.target).value)" />
+      @if (erroresCampo()['nombre']) { <small class="err">{{ erroresCampo()['nombre'] }}</small> }
+    </div>
+    <div class="field">
+      <label for="p-sku">SKU *</label>
+      <input id="p-sku" class="input" [value]="form().sku" (input)="set('sku', $any($event.target).value.toUpperCase())" />
+      @if (erroresCampo()['sku']) { <small class="err">{{ erroresCampo()['sku'] }}</small> }
+    </div>
+    <div class="field">
+      <label for="p-ean">EAN</label>
+      <input id="p-ean" class="input" inputmode="numeric" [value]="form().ean" (input)="set('ean', $any($event.target).value)" />
+      @if (erroresCampo()['ean']) { <small class="err">{{ erroresCampo()['ean'] }}</small> }
+    </div>
+    <div class="field span2">
+      <label for="p-cat">Categoría / subcategoría *</label>
+      <select id="p-cat" class="input" (change)="set('categoriaId', $any($event.target).value)">
+        <option value="" [selected]="form().categoriaId === ''">Selecciona…</option>
+        @for (c of categorias(); track c.id) {
+          <option [value]="c.id" [selected]="form().categoriaId === c.id">{{ c.etiqueta }}</option>
+        }
+      </select>
+      @if (erroresCampo()['categoriaId']) { <small class="err">{{ erroresCampo()['categoriaId'] }}</small> }
+    </div>
+    <div class="field">
+      <label for="p-marca">Marca</label>
+      <input id="p-marca" class="input" [value]="form().marca" (input)="set('marca', $any($event.target).value)" />
+    </div>
+    <div class="field">
+      <label for="p-formato">Formato</label>
+      <input id="p-formato" class="input" [value]="form().formato" (input)="set('formato', $any($event.target).value)" />
+    </div>
+    <div class="field">
+      <label for="p-contenido">Contenido</label>
+      <input id="p-contenido" class="input" inputmode="decimal" [value]="form().contenido" (input)="set('contenido', $any($event.target).value)" />
+      @if (erroresCampo()['contenido']) { <small class="err">{{ erroresCampo()['contenido'] }}</small> }
+    </div>
+    <div class="field">
+      <label for="p-unidad">Unidad *</label>
+      <select id="p-unidad" class="input" (change)="set('unidad', $any($event.target).value)">
+        @for (u of unidades; track u) {
+          <option [value]="u" [selected]="form().unidad === u">{{ u }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="p-precio">Precio de referencia (CLP)</label>
+      <input id="p-precio" class="input" inputmode="numeric" [value]="form().precioReferencia" (input)="set('precioReferencia', $any($event.target).value)" />
+      @if (erroresCampo()['precioReferencia']) { <small class="err">{{ erroresCampo()['precioReferencia'] }}</small> }
+    </div>
+    <div class="field">
+      <label for="p-tope">Tope sobre la referencia (%)</label>
+      <input id="p-tope" class="input" inputmode="numeric" [value]="form().topeSobreReferenciaPct" (input)="set('topeSobreReferenciaPct', $any($event.target).value)" />
+      @if (erroresCampo()['topeSobreReferenciaPct']) { <small class="err">{{ erroresCampo()['topeSobreReferenciaPct'] }}</small> }
+    </div>
+    <div class="field span2">
+      <label for="p-desc">Descripción</label>
+      <textarea id="p-desc" class="input" rows="4" [value]="form().descripcion" (input)="set('descripcion', $any($event.target).value)"></textarea>
+      @if (erroresCampo()['descripcion']) { <small class="err">{{ erroresCampo()['descripcion'] }}</small> }
+    </div>
+
+    <div class="acciones span2">
+      <button type="submit" class="btn btn-secondary" [disabled]="guardando()">Guardar borrador</button>
+      <button type="button" class="btn btn-primary" [disabled]="guardando() || esNuevo()" (click)="publicar()">Publicar</button>
+      @if (esNuevo()) { <small>Guarda el borrador para agregar imágenes y poder publicar.</small> }
+      <span class="badge">{{ estado() }}</span>
+    </div>
+  </form>
+
+  <section class="galeria" aria-labelledby="g-tit">
+    <h3 id="g-tit">Imágenes ({{ imagenes().length }}/{{ maxImagenes }})</h3>
+    @if (esNuevo()) {
+      <p class="estado">Las imágenes se habilitan después del primer "Guardar borrador".</p>
+    } @else {
+      <p class="ayuda">JPG o PNG, mínimo 1200 px de ancho, máximo 5 MB. Una debe ser la principal.</p>
+      @if (errorImagenes()) { <p class="mensaje" role="alert">{{ errorImagenes() }}</p> }
+      <input type="file" accept="image/jpeg,image/png" multiple [disabled]="subiendo() || imagenes().length >= maxImagenes" (change)="onArchivos($event)" aria-label="Agregar imágenes" />
+      @if (subiendo()) { <p role="status">Subiendo…</p> }
+      <ul class="miniaturas">
+        @for (img of imagenes(); track img.url; let i = $index) {
+          <li [class.principal]="img.esPrincipal">
+            <img [src]="img.url" [alt]="img.textoAlt || 'Imagen ' + (i + 1)" />
+            <div class="botones">
+              @if (img.esPrincipal) { <strong>Principal</strong> } @else {
+                <button type="button" class="btn btn-secondary" (click)="marcarPrincipal(i)">Hacer principal</button>
+              }
+              <button type="button" class="btn btn-secondary" [disabled]="i === 0" (click)="mover(i, -1)" aria-label="Subir">↑</button>
+              <button type="button" class="btn btn-secondary" [disabled]="i === imagenes().length - 1" (click)="mover(i, 1)" aria-label="Bajar">↓</button>
+              <button type="button" class="btn btn-secondary" (click)="quitar(i)">Quitar</button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+}

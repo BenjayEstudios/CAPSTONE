@@ -1,7 +1,15 @@
 import { HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { ApiClient } from "../../core/api/api.client";
-import { CategoriaItem, FiltrosProductos, ProductoListadoRespuesta } from "../../core/models/catalogo.models";
+import {
+  CategoriaItem,
+  FiltrosProductos,
+  ImagenProducto,
+  ImagenSubida,
+  ProductoFicha,
+  ProductoListadoRespuesta,
+  ProductoPayload
+} from "../../core/models/catalogo.models";
 
 const fmtCLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
 
@@ -41,5 +49,27 @@ export class CatalogoService {
 
   categorias() {
     return this.api.get<CategoriaItem[]>("/categorias?incluirOcultas=true");
+  }
+
+  obtener(id: string | number) {
+    return this.api.get<ProductoFicha>(`/productos/${id}`);
+  }
+
+  crear(body: ProductoPayload) {
+    return this.api.post<ProductoFicha>("/productos", body);
+  }
+
+  actualizar(id: string | number, body: ProductoPayload) {
+    return this.api.patch<ProductoFicha>(`/productos/${id}`, body);
+  }
+
+  subirImagen(id: string | number, archivo: File) {
+    const fd = new FormData();
+    fd.append("archivo", archivo);
+    return this.api.post<ImagenSubida>(`/productos/${id}/imagenes/archivo`, fd);
+  }
+
+  guardarImagenes(id: string | number, imagenes: ImagenProducto[]) {
+    return this.api.put<ProductoFicha>(`/productos/${id}/imagenes`, { imagenes });
   }
 }

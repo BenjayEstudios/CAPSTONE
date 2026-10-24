@@ -7,6 +7,8 @@ import { MODULOS } from "./core/navigation/modulos.config";
 // lazy. Por ahora todas cargan el placeholder "En construccion"; al
 // implementar un feature, reemplazar su `loadComponent` por un
 // `loadChildren` hacia features/<modulo>/<modulo>.routes.ts.
+const RUTAS_PROPIAS = ["catalogo-maestro", "categorias"];
+
 export const routes: Routes = [
   {
     path: "login",
@@ -32,7 +34,8 @@ export const routes: Routes = [
         canActivate: [permisoGuard("crear_producto")],
         loadChildren: () => import("./features/categorias/categorias.routes").then((m) => m.CATEGORIAS_ROUTES)
       },
-      ...MODULOS.map((m) => ({
+      // catalogo-maestro y categorias ya tienen rutas reales arriba.
+      ...MODULOS.filter((m) => !RUTAS_PROPIAS.includes(m.path)).map((m) => ({
         path: m.path,
         title: `${m.label} · ${BRAND.nombre}`,
         data: { titulo: m.label },

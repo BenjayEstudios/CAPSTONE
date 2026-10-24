@@ -49,6 +49,31 @@ describe("CatalogoService", () => {
     ]);
     expect(r.map((x) => x.etiqueta)).toEqual(["Alimentos", "Alimentos > Lácteos"]);
   });
+
+  it("crea, actualiza, sube archivo y reemplaza imagenes", () => {
+    svc.crear({ nombre: "A", sku: "A1", categoriaId: 1, unidad: "kg" }).subscribe();
+    const post = http.expectOne(`${environment.apiUrl}/productos`);
+    expect(post.request.method).toBe("POST");
+    post.flush({});
+
+    svc.actualizar("5", { estado: "publicado" }).subscribe();
+    const patch = http.expectOne(`${environment.apiUrl}/productos/5`);
+    expect(patch.request.method).toBe("PATCH");
+    expect(patch.request.body).toEqual({ estado: "publicado" });
+    patch.flush({});
+
+    svc.subirImagen("5", new File(["x"], "a.png", { type: "image/png" })).subscribe();
+    const up = http.expectOne(`${environment.apiUrl}/productos/5/imagenes/archivo`);
+    expect(up.request.method).toBe("POST");
+    expect(up.request.body instanceof FormData).toBeTrue();
+    up.flush({ url: "u", clave: "c", ancho: 1200, alto: 800 });
+
+    svc.guardarImagenes("5", [{ url: "u", esPrincipal: true, orden: 0 }]).subscribe();
+    const put = http.expectOne(`${environment.apiUrl}/productos/5/imagenes`);
+    expect(put.request.method).toBe("PUT");
+    expect(put.request.body).toEqual({ imagenes: [{ url: "u", esPrincipal: true, orden: 0 }] });
+    put.flush({});
+  });
 });
 
 describe("formatearPrecio", () => {
