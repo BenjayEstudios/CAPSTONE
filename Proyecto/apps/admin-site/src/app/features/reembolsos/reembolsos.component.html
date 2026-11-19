@@ -1,0 +1,107 @@
+<header class="cabecera">
+  <h2>Reembolsos</h2>
+</header>
+
+<form class="busqueda" (submit)="$event.preventDefault(); buscar()">
+  <div class="field">
+    <label for="r-codigo">Folio de la orden</label>
+    <input id="r-codigo" class="input" type="text" placeholder="CM-90412" autocomplete="off" [value]="codigo()" (input)="codigo.set($any($event.target).value)" />
+  </div>
+  <button type="submit" class="btn btn-primary" [disabled]="!codigo().trim() || cargando()">Buscar orden</button>
+</form>
+
+@if (cargando()) {
+  <p class="estado" role="status">Buscando orden…</p>
+} @else if (error()) {
+  <p class="mensaje" role="alert">{{ error() }}</p>
+} @else if (!resumen()) {
+  <p class="estado">Busca una orden por su folio para ver su saldo reembolsable e historial.</p>
+}
+
+@if (resumen(); as r) {
+  @if (exito()) {
+    <p class="exito" role="status">{{ exito() }}</p>
+  }
+  <section class="panel" aria-label="Orden">
+    <h3>{{ r.orden.codigo }}</h3>
+    <dl class="datos">
+      <dt>Cliente</dt><dd>{{ r.orden.cliente }} <small>{{ r.orden.organizacion }}</small></dd>
+      <dt>Estado</dt><dd>{{ r.orden.estado }} · pago {{ r.orden.estadoPago }}</dd>
+      <dt>Total pagado</dt><dd>{{ clp(r.orden.total) }}</dd>
+      <dt>Reembolsado</dt><dd>{{ clp(r.reembolsado) }}</dd>
+      <dt>Saldo reembolsable</dt><dd><strong>{{ clp(r.saldo) }}</strong></dd>
+    </dl>
+
+    @if (!r.reembolsable) {
+      <p class="estado">
+        @if (r.orden.estadoPago === "reembolsado") { Esta orden ya fue reembolsada por completo. }
+        @else { La orden no está pagada: no admite reembolsos. }
+      </p>
+    } @else {
+      <form class="form" (submit)="$event.preventDefault(); revisar()">
+        <fieldset [disabled]="paso() === 2 || enviando()">
+          <legend>Tipo de reembolso</legend>
+          <label><input type="radio" name="modo" [checked]="modo() === 'total'" (change)="elegirModo('total')" /> Total ({{ clp(r.saldo) }})</label>
+          <label><input type="radio" name="modo" [checked]="modo() === 'parcial'" (change)="elegirModo('parcial')" /> Parcial</label>
+          @if (modo() === "parcial") {
+            <div class="field">
+              <label for="r-monto">Monto a reembolsar (CLP)</label>
+              <input id="r-monto" class="input" type="text" inputmode="numeric" [value]="montoTexto()" (input)="montoTexto.set($any($event.target).value)" />
+              @if (intentado() && validacion().error) { <small class="err" role="alert">{{ validacion().error }}</small> }
+            </div>
+          }
+          <div class="field">
+            <label for="r-motivo">Motivo (máx. 300 caracteres)</label>
+            <textarea id="r-motivo" class="input" rows="3" maxlength="300" [value]="motivo()" (input)="motivo.set($any($event.target).value)"></textarea>
+            @if (intentado() && validacion().errorMotivo) { <small class="err" role="alert">{{ validacion().errorMotivo }}</small> }
+          </div>
+        </fieldset>
+
+        @if (errorEnvio()) {
+          <p class="mensaje" role="alert">{{ errorEnvio() }}</p>
+        }
+
+        @if (paso() === 1) {
+          <button type="submit" class="btn btn-primary">Revisar reembolso</button>
+        } @else {
+          <div class="confirmacion" role="alertdialog" aria-label="Confirmar reembolso">
+            <p>
+              Se emitirá una nota de crédito por <strong>{{ clp(validacion().monto) }}</strong>
+              ({{ modo() === "total" ? "reembolso total" : "reembolso parcial" }}) sobre la orden {{ r.orden.codigo }}.
+              Esta acción no se puede deshacer.
+            </p>
+            <button type="button" class="btn btn-primary" [disabled]="enviando()" (click)="confirmar()">
+              {{ enviando() ? "Emitiendo…" : "Confirmar reembolso" }}
+            </button>
+            <button type="button" class="btn btn-secondary" [disabled]="enviando()" (click)="volver()">Volver</button>
+          </div>
+        }
+      </form>
+    }
+  </section>
+
+  <section class="panel" aria-label="Historial de reembolsos">
+    <h3>Historial</h3>
+    @if (errorPdf()) { <p class="mensaje" role="alert">{{ errorPdf() }}</p> }
+    @if (r.items.length === 0) {
+      <p class="estado">Esta orden no tiene reembolsos.</p>
+    } @else {
+      <div class="tabla-wrap">
+        <table class="tabla">
+          <thead><tr><th>Nota de crédito</th><th>Fecha</th><th>Motivo</th><th class="num">Monto</th><th>PDF</th></tr></thead>
+          <tbody>
+            @for (i of r.items; track i.id) {
+              <tr>
+                <td>N° {{ i.folio }}</td>
+                <td>{{ i.creadoEn | date: "dd-MM-yyyy HH:mm" }}</td>
+                <td>{{ i.motivo || "—" }}</td>
+                <td class="num">{{ clp(i.monto) }}</td>
+                <td><button type="button" class="link" (click)="verPdf(i)">Ver PDF</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+}

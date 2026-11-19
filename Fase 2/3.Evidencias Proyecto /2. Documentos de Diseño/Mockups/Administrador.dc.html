@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#f3f2f2">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#f3f2f2"/>
+    <rect x="150" y="140" width="900" height="10" fill="#201e1d"/>
+    <rect x="150" y="192" width="380" height="40" rx="4" fill="#201e1d"/>
+    <rect x="150" y="300" width="900" height="4" fill="#201e1d" opacity=".35"/>
+    <rect x="150" y="330" width="240" height="18" rx="4" fill="#201e1d" opacity=".6"/>
+    <rect x="470" y="326" width="34" height="26" rx="4" fill="#0088b0"/>
+    <rect x="560" y="326" width="34" height="26" rx="4" fill="#0088b0"/>
+    <rect x="650" y="326" width="34" height="26" rx="4" fill="#d6006c"/>
+    <rect x="150" y="392" width="900" height="4" fill="#201e1d" opacity=".35"/>
+    <rect x="150" y="422" width="240" height="18" rx="4" fill="#201e1d" opacity=".6"/>
+    <rect x="470" y="418" width="34" height="26" rx="4" fill="#0088b0"/>
+    <rect x="560" y="418" width="34" height="26" rx="4" fill="#d6006c"/>
+    <rect x="650" y="418" width="34" height="26" rx="4" fill="#d6d4d3"/>
+    <rect x="150" y="484" width="900" height="4" fill="#201e1d" opacity=".35"/>
+    <rect x="150" y="514" width="240" height="18" rx="4" fill="#201e1d" opacity=".6"/>
+    <rect x="470" y="510" width="34" height="26" rx="4" fill="#0088b0"/>
+    <rect x="560" y="510" width="34" height="26" rx="4" fill="#d6d4d3"/>
+    <rect x="650" y="510" width="34" height="26" rx="4" fill="#d6d4d3"/>
+    <rect x="150" y="620" width="900" height="4" fill="#201e1d"/>
+  </svg>
+</template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/broadsheet-7fa73b13-f6a8-49ad-87d0-a2e25f247d59/styles.css">
+<script src="_ds/broadsheet-7fa73b13-f6a8-49ad-87d0-a2e25f247d59/print-plates.js"></script>
+<script src="_ds/broadsheet-7fa73b13-f6a8-49ad-87d0-a2e25f247d59/_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--color-bg)}a{color:var(--color-accent)}a:hover{color:var(--color-accent-600)}</style>
+</helmet>
+
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text)">
+  <div style="max-width:1400px;margin:0 auto;padding:0 40px">
+
+    <div style="height:4px;background:var(--color-text);margin-top:22px"></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:7px 0;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 60%, transparent)">
+      <span>Administración del sistema</span><span>·</span><span>Sesión: R. Fuentealba</span><span>·</span><span>Rol: Administrador general</span>
+      <span style="margin-left:auto">Sábado 12 de septiembre de 2026</span>
+    </div>
+    <div style="height:1px;background:var(--color-text)"></div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px;padding:20px 0 22px">
+      <div>
+        <div style="font-family:var(--font-heading);font-weight:600;font-size:36px;line-height:1;letter-spacing:-.02em">CompraMejor <span style="font-family:var(--font-body);font-weight:400;font-size:17px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">administración</span></div>
+        <div style="font-size:12px;margin-top:6px;color:color-mix(in srgb, var(--color-text) 60%, transparent)">Catálogo maestro, órdenes de toda la plataforma, usuarios y permisos.</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <button type="button" class="btn btn-secondary" onClick="{{ openUser }}">Crear usuario</button>
+        <button type="button" class="btn btn-primary" onClick="{{ openProduct }}">Crear producto</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px 28px;padding-bottom:16px;font-size:14px">
+      <sc-for list="{{ nav }}" as="t" hint-placeholder-count="5">
+        <button type="button" onClick="{{ t.onClick }}" style="font:inherit;font-family:var(--font-heading);cursor:pointer;background:none;border:0;padding:0 0 6px;color:{{ t.fg }};font-weight:600;border-bottom:2px solid {{ t.ul }}">{{ t.label }}</button>
+      </sc-for>
+    </div>
+    <div style="height:1px;background:var(--color-divider);margin-bottom:36px"></div>
+
+    <sc-if value="{{ isPanel }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:60px">
+        <h2 style="margin:0 0 6px;font-size:34px">Estado de la plataforma</h2>
+        <p style="font-size:14px;max-width:64ch;color:color-mix(in srgb, var(--color-text) 70%, transparent)">Septiembre a la fecha. Una orden del cliente puede repartirse entre varios proveedores; aquí se cuentan las órdenes del cliente, no los envíos.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:52px;margin:34px 0 46px">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div style="flex:0 0 auto">
+              <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin-bottom:10px">{{ k.label }}</div>
+              <div class="cmyk-num" style="font-family:var(--font-heading);font-weight:600;font-size:48px"><span class="paper">{{ k.v }}</span><span class="plate plate-c" aria-hidden="true">{{ k.v }}</span><span class="plate plate-m" aria-hidden="true">{{ k.v }}</span><span class="plate plate-y" aria-hidden="true">{{ k.v }}</span></div>
+              <div style="font-size:13px;margin-top:10px;color:{{ k.fg }}">{{ k.delta }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+          <div style="flex:1 1 520px;min-width:0">
+            <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px">
+              <h3 style="margin:0;font-size:20px">Transado por semana</h3>
+              <span style="font-size:12px;color:color-mix(in srgb, var(--color-text) 50%, transparent)">todos los proveedores, en millones de pesos</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:10px;height:190px">
+              <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="12">
+                <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:8px">
+                  <div style="height:{{ w.h }};background:{{ w.bg }}"></div>
+                  <div style="font-size:10px;text-align:center;color:color-mix(in srgb, var(--color-text) 50%, transparent)">{{ w.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <h3 style="margin:40px 0 14px;font-size:20px">Proveedores por volumen</h3>
+            <sc-for list="{{ topProv }}" as="p" hint-placeholder-count="6">
+              <div style="border-top:1px solid var(--color-divider);padding:13px 0">
+                <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline">
+                  <span style="flex:1 1 180px;min-width:0;font-family:var(--font-heading);font-weight:600">{{ p.n }}</span>
+                  <span style="flex:0 0 auto;font-size:13px;color:color-mix(in srgb, var(--color-text) 60%, transparent)">{{ p.sku }} SKU · {{ p.ordenes }} órdenes</span>
+                  <span style="flex:0 0 auto;margin-left:auto;font-family:var(--font-heading);font-weight:600">{{ p.monto }}</span>
+                </div>
+                <div style="height:6px;background:var(--color-neutral-200);margin-top:8px"><div style="height:6px;width:{{ p.w }};background:var(--color-accent)"></div></div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="flex:1 1 320px;min-width:0">
+            <h3 style="margin:0 0 14px;font-size:20px">Cola de moderación</h3>
+            <sc-for list="{{ queue }}" as="q" hint-placeholder-count="4">
+              <div style="border-top:1px solid var(--color-divider);padding:13px 0">
+                <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:6px">
+                  <span class="tag {{ q.tagClass }}">{{ q.tag }}</span>
+                  <span style="font-size:12px;margin-left:auto;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ q.when }}</span>
+                </div>
+                <div style="font-size:14px">{{ q.text }}</div>
+                <div style="display:flex;gap:8px;margin-top:10px"><button type="button" class="btn btn-primary">{{ q.primary }}</button><button type="button" class="btn btn-ghost">Revisar</button></div>
+              </div>
+            </sc-for>
+
+            <h3 style="margin:38px 0 14px;font-size:20px">Salud del catálogo</h3>
+            <sc-for list="{{ health }}" as="h" hint-placeholder-count="4">
+              <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;border-top:1px solid var(--color-divider);padding:12px 0">
+                <span style="flex:1 1 160px;min-width:0;font-size:14px">{{ h.label }}</span>
+                <span style="flex:0 0 auto;margin-left:auto;font-family:var(--font-heading);font-weight:600;color:{{ h.fg }}">{{ h.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:60px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px">
+          <h2 style="margin:0;font-size:34px">Catálogo maestro</h2>
+          <span style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ catCount }}</span>
+          <button type="button" class="btn btn-primary" style="margin-left:auto" onClick="{{ openProduct }}">Crear producto</button>
+        </div>
+        <p style="font-size:14px;max-width:72ch;color:color-mix(in srgb, var(--color-text) 70%, transparent)">Una ficha por producto. Los proveedores se asignan a estas fichas y publican su precio; nadie más crea productos.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 4px">
+          <sc-for list="{{ catFilters }}" as="f" hint-placeholder-count="5">
+            <button type="button" onClick="{{ f.onClick }}" style="font:inherit;font-family:var(--font-body);cursor:pointer;border:0;padding:0;background:none"><span class="tag {{ f.tagClass }}">{{ f.label }}</span></button>
+          </sc-for>
+        </div>
+
+        <div style="overflow-x:auto;margin-top:20px">
+          <table class="table" style="min-width:980px">
+            <thead><tr><th></th><th>Producto</th><th>SKU</th><th>Categoría</th><th>Formato</th><th style="text-align:right">Proveedores</th><th style="text-align:right">Desde</th><th>Imágenes</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ catalog }}" as="c" hint-placeholder-count="8">
+                <tr>
+                  <td style="width:52px"><div class="halftone" style="width:44px;height:44px;background:var(--color-surface)"></div></td>
+                  <td style="font-family:var(--font-heading);font-weight:600">{{ c.n }}</td>
+                  <td class="text-muted">{{ c.sku }}</td>
+                  <td class="text-muted">{{ c.sub }}</td>
+                  <td class="text-muted">{{ c.fmt }}</td>
+                  <td style="text-align:right">{{ c.provs }}</td>
+                  <td style="text-align:right;font-family:var(--font-heading);font-weight:600">{{ c.desde }}</td>
+                  <td><span class="tag {{ c.imgClass }}">{{ c.imgs }}</span></td>
+                  <td><span class="tag {{ c.tagClass }}">{{ c.estado }}</span></td>
+                  <td style="text-align:right;white-space:nowrap"><button type="button" class="btn btn-ghost" onClick="{{ c.onEdit }}">Editar</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOrders }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:60px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px">
+          <h2 style="margin:0;font-size:34px">Órdenes de la plataforma</h2>
+          <span style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ ordersSummary }}</span>
+        </div>
+        <p style="font-size:14px;max-width:72ch;color:color-mix(in srgb, var(--color-text) 70%, transparent)">Vista de orden del cliente: un pago, y debajo los envíos que cada proveedor debe cumplir. El proveedor solo ve su propio tramo.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 24px">
+          <sc-for list="{{ orderChips }}" as="c" hint-placeholder-count="4">
+            <span class="tag {{ c.tagClass }}">{{ c.label }}</span>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <sc-for list="{{ orders }}" as="o" hint-placeholder-count="5">
+            <div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;border-top:2px solid var(--color-text);padding-top:14px">
+                <span style="font-family:var(--font-heading);font-weight:600;font-size:21px">{{ o.folio }}</span>
+                <span style="font-size:14px">{{ o.cliente }}</span>
+                <span style="font-size:13px;color:color-mix(in srgb, var(--color-text) 58%, transparent)">{{ o.comuna }} · {{ o.fecha }} · {{ o.pago }}</span>
+                <span class="tag {{ o.tagClass }}">{{ o.estado }}</span>
+                <span style="margin-left:auto;font-family:var(--font-heading);font-weight:600;font-size:21px">{{ o.monto }}</span>
+              </div>
+              <sc-for list="{{ o.envios }}" as="e" hint-placeholder-count="2">
+                <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;border-top:1px solid var(--color-divider);padding:11px 0 11px 22px">
+                  <span style="flex:1 1 220px;min-width:0;font-size:14px">{{ e.prov }} <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent)">· {{ e.lineas }}</span></span>
+                  <span style="flex:0 0 auto;font-size:13px;color:color-mix(in srgb, var(--color-text) 65%, transparent)">{{ e.plazo }}</span>
+                  <span style="flex:0 0 auto;font-size:13px;color:{{ e.fg }}">{{ e.estado }}</span>
+                  <span style="flex:0 0 auto;margin-left:auto;font-family:var(--font-heading);font-weight:600">{{ e.monto }}</span>
+                </div>
+              </sc-for>
+              <div style="display:flex;flex-wrap:wrap;gap:14px;border-top:1px solid var(--color-divider);padding-top:10px;font-size:12px;color:color-mix(in srgb, var(--color-text) 58%, transparent)">
+                <span>Comisión CompraMejor {{ o.comision }}</span>
+                <span>A liquidar a proveedores {{ o.liquidar }}</span>
+                <span style="margin-left:auto">{{ o.envioCount }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsers }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:60px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px">
+          <h2 style="margin:0;font-size:34px">Usuarios</h2>
+          <span style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ usersCount }}</span>
+          <button type="button" class="btn btn-primary" style="margin-left:auto" onClick="{{ openUser }}">Crear usuario</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 4px">
+          <sc-for list="{{ userFilters }}" as="f" hint-placeholder-count="4">
+            <button type="button" onClick="{{ f.onClick }}" style="font:inherit;font-family:var(--font-body);cursor:pointer;border:0;padding:0;background:none"><span class="tag {{ f.tagClass }}">{{ f.label }}</span></button>
+          </sc-for>
+        </div>
+        <div style="overflow-x:auto;margin-top:20px">
+          <table class="table" style="min-width:920px">
+            <thead><tr><th>Usuario</th><th>Rol</th><th>Organización</th><th>Último acceso</th><th>2FA</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <sc-for list="{{ users }}" as="u" hint-placeholder-count="8">
+                <tr>
+                  <td>
+                    <div style="font-family:var(--font-heading);font-weight:600">{{ u.n }}</div>
+                    <div style="font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ u.mail }}</div>
+                  </td>
+                  <td>{{ u.rol }}</td>
+                  <td class="text-muted">{{ u.org }}</td>
+                  <td class="text-muted">{{ u.last }}</td>
+                  <td class="text-muted">{{ u.mfa }}</td>
+                  <td><span class="tag {{ u.tagClass }}">{{ u.estado }}</span></td>
+                  <td style="text-align:right;white-space:nowrap"><button type="button" class="btn btn-ghost" onClick="{{ u.onEdit }}">Editar</button><button type="button" class="btn btn-ghost">Suspender</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRoles }}" hint-placeholder-val="{{ true }}">
+      <div style="padding-bottom:60px">
+        <h2 style="margin:0 0 6px;font-size:34px">Roles y permisos</h2>
+        <p style="font-size:14px;max-width:66ch;color:color-mix(in srgb, var(--color-text) 70%, transparent)">Los permisos se otorgan por rol. Marca una celda para cambiar lo que ese rol puede hacer; el cambio aplica a {{ usersCount }}.</p>
+
+        <div style="overflow-x:auto;margin-top:28px">
+          <table class="table" style="min-width:880px">
+            <thead>
+              <tr>
+                <th>Permiso</th>
+                <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5">
+                  <th style="text-align:center">{{ r.n }}<div style="font-family:var(--font-body);font-weight:400;font-size:11px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ r.count }}</div></th>
+                </sc-for>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ perms }}" as="p" hint-placeholder-count="10">
+                <tr>
+                  <td>
+                    <div style="font-family:var(--font-heading);font-weight:600">{{ p.n }}</div>
+                    <div style="font-size:12px;color:color-mix(in srgb, var(--color-text) 55%, transparent)">{{ p.desc }}</div>
+                  </td>
+                  <sc-for list="{{ p.cells }}" as="c" hint-placeholder-count="5">
+                    <td style="text-align:center"><button type="button" onClick="{{ c.onToggle }}" title="{{ c.title }}" style="font:inherit;font-family:var(--font-heading);font-weight:600;font-size:16px;cursor:pointer;background:{{ c.bg }};border:1px solid {{ c.border }};color:{{ c.fg }};width:34px;height:34px;border-radius:var(--radius-sm)">{{ c.mark }}</button></td>
+                  </sc-for>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:26px"><button type="button" class="btn btn-primary">Guardar permisos</button><button type="button" class="btn btn-secondary" onClick="{{ resetPerms }}">Restablecer</button></div>
+      </div>
+    </sc-if>
+
+    <div style="height:1px;background:var(--color-text);margin-top:20px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:26px;padding:16px 0 50px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent)">
+      <span>CompraMejor</span><span>Registro de auditoría</span><span>Reglas de catálogo</span><span>Soporte interno</span><span style="margin-left:auto">Maqueta de diseño · datos de ejemplo</span>
+    </div>
+  </div>
+
+  <sc-if value="{{ productOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" style="z-index:60;align-items:start;overflow-y:auto;padding:48px 24px">
+      <div class="dialog" style="width:min(940px,100%);padding:34px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <div class="dialog-title" style="font-size:26px">{{ productTitle }}</div>
+          <button type="button" class="btn btn-ghost" style="margin-left:auto" onClick="{{ closeProduct }}">Cerrar</button>
+        </div>
+        <p class="dialog-body" style="margin:0">La ficha es única y compartida. Los precios y el stock los pone cada proveedor.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start;margin-top:8px">
+          <div style="flex:1 1 380px;min-width:0">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px">
+              <div class="field" style="grid-column:1/-1"><label>Nombre del producto</label><input class="input" value="{{ form.n }}" onChange="{{ onName }}"></div>
+              <div class="field"><label>SKU interno</label><input class="input" value="{{ form.sku }}" onChange="{{ onSku }}"></div>
+              <div class="field"><label>Código de barras (EAN)</label><input class="input" value="{{ form.ean }}" onChange="{{ onEan }}"></div>
+              <div class="field"><label>Categoría</label><input class="input" value="{{ form.grupo }}" onChange="{{ onGrupo }}"></div>
+              <div class="field"><label>Subcategoría</label><input class="input" value="{{ form.sub }}" onChange="{{ onSub }}"></div>
+              <div class="field"><label>Formato</label><input class="input" value="{{ form.fmt }}" onChange="{{ onFmt }}"></div>
+              <div class="field"><label>Marca</label><input class="input" value="{{ form.marca }}" onChange="{{ onMarca }}"></div>
+              <div class="field"><label>Contenido</label><input class="input" type="number" value="{{ form.size }}" onChange="{{ onSize }}"></div>
+              <div class="field"><label>Unidad de medida</label><input class="input" value="{{ form.unit }}" onChange="{{ onUnit }}"></div>
+            </div>
+            <div class="field" style="margin-top:16px"><label>Descripción pública</label><input class="input" value="{{ form.desc }}" onChange="{{ onDesc }}"></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+              <label class="radio"><input type="radio" name="estado-prod" checked="{{ true }}"><span class="dot"></span><span>Publicar en el catálogo</span></label>
+              <label class="radio"><input type="radio" name="estado-prod"><span class="dot"></span><span>Guardar como borrador (no visible para proveedores)</span></label>
+            </div>
+          </div>
+
+          <div style="flex:1 1 320px;min-width:0">
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin-bottom:10px">Imágenes de la ficha</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px">
+              <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+                <button type="button" onClick="{{ s.onToggle }}" class="halftone" style="aspect-ratio:1;cursor:pointer;background:var(--color-surface);border:1px {{ s.borderStyle }} {{ s.border }};display:grid;place-items:center;padding:8px;font:inherit;font-size:11px;text-align:center;color:{{ s.fg }}">{{ s.label }}</button>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;margin-top:10px;color:color-mix(in srgb, var(--color-text) 60%, transparent)">JPG o PNG, mínimo 1200 px, fondo blanco. La primera imagen es la principal.</div>
+            <div style="display:flex;gap:8px;margin-top:14px"><button type="button" class="btn btn-secondary">Subir imagen</button><button type="button" class="btn btn-ghost">Pedirla al proveedor</button></div>
+
+            <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin:26px 0 10px">Reglas de la ficha</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px">
+              <div class="field"><label>Precio de referencia</label><input class="input" value="$1.290"></div>
+              <div class="field"><label>Tope de publicación</label><input class="input" value="+40 % sobre referencia"></div>
+            </div>
+            <div style="font-size:14px;margin-top:16px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">{{ productHint }}</div>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-secondary" onClick="{{ closeProduct }}">Cancelar</button>
+          <button type="button" class="btn btn-primary" onClick="{{ saveProduct }}">{{ productCta }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ userOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" style="z-index:60;align-items:start;overflow-y:auto;padding:48px 24px">
+      <div class="dialog" style="width:min(720px,100%);padding:34px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <div class="dialog-title" style="font-size:26px">{{ userTitle }}</div>
+          <button type="button" class="btn btn-ghost" style="margin-left:auto" onClick="{{ closeUser }}">Cerrar</button>
+        </div>
+        <p class="dialog-body" style="margin:0">El rol define los permisos. Puedes ajustarlos para todos en la pestaña Roles y permisos.</p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:8px">
+          <div class="field"><label>Nombre y apellido</label><input class="input" value="{{ uform.n }}" onChange="{{ onUName }}"></div>
+          <div class="field"><label>Correo</label><input class="input" value="{{ uform.mail }}" onChange="{{ onUMail }}"></div>
+          <div class="field"><label>RUT</label><input class="input" value="{{ uform.rut }}" onChange="{{ onURut }}"></div>
+          <div class="field"><label>Teléfono</label><input class="input" value="{{ uform.fono }}" onChange="{{ onUFono }}"></div>
+        </div>
+
+        <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin:22px 0 10px">Rol</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ roleOptions }}" as="r" hint-placeholder-count="5">
+            <label class="radio"><input type="radio" name="rol-nuevo" checked="{{ r.checked }}" onChange="{{ r.onPick }}"><span class="dot"></span><span>{{ r.n }} <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent)">· {{ r.desc }}</span></span></label>
+          </sc-for>
+        </div>
+
+        <div class="field" style="margin-top:22px"><label>Organización asociada</label><input class="input" value="{{ uform.org }}" onChange="{{ onUOrg }}"></div>
+
+        <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 55%, transparent);margin:22px 0 10px">Este rol podrá</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ rolePerms }}" as="p" hint-placeholder-count="5">
+            <span class="tag {{ p.tagClass }}">{{ p.n }}</span>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:22px">
+          <label class="radio"><input type="radio" name="alta" checked="{{ true }}"><span class="dot"></span><span>Enviar invitación por correo</span></label>
+          <label class="radio"><input type="radio" name="alta"><span class="dot"></span><span>Crear con contraseña temporal</span></label>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+          <label class="radio"><input type="radio" name="mfa" checked="{{ true }}"><span class="dot"></span><span>Exigir segundo factor</span></label>
+          <label class="radio"><input type="radio" name="mfa"><span class="dot"></span><span>Opcional</span></label>
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-secondary" onClick="{{ closeUser }}">Cancelar</button>
+          <button type="button" class="btn btn-primary" onClick="{{ saveUser }}">{{ userCta }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000}}">
+class Component extends DCLogic {
+  state = {
+    screen: "panel", catFilter: "Todos", userFilter: "Todos",
+    productOpen: false, userOpen: false, editingProduct: null, editingUser: null,
+    form: { n: "", sku: "", ean: "", grupo: "Alimentos", sub: "Secos", fmt: "", marca: "", size: 1, unit: "kg", desc: "" },
+    uform: { n: "", mail: "", rut: "", fono: "", org: "", rol: "Comprador" },
+    imgs: [true, false, false, false],
+    extraProducts: [], extraUsers: [],
+    permOverrides: {}
+  };
+
+  baseCatalog = [
+    { n: "Arroz grano largo", sku: "AL-10042", grupo: "Alimentos", sub: "Secos", fmt: "Bolsa 1 kg", marca: "Genérico", size: 1, unit: "kg", provs: 5, desde: 1180, imgs: 4, estado: "Publicado" },
+    { n: "Lentejas laird", sku: "AL-10110", grupo: "Alimentos", sub: "Legumbres", fmt: "Bolsa 1 kg", marca: "Genérico", size: 1, unit: "kg", provs: 3, desde: 2290, imgs: 3, estado: "Publicado" },
+    { n: "Fideos spaghetti", sku: "AL-10233", grupo: "Alimentos", sub: "Secos", fmt: "Paquete 400 g", marca: "Genérico", size: 0.4, unit: "kg", provs: 3, desde: 690, imgs: 2, estado: "Publicado" },
+    { n: "Aceite de maravilla", sku: "AL-10318", grupo: "Alimentos", sub: "Secos", fmt: "Botella 900 ml", marca: "Genérico", size: 0.9, unit: "L", provs: 3, desde: 2090, imgs: 3, estado: "Publicado" },
+    { n: "Leche entera", sku: "AL-20061", grupo: "Alimentos", sub: "Refrigerados", fmt: "Caja 1 L", marca: "Genérico", size: 1, unit: "L", provs: 3, desde: 1040, imgs: 4, estado: "Publicado" },
+    { n: "Queso gauda laminado", sku: "AL-20144", grupo: "Alimentos", sub: "Refrigerados", fmt: "Bandeja 500 g", marca: "Genérico", size: 0.5, unit: "kg", provs: 2, desde: 4590, imgs: 1, estado: "Publicado" },
+    { n: "Arvejas congeladas", sku: "AL-30027", grupo: "Alimentos", sub: "Congelados", fmt: "Bolsa 1 kg", marca: "Genérico", size: 1, unit: "kg", provs: 2, desde: 1790, imgs: 2, estado: "Publicado" },
+    { n: "Agua mineral sin gas", sku: "BE-40012", grupo: "Alimentos", sub: "Bebidas", fmt: "Botella 1,6 L", marca: "Genérico", size: 1.6, unit: "L", provs: 2, desde: 690, imgs: 3, estado: "Publicado" },
+    { n: "Néctar de durazno", sku: "BE-40088", grupo: "Alimentos", sub: "Bebidas", fmt: "Caja 1 L", marca: "Genérico", size: 1, unit: "L", provs: 2, desde: 990, imgs: 0, estado: "Sin imagen" },
+    { n: "Cloro gel", sku: "AS-50019", grupo: "Aseo y hogar", sub: "Aseo", fmt: "Botella 900 ml", marca: "Genérico", size: 0.9, unit: "L", provs: 2, desde: 1090, imgs: 2, estado: "Publicado" },
+    { n: "Papel higiénico doble hoja", sku: "AS-50203", grupo: "Aseo y hogar", sub: "Baño", fmt: "4 rollos de 30 m", marca: "Genérico", size: 0, unit: "unidad", provs: 2, desde: 2690, imgs: 2, estado: "Publicado" },
+    { n: "Olla de aluminio 24 cm", sku: "HO-60041", grupo: "Aseo y hogar", sub: "Cocina", fmt: "Unidad con tapa", marca: "Genérico", size: 0, unit: "unidad", provs: 2, desde: 11900, imgs: 1, estado: "Publicado" },
+    { n: "Estante metálico 5 bandejas", sku: "HO-60118", grupo: "Aseo y hogar", sub: "Muebles", fmt: "180 × 90 × 40 cm", marca: "Genérico", size: 0, unit: "unidad", provs: 2, desde: 39900, imgs: 0, estado: "Borrador" }
+  ];
+
+  baseUsers = [
+    { n: "Rodrigo Fuentealba", mail: "r.fuentealba@compramejor.cl", rol: "Administrador general", org: "CompraMejor", last: "hoy, 09:14", mfa: "Activo", estado: "Activo" },
+    { n: "Ignacia Ruiz", mail: "i.ruiz@compramejor.cl", rol: "Editor de catálogo", org: "CompraMejor", last: "hoy, 08:40", mfa: "Activo", estado: "Activo" },
+    { n: "Matías Peña", mail: "m.pena@compramejor.cl", rol: "Soporte", org: "CompraMejor", last: "ayer, 18:02", mfa: "Activo", estado: "Activo" },
+    { n: "Jorge Undurraga", mail: "ventas@distribuidoraandes.cl", rol: "Proveedor", org: "Distribuidora Andes SpA", last: "hoy, 07:55", mfa: "Activo", estado: "Activo" },
+    { n: "Carla Núñez", mail: "operaciones@distribuidoraandes.cl", rol: "Proveedor", org: "Distribuidora Andes SpA", last: "hoy, 08:20", mfa: "Pendiente", estado: "Activo" },
+    { n: "Paulina Vera", mail: "contacto@comercialbiobio.cl", rol: "Proveedor", org: "Comercial Bío Bío Ltda.", last: "ayer, 16:31", mfa: "Activo", estado: "En revisión" },
+    { n: "Casino Central Ltda.", mail: "compras@casinocentral.cl", rol: "Comprador", org: "Casino Central Ltda.", last: "hoy, 10:02", mfa: "Opcional", estado: "Activo" },
+    { n: "María Paz Contreras", mail: "mp.contreras@correo.cl", rol: "Comprador", org: "Persona natural", last: "ayer, 21:47", mfa: "Opcional", estado: "Activo" },
+    { n: "Hernán Loyola", mail: "h.loyola@exproveedor.cl", rol: "Proveedor", org: "Abastos del Sur", last: "12 ago", mfa: "Inactivo", estado: "Suspendido" }
+  ];
+
+  roleList = [
+    { n: "Administrador general", desc: "control total del sistema" },
+    { n: "Editor de catálogo", desc: "crea y corrige fichas de producto" },
+    { n: "Soporte", desc: "atiende casos, sin tocar el catálogo" },
+    { n: "Proveedor", desc: "publica precios y despacha" },
+    { n: "Comprador", desc: "compra en la tienda" }
+  ];
+
+  permList = [
+    { n: "Crear y editar productos", desc: "fichas del catálogo maestro", grants: [2, 2, 0, 0, 0] },
+    { n: "Cargar imágenes", desc: "fotos de ficha y galería", grants: [2, 2, 0, 1, 0] },
+    { n: "Aprobar proveedores", desc: "validar datos legales y documentos", grants: [2, 0, 1, 0, 0] },
+    { n: "Ver todas las órdenes", desc: "de toda la plataforma", grants: [2, 1, 1, 0, 0] },
+    { n: "Ver órdenes propias", desc: "solo las del propio proveedor o cliente", grants: [2, 2, 2, 2, 2] },
+    { n: "Publicar precios y stock", desc: "asignarse productos del catálogo", grants: [2, 0, 0, 2, 0] },
+    { n: "Emitir reembolsos", desc: "devolver montos ya pagados", grants: [2, 0, 2, 0, 0] },
+    { n: "Liquidar a proveedores", desc: "ejecutar los pagos semanales", grants: [2, 0, 0, 0, 0] },
+    { n: "Crear usuarios", desc: "altas y asignación de rol", grants: [2, 0, 1, 0, 0] },
+    { n: "Cambiar permisos", desc: "editar esta misma matriz", grants: [2, 0, 0, 0, 0] },
+    { n: "Ver registro de auditoría", desc: "historial de acciones del sistema", grants: [2, 0, 1, 0, 0] }
+  ];
+
+  clp(n) { return "$" + Math.round(n).toLocaleString("es-CL"); }
+  num(n) { return Math.round(n).toLocaleString("es-CL"); }
+  go(screen) { return () => this.setState({ screen, productOpen: false, userOpen: false }); }
+  setForm(k) { return e => { const v = e.target.value; this.setState(s => ({ form: Object.assign({}, s.form, { [k]: v }) })); }; }
+  setU(k) { return e => { const v = e.target.value; this.setState(s => ({ uform: Object.assign({}, s.uform, { [k]: v }) })); }; }
+
+  renderVals() {
+    const st = this.state;
+    const catalog = this.baseCatalog.concat(st.extraProducts);
+    const users = this.baseUsers.concat(st.extraUsers);
+
+    const nav = [["panel", "Panel"], ["catalog", "Catálogo maestro"], ["orders", "Órdenes"], ["users", "Usuarios"], ["roles", "Roles y permisos"]].map(([k, label]) => ({
+      label, onClick: this.go(k),
+      fg: st.screen === k ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 72%, transparent)",
+      ul: st.screen === k ? "var(--color-accent)" : "transparent"
+    }));
+
+    const rawOrders = [
+      { folio: "CM-90412", cliente: "Casino Central Ltda.", comuna: "Santiago", fecha: "11 sept", pago: "Línea de crédito", estado: "En preparación",
+        envios: [["Distribuidora Andes", "4 líneas", "24 h", "Por despachar", 1284600], ["Comercial Bío Bío", "2 líneas", "48 h", "En preparación", 412300]] },
+      { folio: "CM-90408", cliente: "Hotel Lastarria", comuna: "Santiago", fecha: "11 sept", pago: "Transferencia", estado: "Despachada",
+        envios: [["Distribuidora Andes", "6 líneas", "24 h", "Despachada", 640900], ["Alimentos Pacífico", "3 líneas", "24 h", "Despachada", 318400]] },
+      { folio: "CM-90401", cliente: "María Paz Contreras", comuna: "Santiago", fecha: "10 sept", pago: "Tarjeta", estado: "En preparación",
+        envios: [["Distribuidora Andes", "2 líneas", "24 h", "Por despachar", 18600], ["Mayorista Aconcagua", "1 línea", "24 h", "Por despachar", 12900]] },
+      { folio: "CM-90396", cliente: "Jardín Los Aromos", comuna: "Ñuñoa", fecha: "9 sept", pago: "Transferencia", estado: "Entregada",
+        envios: [["Distribuidora Andes", "3 líneas", "24 h", "Entregada", 214300]] },
+      { folio: "CM-90390", cliente: "Minimarket El Roble", comuna: "Puente Alto", fecha: "8 sept", pago: "Tarjeta", estado: "Entregada",
+        envios: [["Comercial Bío Bío", "3 líneas", "48 h", "Entregada", 148200], ["Grupo Maule", "2 líneas", "72 h", "Entregada", 96400]] },
+      { folio: "CM-90384", cliente: "Cocinería Paula", comuna: "Recoleta", fecha: "7 sept", pago: "Tarjeta", estado: "Reembolsada",
+        envios: [["Abastos del Sur", "2 líneas", "72 h", "Cancelada", 72500]] }
+    ];
+    const estadoFg = e => e === "Entregada" || e === "Despachada" ? "var(--color-accent-700)" : (e === "Cancelada" ? "var(--color-accent-2-700)" : "color-mix(in srgb, var(--color-text) 70%, transparent)");
+    const orders = rawOrders.map(o => {
+      const total = o.envios.reduce((a, e) => a + e[4], 0);
+      return {
+        folio: o.folio, cliente: o.cliente, comuna: o.comuna, fecha: o.fecha, pago: o.pago, estado: o.estado,
+        tagClass: o.estado === "Entregada" ? "tag-neutral" : (o.estado === "Reembolsada" ? "tag-accent-2" : "tag-accent"),
+        monto: this.clp(total), comision: this.clp(total * 0.065), liquidar: this.clp(total * 0.935),
+        envioCount: o.envios.length + (o.envios.length === 1 ? " proveedor en esta orden" : " proveedores en esta orden"),
+        envios: o.envios.map(e => ({ prov: e[0], lineas: e[1], plazo: "entrega " + e[2], estado: e[3], fg: estadoFg(e[3]), monto: this.clp(e[4]) }))
+      };
+    });
+    const countBy = e => rawOrders.filter(o => o.estado === e).length;
+    const orderChips = [["En preparación", "tag-accent"], ["Despachada", "tag-neutral"], ["Entregada", "tag-neutral"], ["Reembolsada", "tag-accent-2"]]
+      .map(([e, tagClass]) => ({ label: e + " " + countBy(e), tagClass }));
+    const envioTotal = rawOrders.reduce((a, o) => a + o.envios.length, 0);
+    const gmv = rawOrders.reduce((a, o) => a + o.envios.reduce((b, e) => b + e[4], 0), 0);
+
+    const weekVals = [18.2, 20.4, 19.6, 23.1, 21.8, 24.6, 22.8, 25.9, 27.4, 25.1, 31.8, 28.9];
+    const maxW = Math.max.apply(null, weekVals);
+    const weeks = weekVals.map((v, i) => ({ label: "S" + (25 + i), h: Math.round((v / maxW) * 100) + "%", bg: i === weekVals.length - 1 ? "var(--color-accent-2)" : "var(--color-accent)" }));
+
+    const provVals = [["Distribuidora Andes", 5_620_000, 6, 41], ["Comercial Bío Bío", 4_180_000, 5, 36], ["Alimentos Pacífico", 3_240_000, 4, 28], ["Mayorista Aconcagua", 2_110_000, 3, 22], ["Grupo Maule", 1_640_000, 4, 19], ["Central Norte", 980_000, 2, 12]];
+    const maxP = provVals[0][1];
+    const topProv = provVals.map(([n, m, sku, ordenes]) => ({ n, monto: this.clp(m), sku, ordenes, w: Math.round((m / maxP) * 100) + "%" }));
+
+    const sinImagen = catalog.filter(c => c.imgs === 0).length;
+    const borradores = catalog.filter(c => c.estado === "Borrador").length;
+    const sinProv = catalog.filter(c => c.provs === 0).length;
+
+    const kpis = [
+      { label: "Transado en septiembre", v: "$28,4 M", delta: "+12 % vs. agosto", fg: "var(--color-accent-700)" },
+      { label: "Órdenes de cliente", v: this.num(rawOrders.length * 47), delta: this.num(Math.round(rawOrders.length * 47 * (envioTotal / rawOrders.length))) + " envíos a proveedores", fg: "color-mix(in srgb, var(--color-text) 65%, transparent)" },
+      { label: "Productos en catálogo", v: this.num(catalog.length * 26), delta: sinImagen + " fichas sin imagen", fg: sinImagen ? "var(--color-accent-2-700)" : "var(--color-accent-700)" },
+      { label: "Proveedores activos", v: "1.248", delta: "7 esperando aprobación", fg: "var(--color-accent-2-700)" }
+    ];
+
+    const queue = [
+      { tag: "Alta de proveedor", tagClass: "tag-accent-2", when: "hace 2 h", text: "Comercial Bío Bío Ltda. subió carpeta tributaria y resolución sanitaria.", primary: "Aprobar" },
+      { tag: "Ficha duplicada", tagClass: "tag-accent", when: "hace 5 h", text: "«Arroz grano largo 1 kg» fue propuesta dos veces por proveedores distintos.", primary: "Fusionar" },
+      { tag: "Precio fuera de rango", tagClass: "tag-accent-2", when: "ayer", text: "Alimentos Pacífico publica arroz a $1.420, sobre el tope de la ficha.", primary: "Notificar" },
+      { tag: "Reembolso", tagClass: "tag-neutral", when: "ayer", text: "CM-90384 pide devolución total por entrega fuera de plazo.", primary: "Autorizar" }
+    ];
+
+    const health = [
+      { label: "Fichas sin imagen", v: String(sinImagen), fg: sinImagen ? "var(--color-accent-2-700)" : "var(--color-accent-700)" },
+      { label: "Fichas en borrador", v: String(borradores), fg: "color-mix(in srgb, var(--color-text) 70%, transparent)" },
+      { label: "Fichas sin proveedor", v: String(sinProv), fg: "color-mix(in srgb, var(--color-text) 70%, transparent)" },
+      { label: "Categorías activas", v: "9", fg: "color-mix(in srgb, var(--color-text) 70%, transparent)" }
+    ];
+
+    const filterNames = ["Todos", "Alimentos", "Aseo y hogar", "Sin imagen", "Borrador"];
+    const catFilters = filterNames.map(f => ({
+      label: f, onClick: () => this.setState({ catFilter: f }),
+      tagClass: st.catFilter === f ? "tag-accent" : "tag-outline"
+    }));
+    const catShown = catalog.filter(c => {
+      if (st.catFilter === "Todos") return true;
+      if (st.catFilter === "Sin imagen") return c.imgs === 0;
+      if (st.catFilter === "Borrador") return c.estado === "Borrador";
+      return c.grupo === st.catFilter;
+    }).map((c, i) => ({
+      n: c.n, sku: c.sku, sub: c.sub, fmt: c.fmt, provs: c.provs, desde: c.provs ? this.clp(c.desde) : "—",
+      imgs: c.imgs === 0 ? "Ninguna" : c.imgs + (c.imgs === 1 ? " imagen" : " imágenes"),
+      imgClass: c.imgs === 0 ? "tag-accent-2" : "tag-neutral",
+      estado: c.estado,
+      tagClass: c.estado === "Publicado" ? "tag-accent" : (c.estado === "Sin imagen" ? "tag-accent-2" : "tag-neutral"),
+      onEdit: () => this.setState({
+        productOpen: true, editingProduct: c.sku,
+        form: { n: c.n, sku: c.sku, ean: "780" + c.sku.replace(/\D/g, ""), grupo: c.grupo, sub: c.sub, fmt: c.fmt, marca: c.marca, size: c.size, unit: c.unit, desc: c.n + ", " + c.fmt + "." },
+        imgs: [c.imgs > 0, c.imgs > 1, c.imgs > 2, c.imgs > 3]
+      })
+    }));
+
+    const userFilterNames = ["Todos", "CompraMejor", "Proveedor", "Comprador", "Suspendido"];
+    const userFilters = userFilterNames.map(f => ({
+      label: f, onClick: () => this.setState({ userFilter: f }),
+      tagClass: st.userFilter === f ? "tag-accent" : "tag-outline"
+    }));
+    const usersShown = users.filter(u => {
+      if (st.userFilter === "Todos") return true;
+      if (st.userFilter === "CompraMejor") return u.org === "CompraMejor";
+      if (st.userFilter === "Suspendido") return u.estado === "Suspendido";
+      return u.rol === st.userFilter;
+    }).map(u => Object.assign({}, u, {
+      tagClass: u.estado === "Activo" ? "tag-accent" : (u.estado === "Suspendido" ? "tag-accent-2" : "tag-neutral"),
+      onEdit: () => this.setState({ userOpen: true, editingUser: u.mail, uform: { n: u.n, mail: u.mail, rut: "", fono: "", org: u.org, rol: u.rol } })
+    }));
+
+    const roles = this.roleList.map(r => {
+      const c = users.filter(u => u.rol === r.n).length;
+      return { n: r.n, count: c + (c === 1 ? " usuario" : " usuarios") };
+    });
+
+    const marks = ["—", "Parcial", "Sí"];
+    const perms = this.permList.map((p, pi) => ({
+      n: p.n, desc: p.desc,
+      cells: p.grants.map((g0, ri) => {
+        const key = pi + ":" + ri;
+        const g = st.permOverrides[key] === undefined ? g0 : st.permOverrides[key];
+        return {
+          mark: g === 2 ? "✓" : (g === 1 ? "~" : "·"),
+          title: this.roleList[ri].n + " — " + marks[g],
+          bg: g === 2 ? "var(--color-accent-100)" : (g === 1 ? "var(--color-accent-2-100)" : "transparent"),
+          border: g === 2 ? "var(--color-accent-300)" : (g === 1 ? "var(--color-accent-2-300)" : "var(--color-divider)"),
+          fg: g === 2 ? "var(--color-accent-700)" : (g === 1 ? "var(--color-accent-2-700)" : "color-mix(in srgb, var(--color-text) 40%, transparent)"),
+          onToggle: () => this.setState(s => ({ permOverrides: Object.assign({}, s.permOverrides, { [key]: ((s.permOverrides[key] === undefined ? g0 : s.permOverrides[key]) + 1) % 3 }) }))
+        };
+      })
+    }));
+
+    const roleOptions = this.roleList.map(r => ({
+      n: r.n, desc: r.desc, checked: st.uform.rol === r.n,
+      onPick: () => this.setState(s => ({ uform: Object.assign({}, s.uform, { rol: r.n }) }))
+    }));
+    const roleIdx = Math.max(0, this.roleList.findIndex(r => r.n === st.uform.rol));
+    const rolePerms = this.permList.map((p, pi) => {
+      const key = pi + ":" + roleIdx;
+      const g = st.permOverrides[key] === undefined ? p.grants[roleIdx] : st.permOverrides[key];
+      return { n: p.n, g, tagClass: g === 2 ? "tag-accent" : "tag-accent-2" };
+    }).filter(p => p.g > 0);
+
+    const slotLabels = ["Principal", "Ángulo 2", "Etiqueta", "En uso"];
+    const slots = st.imgs.map((on, i) => ({
+      label: on ? slotLabels[i] + " · cargada" : "Arrastra " + slotLabels[i].toLowerCase(),
+      borderStyle: on ? "solid" : "dashed",
+      border: on ? "var(--color-accent)" : "var(--color-neutral-400)",
+      fg: on ? "var(--color-accent-700)" : "color-mix(in srgb, var(--color-text) 50%, transparent)",
+      onToggle: () => this.setState(s => { const a = s.imgs.slice(); a[i] = !a[i]; return { imgs: a }; })
+    }));
+    const imgCount = st.imgs.filter(Boolean).length;
+
+    return {
+      nav,
+      isPanel: st.screen === "panel", isCatalog: st.screen === "catalog", isOrders: st.screen === "orders",
+      isUsers: st.screen === "users", isRoles: st.screen === "roles",
+      kpis, weeks, topProv, queue, health,
+      catalog: catShown, catFilters,
+      catCount: catShown.length + (catShown.length === 1 ? " ficha" : " fichas"),
+      orders, orderChips,
+      ordersSummary: rawOrders.length + " órdenes de cliente · " + envioTotal + " envíos · " + this.clp(gmv) + " en pantalla",
+      users: usersShown, userFilters,
+      usersCount: usersShown.length + (usersShown.length === 1 ? " usuario" : " usuarios"),
+      roles, perms, roleOptions, rolePerms, slots,
+      resetPerms: () => this.setState({ permOverrides: {} }),
+      productOpen: st.productOpen, userOpen: st.userOpen,
+      productTitle: st.editingProduct ? "Editar producto" : "Crear producto",
+      productCta: st.editingProduct ? "Guardar cambios" : "Crear producto",
+      productHint: imgCount === 0 ? "Sin imágenes la ficha se publica marcada como incompleta." : imgCount + (imgCount === 1 ? " imagen cargada." : " imágenes cargadas.") + " Se recortan a cuadrado automáticamente.",
+      userTitle: st.editingUser ? "Editar usuario" : "Crear usuario",
+      userCta: st.editingUser ? "Guardar cambios" : "Crear e invitar",
+      form: st.form, uform: st.uform,
+      onName: this.setForm("n"), onSku: this.setForm("sku"), onEan: this.setForm("ean"),
+      onGrupo: this.setForm("grupo"), onSub: this.setForm("sub"), onFmt: this.setForm("fmt"),
+      onMarca: this.setForm("marca"), onSize: this.setForm("size"), onUnit: this.setForm("unit"), onDesc: this.setForm("desc"),
+      onUName: this.setU("n"), onUMail: this.setU("mail"), onURut: this.setU("rut"), onUFono: this.setU("fono"), onUOrg: this.setU("org"),
+      openProduct: () => this.setState({
+        productOpen: true, editingProduct: null, imgs: [false, false, false, false],
+        form: { n: "", sku: "", ean: "", grupo: "Alimentos", sub: "Secos", fmt: "", marca: "", size: 1, unit: "kg", desc: "" }
+      }),
+      closeProduct: () => this.setState({ productOpen: false }),
+      openUser: () => this.setState({ userOpen: true, editingUser: null, uform: { n: "", mail: "", rut: "", fono: "", org: "", rol: "Comprador" } }),
+      closeUser: () => this.setState({ userOpen: false }),
+      saveProduct: () => this.setState(s => {
+        const f = s.form, n = imgCount;
+        if (s.editingProduct) return { productOpen: false, screen: "catalog" };
+        return {
+          productOpen: false, screen: "catalog",
+          extraProducts: s.extraProducts.concat([{
+            n: f.n || "Producto sin nombre", sku: f.sku || "NUEVO-0001", grupo: f.grupo, sub: f.sub,
+            fmt: f.fmt || "Sin formato", marca: f.marca, size: Number(f.size) || 0, unit: f.unit,
+            provs: 0, desde: 0, imgs: n, estado: n === 0 ? "Sin imagen" : "Publicado"
+          }])
+        };
+      }),
+      saveUser: () => this.setState(s => {
+        if (s.editingUser) return { userOpen: false, screen: "users" };
+        const f = s.uform;
+        return {
+          userOpen: false, screen: "users",
+          extraUsers: s.extraUsers.concat([{
+            n: f.n || "Usuario sin nombre", mail: f.mail || "sin-correo@compramejor.cl", rol: f.rol,
+            org: f.org || "Sin organización", last: "nunca", mfa: "Pendiente", estado: "Invitado"
+          }])
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

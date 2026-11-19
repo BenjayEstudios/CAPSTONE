@@ -1,0 +1,144 @@
+<header class="cabecera">
+  <h2>Auditoría</h2>
+</header>
+
+<div class="filtros">
+  <div class="field">
+    <label for="f-entidad">Entidad</label>
+    <select id="f-entidad" class="input" (change)="onFiltro('entidad', $any($event.target).value)">
+      <option value="" [selected]="entidad() === ''">Todas</option>
+      @for (e of opciones().entidades; track e) {
+        <option [value]="e" [selected]="entidad() === e">{{ e }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-accion">Acción</label>
+    <select id="f-accion" class="input" (change)="onFiltro('accion', $any($event.target).value)">
+      <option value="" [selected]="accion() === ''">Todas</option>
+      @for (a of opciones().acciones; track a) {
+        <option [value]="a" [selected]="accion() === a">{{ etiquetas[a] }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-usuario">Usuario</label>
+    <select id="f-usuario" class="input" (change)="onFiltro('usuarioId', $any($event.target).value)">
+      <option value="" [selected]="usuarioId() === ''">Todos</option>
+      @for (u of opciones().usuarios; track u.id) {
+        <option [value]="u.id" [selected]="usuarioId() === '' + u.id">{{ u.nombre }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-desde">Desde</label>
+    <input id="f-desde" class="input" type="date" [value]="desde()" [max]="hasta() || null" (change)="onFiltro('desde', $any($event.target).value)" />
+  </div>
+  <div class="field">
+    <label for="f-hasta">Hasta</label>
+    <input id="f-hasta" class="input" type="date" [value]="hasta()" [min]="desde() || null" (change)="onFiltro('hasta', $any($event.target).value)" />
+  </div>
+  <button type="button" class="btn btn-secondary limpiar" (click)="limpiar()">Limpiar filtros</button>
+</div>
+
+<div class="layout" [class.con-detalle]="seleccionadoId() !== null">
+  <section class="lista">
+    @if (error()) {
+      <p class="mensaje" role="alert">
+        {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+      </p>
+    } @else if (cargando() && items().length === 0) {
+      <p class="estado" role="status">Cargando registros…</p>
+    } @else if (items().length === 0) {
+      <p class="estado">No hay registros que coincidan con los filtros.</p>
+    } @else {
+      <div class="tabla-wrap" [class.cargando]="cargando()">
+        <table class="tabla">
+          <thead>
+            <tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th class="num">ID</th><th>Operación</th></tr>
+          </thead>
+          <tbody>
+            @for (r of items(); track r.id) {
+              <tr class="fila" [class.activa]="r.id === seleccionadoId()" tabindex="0" role="button"
+                  [attr.aria-pressed]="r.id === seleccionadoId()" (click)="abrir(r)"
+                  (keydown.enter)="abrir(r)" (keydown.space)="$event.preventDefault(); abrir(r)">
+                <td>{{ r.creadoEn | date: "dd-MM-yyyy HH:mm:ss" }}</td>
+                <td>{{ r.usuario?.nombre ?? "Sistema" }}</td>
+                <td><span class="badge" [class]="'badge ' + r.accion">{{ etiquetas[r.accion] }}</span></td>
+                <td>{{ r.entidad }}</td>
+                <td class="num">{{ r.entidadId }}</td>
+                <td>{{ r.operacion ?? "—" }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación">
+        <span>{{ total() }} registros · página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+      </nav>
+    }
+  </section>
+
+  @if (seleccionadoId() !== null) {
+    <aside class="detalle" aria-label="Detalle del registro">
+      <div class="detalle-cab">
+        <h3>Registro #{{ seleccionadoId() }}</h3>
+        <button type="button" class="btn btn-secondary" (click)="cerrar()">Cerrar</button>
+      </div>
+      @if (errorDetalle()) {
+        <p class="mensaje" role="alert">
+          {{ errorDetalle() }} <button type="button" class="btn btn-secondary" (click)="reintentarDetalle()">Reintentar</button>
+        </p>
+      } @else if (cargandoDetalle() || !detalle()) {
+        <p class="estado" role="status">Cargando detalle…</p>
+      } @else {
+        @let d = detalle()!;
+        <dl class="meta">
+          <dt>Fecha</dt><dd>{{ d.creadoEn | date: "dd-MM-yyyy HH:mm:ss" }}</dd>
+          <dt>Usuario</dt><dd>{{ d.usuario?.nombre ?? "Sistema" }}</dd>
+          <dt>Acción</dt><dd>{{ etiquetas[d.accion] }}</dd>
+          <dt>Entidad</dt><dd>{{ d.entidad }} #{{ d.entidadId }}</dd>
+          @if (d.operacion) { <dt>Operación</dt><dd>{{ d.operacion }}</dd> }
+        </dl>
+
+        <h4>Cambios</h4>
+        @if (diff().length === 0) {
+          <p class="estado">Este registro no tiene datos antes/después.</p>
+        } @else {
+          <table class="diff">
+            <thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead>
+            <tbody>
+              @for (c of diff(); track c.ruta) {
+                <tr [class]="'cambio ' + c.tipo">
+                  <td class="ruta">
+                    {{ c.ruta }}
+                    @switch (c.tipo) {
+                      @case ("agregado") { <span class="tag">agregado</span> }
+                      @case ("quitado") { <span class="tag">quitado</span> }
+                      @case ("cambiado") { <span class="tag">cambiado</span> }
+                    }
+                  </td>
+                  <td>{{ formatearValor(c.antes) }}</td>
+                  <td>{{ formatearValor(c.despues) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+
+        <button type="button" class="btn btn-secondary crudo-btn" [attr.aria-expanded]="verCrudo()" (click)="verCrudo.set(!verCrudo())">
+          {{ verCrudo() ? "Ocultar datos crudos" : "Ver datos crudos" }}
+        </button>
+        @if (verCrudo()) {
+          <div class="crudo">
+            <div><h5>Antes</h5><pre>{{ crudoAntes() }}</pre></div>
+            <div><h5>Después</h5><pre>{{ crudoDespues() }}</pre></div>
+          </div>
+        }
+      }
+    </aside>
+  }
+</div>

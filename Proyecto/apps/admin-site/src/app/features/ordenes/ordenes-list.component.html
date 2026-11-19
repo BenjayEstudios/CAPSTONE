@@ -1,0 +1,128 @@
+<header class="cabecera">
+  <h2>Órdenes</h2>
+</header>
+
+<div class="filtros">
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onEstado($any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ etiquetaOrden[e] }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+<div class="layout" [class.con-detalle]="seleccionadoId() !== null">
+  <section class="lista" aria-label="Listado de órdenes">
+    @if (error()) {
+      <p class="mensaje" role="alert">
+        {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+      </p>
+    } @else if (cargando() && items().length === 0) {
+      <p class="estado" role="status">Cargando órdenes…</p>
+    } @else if (items().length === 0) {
+      <p class="estado">No hay órdenes que coincidan con los filtros.</p>
+    } @else {
+      <div class="tabla-wrap" [class.cargando]="cargando()">
+        <table class="tabla">
+          <thead>
+            <tr><th>Folio</th><th>Cliente</th><th>Comuna</th><th>Fecha</th><th>Medio de pago</th><th>Estado</th><th class="num">Monto</th></tr>
+          </thead>
+          <tbody>
+            @for (o of items(); track o.id) {
+              <tr [class.activa]="o.id === seleccionadoId()">
+                <td><button type="button" class="link" (click)="seleccionar(o.id)">{{ o.codigo }}</button></td>
+                <td>{{ o.cliente?.nombre || "—" }}@if (o.cliente?.organizacion) { <br /><small>{{ o.cliente?.organizacion }}</small> }</td>
+                <td>{{ o.comuna || "—" }}</td>
+                <td>{{ o.creadaEn | date: "dd-MM-yyyy HH:mm" }}</td>
+                <td>{{ medio(o.medioPago) }}</td>
+                <td><span class="badge" [class]="'badge ' + o.estado">{{ etiquetaOrden[o.estado] }}</span></td>
+                <td class="num">{{ clp(o.total) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación">
+        <span>{{ total() }} órdenes · página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+      </nav>
+    }
+  </section>
+
+  @if (seleccionadoId() !== null) {
+    <aside class="panel" aria-label="Detalle de la orden">
+      <div class="panel-cab">
+        <h3>{{ detalle()?.codigo || "Orden #" + seleccionadoId() }}</h3>
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+
+      @if (errorDetalle()) {
+        <p class="mensaje" role="alert">
+          {{ errorDetalle() }} <button type="button" class="btn btn-secondary" (click)="reintentarDetalle()">Reintentar</button>
+        </p>
+      } @else if (cargandoDetalle() && !detalle()) {
+        <p class="estado" role="status">Cargando detalle…</p>
+      }
+      @if (!errorDetalle() && detalle(); as d) {
+        <dl class="datos">
+          <dt>Estado</dt><dd><span class="badge" [class]="'badge ' + d.estado">{{ etiquetaOrden[d.estado] }}</span></dd>
+          <dt>Cliente</dt><dd>{{ d.cliente?.nombre || "—" }} @if (d.cliente?.organizacion) { <small>({{ d.cliente?.organizacion }})</small> }</dd>
+          <dt>Fecha</dt><dd>{{ d.creadaEn | date: "dd-MM-yyyy HH:mm" }}</dd>
+          <dt>Medio de pago</dt><dd>{{ medio(d.medioPago) }}</dd>
+          <dt>Entrega</dt>
+          <dd>
+            @if (d.direccionEntrega; as dir) {
+              {{ dir.calle }} {{ dir.numero }}, {{ dir.comunaNombre }}, {{ dir.regionNombre }}
+            } @else {
+              {{ d.comuna || "—" }}
+            }
+          </dd>
+        </dl>
+
+        <dl class="resumen" aria-label="Totales de la orden">
+          <dt>Subtotal</dt><dd>{{ clp(d.subtotal) }}</dd>
+          <dt>Despacho</dt><dd>{{ clp(d.costoDespachoTotal) }}</dd>
+          <dt class="fuerte">Total</dt><dd class="fuerte">{{ clp(d.total) }}</dd>
+          <dt>Comisión de la plataforma</dt><dd>{{ clp(d.comisionTotal) }}</dd>
+          <dt class="fuerte">A liquidar a proveedores</dt><dd class="fuerte">{{ clp(d.montoALiquidarTotal) }}</dd>
+        </dl>
+
+        <h4>Envíos por proveedor ({{ d.envios.length }})</h4>
+        @for (e of d.envios; track e.id) {
+          <section class="envio">
+            <h4>
+              <span>{{ e.proveedorNombre }}</span>
+              <span class="badge" [class]="'badge ' + e.estado">{{ etiquetaEnvio[e.estado] }}</span>
+            </h4>
+            <small>{{ e.modalidad === "retiro" ? "Retiro" : "Despacho" }} · plazo {{ plazo(e.plazoHoras) }}</small>
+            <table class="lineas">
+              <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead>
+              <tbody>
+                @for (l of e.lineas ?? []; track l.id) {
+                  <tr>
+                    <td>{{ l.nombreProducto }}@if (l.formato) { <small> · {{ l.formato }}</small> }</td>
+                    <td class="num">{{ l.cantidad }}</td>
+                    <td class="num">{{ clp(l.precioUnitario) }}</td>
+                    <td class="num">{{ clp(l.totalLinea) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <dl class="resumen">
+              <dt>Subtotal</dt><dd>{{ clp(e.subtotal) }}</dd>
+              <dt>Despacho</dt><dd>{{ clp(e.costoDespacho) }}</dd>
+              <dt>Monto del envío</dt><dd>{{ clp(e.montoEnvio) }}</dd>
+              <dt>Comisión ({{ pct(e.comisionPct) }})</dt><dd>{{ clp(e.comisionMonto) }}</dd>
+              <dt class="fuerte">Neto a liquidar</dt><dd class="fuerte">{{ clp(e.montoALiquidar) }}</dd>
+            </dl>
+          </section>
+        }
+      }
+    </aside>
+  }
+</div>

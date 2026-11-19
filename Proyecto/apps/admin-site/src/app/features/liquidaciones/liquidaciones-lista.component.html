@@ -1,0 +1,203 @@
+<header class="cabecera">
+  <h2>Liquidaciones</h2>
+  @if (puedeEscribir()) {
+    <button type="button" class="btn btn-primary" (click)="abrirGenerar()">Generar liquidaciones</button>
+  }
+</header>
+
+@if (generando()) {
+  <section class="generar" aria-label="Generar liquidaciones">
+    <p>Agrupa los envíos entregados sin liquidar cuyo cierre cae en el rango (hora de Chile) y crea un corte por proveedor. Es seguro repetirlo: no duplica.</p>
+    <div class="fila">
+      <div class="field">
+        <label for="g-desde">Desde</label>
+        <input id="g-desde" type="date" class="input" [value]="genDesde()" (input)="genDesde.set($any($event.target).value)" />
+      </div>
+      <div class="field">
+        <label for="g-hasta">Hasta</label>
+        <input id="g-hasta" type="date" class="input" [value]="genHasta()" (input)="genHasta.set($any($event.target).value)" />
+      </div>
+      <button type="button" class="btn btn-primary" [disabled]="ejecutandoGen()" (click)="ejecutarGenerar()">
+        {{ ejecutandoGen() ? "Generando…" : "Generar" }}
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cerrarGenerar()">Cerrar</button>
+    </div>
+    @if (errorRango()) { <p class="mensaje" role="alert">{{ errorRango() }}</p> }
+    @if (errorGen()) { <p class="mensaje" role="alert">{{ errorGen() }}</p> }
+    @if (resultado(); as r) {
+      <div class="aviso" role="status">
+        @if (r.creadas === 0) {
+          No había envíos por liquidar entre {{ fechaCorta(r.periodoDesde) }} y {{ fechaCorta(r.periodoHasta) }}.
+        } @else {
+          Se crearon {{ r.creadas }} liquidaciones ({{ fechaCorta(r.periodoDesde) }} al {{ fechaCorta(r.periodoHasta) }}):
+          bruto {{ clp(r.montoBruto) }}, comisión {{ clp(r.comision) }}, neto {{ clp(r.montoNeto) }}.
+        }
+      </div>
+      @for (er of r.errores; track er.proveedorId) {
+        <p class="mensaje" role="alert">Proveedor #{{ er.proveedorId }}: {{ er.mensaje }}</p>
+      }
+    }
+  </section>
+}
+
+<div class="filtros">
+  <div class="field">
+    <label for="f-prov">Proveedor</label>
+    <select id="f-prov" class="input" (change)="onProveedor($any($event.target).value)">
+      <option value="" [selected]="proveedor() === ''">Todos</option>
+      @for (p of proveedores(); track p.id) {
+        <option [value]="p.id" [selected]="proveedor() === p.id">{{ p.razonSocial }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onEstado($any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ etiquetaEstado[e] }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-desde">Periodo desde</label>
+    <input id="f-desde" type="date" class="input" [value]="desde()" (change)="onDesde($any($event.target).value)" />
+  </div>
+  <div class="field">
+    <label for="f-hasta">Periodo hasta</label>
+    <input id="f-hasta" type="date" class="input" [value]="hasta()" (change)="onHasta($any($event.target).value)" />
+  </div>
+</div>
+
+<div class="layout" [class.con-detalle]="seleccionadoId() !== null">
+  <section class="lista" aria-label="Liquidaciones">
+    @if (error()) {
+      <p class="mensaje" role="alert">
+        {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+      </p>
+    } @else if (cargando() && items().length === 0) {
+      <p class="estado" role="status">Cargando liquidaciones…</p>
+    } @else if (items().length === 0) {
+      <p class="estado">No hay liquidaciones que coincidan con los filtros.</p>
+    } @else {
+      <div class="tabla-wrap" [class.cargando]="cargando()">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Proveedor</th><th>Periodo</th><th class="num">Bruto</th><th class="num">Comisión</th>
+              <th class="num">Neto</th><th>Estado</th><th>Pagada el</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of items(); track l.id) {
+              <tr [class.activa]="l.id === seleccionadoId()">
+                <td><button type="button" class="link" (click)="seleccionar(l.id)">{{ l.proveedorNombre }}</button></td>
+                <td>{{ fechaCorta(l.periodoDesde) }} al {{ fechaCorta(l.periodoHasta) }}</td>
+                <td class="num">{{ clp(l.montoBruto) }}</td>
+                <td class="num">{{ clp(l.comision) }}</td>
+                <td class="num">{{ clp(l.montoNeto) }}</td>
+                <td><span [class]="'badge ' + l.estado">{{ etiquetaEstado[l.estado] }}</span></td>
+                <td>{{ l.pagadaEn ? (l.pagadaEn | date: "dd-MM-yyyy") : "—" }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="paginacion" aria-label="Paginación">
+        <span>{{ total() }} liquidaciones · página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+        <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+      </nav>
+    }
+  </section>
+
+  @if (seleccionadoId() !== null) {
+    <aside class="panel" aria-label="Detalle de la liquidación">
+      <div class="panel-cab">
+        <h3>Liquidación #{{ seleccionadoId() }}</h3>
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+      </div>
+
+      @if (errorDetalle()) {
+        <p class="mensaje" role="alert">
+          {{ errorDetalle() }} <button type="button" class="btn btn-secondary" (click)="reintentarDetalle()">Reintentar</button>
+        </p>
+      } @else if (cargandoDetalle() && !detalle()) {
+        <p class="estado" role="status">Cargando detalle…</p>
+      }
+      @if (!errorDetalle() && detalle(); as d) {
+        <dl class="datos">
+          <dt>Proveedor</dt><dd>{{ d.proveedorNombre }}</dd>
+          <dt>Periodo</dt><dd>{{ fechaCorta(d.periodoDesde) }} al {{ fechaCorta(d.periodoHasta) }}</dd>
+          <dt>Estado</dt><dd><span [class]="'badge ' + d.estado">{{ etiquetaEstado[d.estado] }}</span></dd>
+          <dt>Pagada el</dt><dd>{{ d.pagadaEn ? (d.pagadaEn | date: "dd-MM-yyyy") : "—" }}</dd>
+          <dt>Bruto</dt><dd>{{ clp(d.montoBruto) }}</dd>
+          <dt>Comisión</dt><dd>{{ clp(d.comision) }}</dd>
+          <dt>Neto</dt><dd><strong>{{ clp(d.montoNeto) }}</strong></dd>
+        </dl>
+
+        @if (aviso()) { <p class="aviso" role="status">{{ aviso() }}</p> }
+        @if (errorAccion()) { <p class="mensaje" role="alert">{{ errorAccion() }}</p> }
+
+        @if (d.estado === 'pendiente' && puedeEscribir()) {
+          @if (!pagando()) {
+            <div class="botones">
+              <button type="button" class="btn btn-primary" (click)="iniciarPago()">Marcar como pagada</button>
+            </div>
+          } @else {
+            <div class="accion">
+              <label for="p-fecha">Fecha de pago</label>
+              <input id="p-fecha" type="date" class="input" [value]="fechaPago()" [disabled]="confirmandoPago()"
+                (input)="fechaPago.set($any($event.target).value)" />
+              @if (errorFecha()) { <p class="mensaje" role="alert">{{ errorFecha() }}</p> }
+              @if (!confirmandoPago()) {
+                <div class="botones">
+                  <button type="button" class="btn btn-primary" (click)="revisarPago()">Continuar</button>
+                  <button type="button" class="btn btn-secondary" (click)="cancelarPago()">Cancelar</button>
+                </div>
+              } @else {
+                <p class="confirma">
+                  ¿Confirmas el pago de {{ clp(d.montoNeto) }} a {{ d.proveedorNombre }} con fecha {{ fechaCorta(fechaPago()) }}?
+                  Esta acción no se puede deshacer.
+                </p>
+                <div class="botones">
+                  <button type="button" class="btn btn-primary" [disabled]="enCurso()" (click)="confirmarPago()">
+                    {{ enCurso() ? "Guardando…" : "Confirmar pago" }}
+                  </button>
+                  <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="volverAEditar()">Volver</button>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        <h4>Envíos incluidos ({{ d.envios.length }})</h4>
+        <div class="tabla-wrap">
+          <table class="tabla">
+            <thead>
+              <tr><th>Orden</th><th>Entregado</th><th class="num">Bruto</th><th class="num">Comisión</th><th class="num">Neto</th></tr>
+            </thead>
+            <tbody>
+              @for (e of d.envios; track e.envioId) {
+                <tr>
+                  <td>{{ e.ordenCodigo }}</td>
+                  <td>{{ e.entregadoEn | date: "dd-MM-yyyy" }}</td>
+                  <td class="num">{{ clp(e.montoBruto) }}</td>
+                  <td class="num">{{ clp(e.comision) }}</td>
+                  <td class="num">{{ clp(e.montoNeto) }}</td>
+                </tr>
+              }
+              <tr class="totales">
+                <td colspan="2">Totales</td>
+                <td class="num">{{ clp(totalesDetalle().bruto) }}</td>
+                <td class="num">{{ clp(totalesDetalle().comision) }}</td>
+                <td class="num">{{ clp(totalesDetalle().neto) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      }
+    </aside>
+  }
+</div>

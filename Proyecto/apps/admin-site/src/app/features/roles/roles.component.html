@@ -1,0 +1,83 @@
+<header class="cabecera">
+  <h2>Roles y permisos</h2>
+  <div class="acciones">
+    <button type="button" class="btn btn-secondary" [disabled]="pendientes() === 0 || guardando()" (click)="restablecer()">Restablecer</button>
+    <button type="button" class="btn btn-primary" [disabled]="pendientes() === 0 || guardando()" (click)="pedirConfirmacion()">Guardar cambios</button>
+  </div>
+</header>
+
+@if (error()) {
+  <p class="mensaje" role="alert">
+    {{ error() }} <button type="button" class="btn btn-secondary" (click)="cargar()">Reintentar</button>
+  </p>
+} @else if (cargando()) {
+  <p class="estado" role="status">Cargando roles…</p>
+} @else if (roles().length === 0) {
+  <p class="estado">No hay roles definidos.</p>
+} @else {
+  @if (ultimaActualizacion(); as u) {
+    <p class="meta">
+      Última actualización de permisos: {{ u.permisosActualizadoEn | date: "dd-MM-yyyy HH:mm" }}
+      @if (u.permisosActualizadoPor) { por {{ u.permisosActualizadoPor.nombre }} }
+      (rol {{ u.nombre }}).
+    </p>
+  } @else {
+    <p class="meta">Los permisos aún no han sido modificados desde este panel.</p>
+  }
+
+  @if (guardadoOk()) { <p class="ok" role="status">Cambios guardados correctamente.</p> }
+  @if (errorGuardado()) { <p class="mensaje" role="alert">{{ errorGuardado() }}</p> }
+
+  @if (confirmando()) {
+    <div class="confirmacion" role="alertdialog" aria-label="Confirmar cambios">
+      <p>
+        Vas a modificar {{ pendientes() }} permiso(s) en {{ rolesAfectados().length }} rol(es). Los usuarios afectados verán el cambio de inmediato.
+      </p>
+      <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardar()">
+        {{ guardando() ? "Guardando…" : "Confirmar y guardar" }}
+      </button>
+      <button type="button" class="btn btn-secondary" [disabled]="guardando()" (click)="cancelarConfirmacion()">Cancelar</button>
+    </div>
+  }
+
+  <div class="tabla-wrap">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Permiso</th>
+          @for (r of roles(); track r.id) {
+            <th class="rol">
+              {{ r.nombre }}
+              <small>{{ r.usuariosAfectados }} {{ r.usuariosAfectados === 1 ? "usuario afectado" : "usuarios afectados" }}</small>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of catalogo(); track p.codigo) {
+          <tr>
+            <th scope="row" class="permiso">
+              {{ p.etiqueta }}
+              @if (p.descripcion) { <small>{{ p.descripcion }}</small> }
+            </th>
+            @for (r of roles(); track r.id) {
+              <td [class.modificada]="modificada(r, p.codigo)">
+                <select
+                  class="input"
+                  [attr.aria-label]="p.etiqueta + ' para ' + r.nombre"
+                  [disabled]="celdaBloqueada(r, p.codigo) || guardando()"
+                  [title]="celdaBloqueada(r, p.codigo) ? 'El administrador debe conservar este permiso en total' : ''"
+                  (change)="onNivel(r, p.codigo, $any($event.target).value)"
+                >
+                  @for (n of niveles; track n) {
+                    <option [value]="n" [selected]="nivel(r, p.codigo) === n">{{ etiquetaNivel[n] }}</option>
+                  }
+                </select>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@cotizapp/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsc -b --watch --preserveWatchOutput",
+    "build": "tsc -b",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "@cotizapp/shared-config": "workspace:*",
+    "typescript": "^5.9.2",
+    "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  }
+}

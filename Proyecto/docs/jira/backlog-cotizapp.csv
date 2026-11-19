@@ -1,0 +1,689 @@
+"Issue ID","Issue Type","Summary","Description","Priority","Assignee","Parent","Epic Name","Labels","Labels","Labels","Labels"
+"E1","Epic","Ecommerce web (cliente y proveedor)","Aplicación web Angular (apps/ecommerce). Incluye el sitio de compra del cliente (catálogo, comparador, carro multiproveedor, checkout único) y el panel web del proveedor (ofertas, órdenes de venta, cobertura, perfil, documentos, liquidaciones).
+
+*Fuente:* Mockups CompraMejor Cliente / Proveedor; Guía Fase 1 obj. 2, 3, 4; Minuta 001","Highest","","","Ecommerce web (cliente y proveedor)","ecommerce","","",""
+"E2","Epic","Página administradora","Panel web de administración de la plataforma: catálogo maestro, aprobación de proveedores, cola de moderación, órdenes de toda la plataforma, usuarios, roles y permisos, liquidaciones y auditoría.
+
+Vive en apps/admin-site (Angular, app propia separada de apps/ecommerce).
+
+*Fuente:* Mockup CompraMejor Administrador; Caso de uso Administrador; Minuta 001","Highest","","","Página administradora","admin-site","admin","",""
+"E3","Epic","App mobile (cliente y distribuidor)","App Flutter (apps/mobile, Riverpod + go_router) con dos perfiles: cliente (catálogo, comparador, carro, checkout, pedidos) y distribuidor (visitas, estadísticas de venta, calificaciones, órdenes).
+
+*Fuente:* Guía Fase 1 obj. 6; Mockup CompraMejor ClienteMovil","Highest","","","App mobile (cliente y distribuidor)","mobile","","",""
+"E4","Epic","Plataforma (API, BD, infraestructura, pagos, QA)","Componentes transversales que usan los tres sistemas: API REST Fastify (apps/backend), modelo de datos MySQL/Drizzle, infraestructura en Digital Ocean, pasarela de pago, DTE simulado, analítica y pruebas.
+
+*Fuente:* Guía Fase 1 obj. 1, 5, 7, 8; dbDiagram.sql; infra/README.md","Highest","","","Plataforma (API, BD, infraestructura, pagos, QA)","plataforma","","",""
+"S001","Story","[Cliente] Home del ecommerce","Portada con buscador, acceso a categorías, contadores (proveedores activos, productos comparados) y bloque 'Mayor diferencia de precio hoy'.
+
+*Criterios de aceptación:*
+* Buscador visible que redirige a resultados de búsqueda
+* Lista de categorías de nivel 1 y 2 con conteo de productos
+* Bloque 'Mayor diferencia de precio hoy' con datos reales del API
+* Botón 'Ver catálogo completo' y 'Ver carro' con cantidad y total
+
+*Fuente:* Mockup Cliente","High","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S002","Story","[Cliente] Catálogo por categoría con filtros","Listado de productos filtrable por categoría (Alimentos: secos, legumbres, refrigerados, congelados, bebidas; Aseo y hogar: aseo, baño, cocina, muebles), plazo de entrega, mínimo de compra y precio por unidad. Ordenado por precio más bajo.
+
+*Criterios de aceptación:*
+* Filtros por categoría, plazo (24 h / hasta 48 h), mínimo de compra
+* Cada producto muestra precio 'desde', precio por kg/L, plazo y n.º de proveedores
+* Vista grilla y vista tabla
+* Ordenado por precio más bajo publicado
+
+*Fuente:* Mockup Cliente; Minuta 001 (filtro por categoría)","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S003","Story","[Cliente] Búsqueda de productos","Página de resultados para un término de búsqueda, con filtros de refinamiento.
+
+*Criterios de aceptación:*
+* Resultados para «término» con conteo
+* Refinar: solo entrega 24 h, sin mínimo de compra, proveedor con retiro, marca propia
+* Muestra proveedor más barato y diferencia con el más caro
+* Búsquedas sin resultados quedan registradas (evento busqueda, resultados = 0)
+
+*Fuente:* Mockup Cliente; dbDiagram (evento_analitico)","High","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S004","Story","[Cliente] Ficha de producto con comparador de proveedores","Ficha única del producto con la tabla de todos los proveedores que lo venden, ordenada por precio unitario.
+
+*Criterios de aceptación:*
+* Muestra imagen, formato, SKU, precio más bajo hoy y diferencia entre el más barato y el más caro
+* Tabla de proveedores: precio unitario, precio por kg/L, plazo de entrega, mínimo, zona; marca 'Más bajo'
+* Botón 'Comprar' por proveedor que agrega esa oferta al carro
+* Registra eventos vista_producto y click_oferta
+
+*Fuente:* Mockup Cliente; Caso de uso 'Comparar precios'","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S005","Story","[Cliente] Comparación lado a lado","Comparación de los tres proveedores más baratos de un producto, con la opción de comprar directo a uno.
+
+*Criterios de aceptación:*
+* Muestra los 3 más baratos en columnas con precio, precio por unidad, plazo y mínimo
+* Botón 'Comprar a <proveedor>' por columna
+* Link 'Ver los N en tabla' vuelve a la tabla completa
+
+*Fuente:* Mockup Cliente","Medium","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S006","Story","[Cliente] Carro multiproveedor","Carro único que mezcla ofertas de distintos proveedores, agrupado por proveedor.
+
+*Criterios de aceptación:*
+* Líneas agrupadas por proveedor con plazo y subtotal por grupo
+* Cambiar cantidad (+/–) respetando el mínimo de compra; eliminar línea
+* Resumen: productos, despachos por proveedor, ahorro vs. comprar al más caro y total
+* Estado vacío con link al catálogo
+* Aviso si un precio cambió desde que se agregó (precio_visto)
+
+*Fuente:* Mockup Cliente; Caso de uso 'Agregar al carro'; Minuta 001","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S007","Story","[Cliente] Checkout único","Flujo de pago en un solo paso para todo el carro.
+
+*Criterios de aceptación:*
+* Paso 1: quién compra (persona o empresa con factura): nombre, RUT, correo, teléfono
+* Paso 2: entrega (despacho a domicilio o retiro en bodega), dirección, comuna e indicaciones
+* Paso 3: medio de pago (tarjeta, transferencia, línea de crédito empresas 30 días)
+* Resumen 'Así llega tu pedido' por proveedor y total a pagar
+* Redirige a la pasarela y vuelve con el resultado
+
+*Fuente:* Mockup Cliente; Caso de uso 'Pagar pedido'; Guía Fase 1 obj. 4","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S008","Story","[Cliente] Confirmación y detalle de compra consolidado","Página de confirmación tras el pago con el detalle consolidado de la orden.
+
+*Criterios de aceptación:*
+* Muestra el folio de la orden (ej. CM-90412), el total pagado y el medio de pago
+* Detalle por envío/proveedor: líneas, plazo y modalidad
+* Enlace a los documentos tributarios (boleta/factura) cuando estén disponibles
+* Maneja pago fallido con opción de reintentar
+
+*Fuente:* Guía Fase 1 obj. 5; Caso de uso 'Emitir DTE'","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S009","Story","[Cliente] Registro e inicio de sesión de comprador","Registro de comprador (persona o empresa) y login.
+
+*Criterios de aceptación:*
+* Registro crea organización tipo cliente + usuario con rol comprador
+* Login con correo y contraseña; la sesión persiste con JWT
+* El catálogo es navegable sin login; el checkout exige sesión
+* Recuperación de contraseña por correo
+
+*Fuente:* dbDiagram (organizacion, usuario, rol)","Highest","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S010","Story","[Cliente] Mis pedidos y seguimiento","Historial de órdenes del cliente con el estado de cada envío por proveedor.
+
+*Criterios de aceptación:*
+* Lista de órdenes con folio, fecha, total y estado
+* Detalle con estado por envío (por despachar, en preparación, listo para retiro, despachado, entregado)
+* Descarga de boleta/factura
+
+*Fuente:* dbDiagram (orden, orden_envio)","High","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S011","Story","[Cliente] Calificar proveedor tras la entrega","El cliente califica al proveedor cuando su envío queda entregado. La calificación se muestra en el comparador.
+
+*Criterios de aceptación:*
+* Solo se puede calificar un envío en estado entregado, una vez
+* Puntaje 1–5 y comentario opcional
+* El promedio del proveedor se ve en la ficha de producto
+
+*Fuente:* Guía Fase 1 (comparar por calificación, clase Calificación). Depende de la historia de BD 'Modelo de calificaciones'","Medium","Benjamín González","E1","","ecommerce","cliente","frontend",""
+"S012","Story","[Proveedor] Registro y alta de proveedor","Formulario 'Vender en CompraMejor' para que una distribuidora solicite su alta.
+
+*Criterios de aceptación:*
+* Captura los datos legales (razón social, RUT, giro, representante) y de contacto
+* La organización queda en estado en_revision y se crea un caso de moderación alta_proveedor
+* El proveedor no puede publicar ofertas hasta estar activo
+
+*Fuente:* Caso de uso 'Aprobar proveedor'; dbDiagram (organizacion, moderacion_caso)","Highest","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S013","Story","[Proveedor] Dashboard de ventas","Inicio del panel del proveedor con sus métricas de venta.
+
+*Criterios de aceptación:*
+* KPIs del mes comparados con el mismo tramo del mes anterior
+* Gráfico de venta semanal de las últimas 12 semanas
+* Productos más vendidos (cajas y monto)
+* Bloque 'Requiere atención' (documentos por vencer, stock bajo, órdenes pendientes)
+
+*Fuente:* Mockup Proveedor","High","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S014","Story","[Proveedor] Asignarme un producto (publicar oferta)","El proveedor elige un producto del catálogo maestro y publica sus condiciones. No crea fichas nuevas.
+
+*Criterios de aceptación:*
+* Buscador sobre el catálogo maestro
+* Campos: precio por unidad, unidades por caja, cajas disponibles, mínimo de compra, plazo, corte, costo de despacho, despacho gratis desde, zonas, notas
+* Calcula el stock total, el valor del stock, el precio por kg/L y la posición frente a otros proveedores
+* Publicar de inmediato o guardar como borrador
+* Rechaza un precio sobre el tope de publicación de la ficha
+
+*Fuente:* Mockup Proveedor; Caso de uso 'Publicar oferta'","Highest","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S015","Story","[Proveedor] Mis productos publicados","Listado y edición de las ofertas del proveedor.
+
+*Criterios de aceptación:*
+* Tabla: producto, formato, precio, unitario, cajas, unidades, despacho, mínimo, estado
+* Editar precio y stock; pausar y reactivar la oferta
+* Cada cambio de precio o stock queda en oferta_precio_historial
+
+*Fuente:* Mockup Proveedor; dbDiagram (oferta, oferta_precio_historial)","Highest","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S016","Story","[Proveedor] Cómo se compara tu precio","Posición de cada oferta del proveedor frente a los demás proveedores del mismo producto.
+
+*Criterios de aceptación:*
+* Por producto: posición (ej. 2.º de 5), diferencia con el más bajo y precio más bajo publicado
+
+*Fuente:* Mockup Proveedor","Medium","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S017","Story","[Proveedor] Órdenes de venta","Gestión de los envíos que le corresponden al proveedor (su tramo de cada orden).
+
+*Criterios de aceptación:*
+* Lista de envíos: folio, cliente, comuna, fecha, líneas, cajas, monto, estado
+* Filtros por estado
+* Acción para avanzar el estado: en preparación → despachado/listo para retiro → entregado
+* El proveedor solo ve su propio tramo, nunca la orden completa
+
+*Fuente:* Mockup Proveedor; dbDiagram (orden_envio)","Highest","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S018","Story","[Proveedor] Tus clientes","Lista de clientes que le compraron al menos una vez.
+
+*Criterios de aceptación:*
+* Columnas: cliente, tipo, comuna, órdenes, monto comprado, última compra, recompra
+* Los datos de contacto se liberan solo después de la primera orden pagada
+
+*Fuente:* Mockup Proveedor","Low","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S019","Story","[Proveedor] Demanda y cobertura (analítica)","Qué miran los clientes, dónde están y cuánto stock queda. Datos de los últimos 30 días.
+
+*Criterios de aceptación:*
+* Más vistos y más clickeados: vistas, clicks, conversión y cajas vendidas
+* Productos restantes: stock actual sobre las cajas iniciales del mes
+* Clientes potenciales por ubicación (vieron y compraron a otro proveedor)
+
+*Fuente:* Mockup Proveedor; dbDiagram (evento_analitico); Minuta 001 (visibilidad/marketing)","Medium","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S020","Story","[Proveedor] Perfil de empresa","Datos que aparecen en la ficha pública y en los documentos tributarios.
+
+*Criterios de aceptación:*
+* Datos legales, contacto comercial y de operaciones
+* Dirección comercial, bodega y horario de retiro
+* Tiempos de despacho: plazo estándar, plazo fuera de región, hora de corte, despacho gratis desde
+* Ofrece retiro / solo despacho; banco y cuenta de liquidación
+* Estado de la cuenta: verificada, comisión vigente, % de entregas a tiempo
+
+*Fuente:* Mockup Proveedor; dbDiagram (organizacion)","High","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S021","Story","[Proveedor] Cobertura de despacho y puntos de retiro","Configurar dónde despacha el proveedor, a qué costo, y sus puntos de retiro.
+
+*Criterios de aceptación:*
+* CRUD de cobertura por región o comuna con costo y plazo
+* CRUD de puntos de retiro (dirección, horario, activo)
+* El checkout solo ofrece despacho si la comuna del cliente está cubierta
+
+*Fuente:* Caso de uso 'Gestionar cobertura'; dbDiagram (proveedor_cobertura, punto_retiro)","Highest","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S022","Story","[Proveedor] Documentos del proveedor","Subida y seguimiento de la documentación exigida.
+
+*Criterios de aceptación:*
+* Subir carpeta tributaria, resolución sanitaria y certificado de vigencia
+* Muestra el estado al día / por vencer / vencido con la fecha de vencimiento
+* Al subir un documento queda pendiente de revisión del administrador
+
+*Fuente:* Mockup Proveedor; dbDiagram (proveedor_documento)","High","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S023","Story","[Proveedor] Liquidaciones","Vista de los cortes semanales y el monto por cobrar.
+
+*Criterios de aceptación:*
+* Monto 'Por cobrar' de lo entregado no liquidado
+* Lista de liquidaciones (período, bruto, comisión, neto, estado, fecha de pago)
+* Detalle de cada liquidación con los envíos incluidos
+
+*Fuente:* Caso de uso 'Ver liquidaciones'; Mockup Proveedor","High","Benjamín González","E1","","ecommerce","proveedor","frontend",""
+"S024","Story","[Admin] Acceso al panel de administración","Login para usuarios internos con control por rol y segundo factor.
+
+*Criterios de aceptación:*
+* Solo entran usuarios de organizaciones tipo interna
+* Exige 2FA cuando el usuario tiene mfa_estado = activo
+* El menú muestra solo las secciones que permite la matriz de permisos del rol
+
+*Fuente:* Mockup Administrador; dbDiagram (usuario.mfa_estado, rol.permisos)","Highest","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S025","Story","[Admin] Dashboard estado de la plataforma","Resumen general de la operación.
+
+*Criterios de aceptación:*
+* KPIs del mes (órdenes del cliente, monto transado, comisión, proveedores activos)
+* Gráfico de monto transado por semana
+* Proveedores por volumen (SKU, órdenes, monto)
+* Salud del catálogo (fichas sin imagen, sin ofertas, duplicadas)
+
+*Fuente:* Mockup Administrador","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S026","Story","[Admin] Cola de moderación","Bandeja de casos pendientes del administrador.
+
+*Criterios de aceptación:*
+* Lista los casos alta_proveedor, ficha_duplicada, precio_fuera_rango y reembolso
+* Asignar caso, revisar, resolver o descartar
+* Cada resolución queda en auditoria_log
+
+*Fuente:* Mockup Administrador; dbDiagram (moderacion_caso)","Highest","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S027","Story","[Admin] Aprobación y suspensión de proveedores","Revisar los documentos y aprobar o suspender proveedores.
+
+*Criterios de aceptación:*
+* Ver los datos legales y documentos del proveedor
+* Marcar cada documento como revisado (revisado_por)
+* Aprobar (activa), rechazar o suspender (suspendida) la organización
+* Asignar el % de comisión al aprobar
+
+*Fuente:* Caso de uso 'Aprobar proveedor'","Highest","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S028","Story","[Admin] Catálogo maestro: listado","Vista de todas las fichas de producto.
+
+*Criterios de aceptación:*
+* Tabla: producto, SKU, categoría, formato, n.º de proveedores, precio desde, imágenes, estado
+* Filtros por estado y categoría; búsqueda por nombre/SKU/EAN
+
+*Fuente:* Mockup Administrador; Caso de uso 'Moderar catálogo'","Highest","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S029","Story","[Admin] Crear y editar ficha de producto","Formulario de la ficha única y compartida. Solo la administración crea productos.
+
+*Criterios de aceptación:*
+* Campos: nombre, SKU, EAN, categoría y subcategoría, marca, formato, contenido, unidad, descripción
+* Galería de imágenes (JPG/PNG, mínimo 1200 px), una marcada como principal
+* Reglas: precio de referencia y tope de publicación sobre la referencia (%)
+* Publicar en el catálogo o guardar como borrador
+
+*Fuente:* Mockup Administrador; dbDiagram (producto)","Highest","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S030","Story","[Admin] Gestión de categorías","Mantener el árbol de categorías de dos niveles.
+
+*Criterios de aceptación:*
+* CRUD de categorías nivel 1 y 2 (padre_id)
+* Ordenar y ocultar categorías
+* El slug es único
+
+*Fuente:* Caso de uso 'Moderar catálogo'; Minuta 001","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S031","Story","[Admin] Órdenes de la plataforma","Vista de cada orden del cliente con los envíos de cada proveedor debajo.
+
+*Criterios de aceptación:*
+* Lista con folio, cliente, comuna, fecha, medio de pago, estado y monto
+* Detalle: envíos por proveedor con líneas, plazo, estado y monto
+* Muestra la comisión de CompraMejor y el monto a liquidar a proveedores
+* Filtros por estado
+
+*Fuente:* Mockup Administrador","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S032","Story","[Admin] Reembolsos","Emitir un reembolso total o parcial de una orden.
+
+*Criterios de aceptación:*
+* Requiere el permiso emitir_reembolso
+* Genera nota de crédito (DTE 61) y marca el pago como reembolsado
+* Queda en auditoria_log con los datos antes y después
+
+*Fuente:* dbDiagram (orden.estado_pago, documento_tributario, auditoria_accion)","Medium","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S033","Story","[Admin] Gestión de usuarios","Alta, edición y suspensión de usuarios.
+
+*Criterios de aceptación:*
+* Tabla: usuario, rol, organización, último acceso, 2FA, estado
+* Crear usuario con invitación por correo o contraseña temporal
+* Asociar a una organización y rol; exigir 2FA o dejarlo opcional
+* Editar y suspender
+
+*Fuente:* Mockup Administrador; Caso de uso 'Gestionar roles'","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S034","Story","[Admin] Roles y permisos (matriz)","Matriz editable rol × permiso.
+
+*Criterios de aceptación:*
+* Filas: permisos del catálogo (crear_producto, aprobar_proveedor, emitir_reembolso, liquidar_proveedor, cambiar_permisos, ver_auditoria, etc.)
+* Columnas: roles, con el n.º de usuarios afectados
+* Nivel por celda: ninguno / parcial / total
+* Guardar o restablecer; el cambio queda en auditoría
+
+*Fuente:* Mockup Administrador; dbDiagram (rol.permisos)","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S035","Story","[Admin] Liquidaciones a proveedores","Gestión de los cortes semanales (actor: Encargado de liquidaciones).
+
+*Criterios de aceptación:*
+* Ver los cortes generados por proveedor y período
+* Detalle con los envíos incluidos, bruto, comisión y neto
+* Marcar como pagada con fecha
+* Requiere el permiso liquidar_proveedor
+
+*Fuente:* Minuta 001 (actor Encargado de liquidaciones); dbDiagram (liquidacion)","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S036","Story","[Admin] Registro de auditoría","Consulta del log de acciones sensibles.
+
+*Criterios de aceptación:*
+* Filtros por entidad, acción, usuario y rango de fechas
+* Ver el diff de datos antes/después
+* Requiere el permiso ver_auditoria
+
+*Fuente:* Mockup Administrador; dbDiagram (auditoria_log)","Medium","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S037","Story","[Mobile] Estructura base de la app","Proyecto Flutter listo para desarrollar.
+
+*Criterios de aceptación:*
+* Rutas con go_router y estado con Riverpod
+* Cliente HTTP con la URL del API por ambiente y manejo de errores
+* Tema visual alineado a los mockups
+* Build de Android funcionando
+
+*Fuente:* apps/mobile/README.md","Highest","Samuel Alarcón","E3","","mobile","frontend","",""
+"S038","Story","[Mobile] Login y navegación según perfil","Login único que lleva a la experiencia de cliente o de distribuidor según el rol.
+
+*Criterios de aceptación:*
+* Login con correo y contraseña contra el API
+* Token guardado en almacenamiento seguro; cierre de sesión
+* Rol comprador → navegación cliente; rol proveedor → navegación distribuidor
+
+*Fuente:* Decisión de alcance: app con perfiles cliente y distribuidor","Highest","Samuel Alarcón","E3","","mobile","frontend","",""
+"S039","Story","[Mobile Cliente] Home, categorías y búsqueda","Pantalla inicial del cliente en móvil.
+
+*Criterios de aceptación:*
+* Buscador, chips de categorías y 'Mayor diferencia de precio hoy'
+* Resultados de búsqueda con precio desde y plazo
+
+*Fuente:* Mockup ClienteMovil","High","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S040","Story","[Mobile Cliente] Listado con filtros","Listado de productos con filtros en un bottom sheet.
+
+*Criterios de aceptación:*
+* Filtros: categoría, plazo de entrega, mínimo de compra
+* Botón 'Ver N resultados'
+
+*Fuente:* Mockup ClienteMovil","High","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S041","Story","[Mobile Cliente] Ficha con comparador de proveedores","Ficha del producto con proveedores ordenados por precio unitario.
+
+*Criterios de aceptación:*
+* Precio más bajo hoy, diferencia y n.º de proveedores
+* Tarjeta por proveedor: precio, precio por kg/L, plazo, mínimo, zona, 'Más bajo'
+* Botón 'Comprar' por proveedor
+
+*Fuente:* Mockup ClienteMovil","Highest","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S042","Story","[Mobile Cliente] Carro multiproveedor","Carro agrupado por proveedor, sincronizado con el carro web del mismo usuario.
+
+*Criterios de aceptación:*
+* Grupos por proveedor con plazo y subtotal; cambiar cantidad respetando el mínimo
+* Resumen: productos, despachos, ahorro y total
+* Barra inferior con total y CTA
+
+*Fuente:* Mockup ClienteMovil","Highest","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S043","Story","[Mobile Cliente] Checkout y pago","Checkout en tres pasos con pago en la pasarela.
+
+*Criterios de aceptación:*
+* Quién compra, entrega y medio de pago (igual que la web)
+* Abre la pasarela (webview o navegador) y vuelve a la app con el resultado
+* Pantalla de confirmación con el folio
+
+*Fuente:* Mockup ClienteMovil","Highest","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S044","Story","[Mobile Cliente] Mis pedidos","Historial y estado de los pedidos.
+
+*Criterios de aceptación:*
+* Lista de órdenes con estado
+* Detalle por envío/proveedor
+* Calificar al proveedor cuando el envío está entregado
+
+*Fuente:* dbDiagram (orden, orden_envio)","Medium","Samuel Alarcón","E3","","mobile","cliente","frontend",""
+"S045","Story","[Mobile Distribuidor] Estadísticas de venta","Resumen de ventas del distribuidor.
+
+*Criterios de aceptación:*
+* KPIs del mes vs. el mes anterior
+* Venta semanal (12 semanas)
+* Productos más vendidos
+
+*Fuente:* Guía Fase 1 obj. 6","Highest","Samuel Alarcón","E3","","mobile","proveedor","frontend",""
+"S046","Story","[Mobile Distribuidor] Visitas y conversión","Cómo se ven y se clickean sus productos.
+
+*Criterios de aceptación:*
+* Vistas, clicks y conversión por producto (últimos 30 días)
+* Clientes potenciales por ubicación
+
+*Fuente:* Guía Fase 1 obj. 6; Mockup Proveedor (Demanda y cobertura)","Highest","Samuel Alarcón","E3","","mobile","proveedor","frontend",""
+"S047","Story","[Mobile Distribuidor] Calificaciones recibidas","Calificaciones que dejaron los clientes.
+
+*Criterios de aceptación:*
+* Promedio y distribución de puntajes
+* Lista de calificaciones con comentario y orden asociada
+* % de entregas a tiempo
+
+*Fuente:* Guía Fase 1 obj. 6. Depende de 'Modelo de calificaciones'","High","Samuel Alarcón","E3","","mobile","proveedor","frontend",""
+"S048","Story","[Mobile Distribuidor] Órdenes vigentes","Envíos pendientes y cambio de estado desde el móvil.
+
+*Criterios de aceptación:*
+* Lista de órdenes vigentes con folio, cliente, estado y monto
+* Avanzar el estado del envío (en preparación, despachado/listo para retiro, entregado)
+
+*Fuente:* Mockup Proveedor (Órdenes vigentes)","High","Samuel Alarcón","E3","","mobile","proveedor","frontend",""
+"S049","Story","[Mobile Distribuidor] Alertas que requieren atención","Avisos operativos del distribuidor.
+
+*Criterios de aceptación:*
+* Documentos por vencer o vencidos
+* Ofertas con stock bajo
+* Monto por cobrar y próxima liquidación
+
+*Fuente:* Mockup Proveedor (Requiere atención, Por cobrar)","Medium","Samuel Alarcón","E3","","mobile","proveedor","frontend",""
+"S050","Story","[Mobile] Build de release para la demo","APK firmado para pruebas con usuarios piloto y la presentación final.
+
+*Criterios de aceptación:*
+* APK de release firmado apuntando al API productivo
+* Instrucciones de instalación en el README de apps/mobile
+
+*Fuente:* Guía Fase 1 (evidencia final: sistema funcional)","Medium","Samuel Alarcón","E3","","mobile","infra","",""
+"S051","Story","[BD] Migraciones Drizzle del modelo completo","Llevar dbDiagram.sql a esquema Drizzle y migraciones para los 9 dominios.
+
+*Criterios de aceptación:*
+* Tablas de identidad, geografía, catálogo, proveedores, ofertas, carro/órdenes, SII/liquidaciones, analítica y auditoría
+* Enums y FKs como en el DBML
+* Las migraciones corren limpio en local y en producción
+
+*Fuente:* dbDiagram.sql; Guía Fase 1 obj. 1","Highest","Samuel Alarcón","E4","","plataforma","bd","",""
+"S052","Story","[BD] Índices y restricciones especiales","Lo que el DBML deja anotado para hacer a mano.
+
+*Criterios de aceptación:*
+* FULLTEXT en producto.nombre
+* CHECK de exclusión entre punto_retiro_id y direccion_entrega_id en orden_envio
+* Particionamiento mensual de evento_analitico por creado_en
+* Índice del comparador (producto_id, precio_unitario)
+
+*Fuente:* dbDiagram.sql (notas)","High","Samuel Alarcón","E4","","plataforma","bd","",""
+"S053","Story","[BD] Datos semilla y de prueba","Seeds para desarrollo y demo.
+
+*Criterios de aceptación:*
+* Comunas y regiones de Chile
+* Árbol de categorías (Alimentos / Aseo y hogar)
+* Roles del sistema con su matriz de permisos
+* Proveedores, productos y ofertas de ejemplo suficientes para la demo
+
+*Fuente:* Guía Fase 1 (cargar datos de prueba)","Highest","Samuel Alarcón","E4","","plataforma","bd","",""
+"S054","Story","[BD] Modelo de calificaciones","Agregar al modelo la calificación de proveedores. Hoy no existe en dbDiagram.sql, pero la Guía Fase 1 la exige (comparar por calificación, app con calificaciones).
+
+*Criterios de aceptación:*
+* Tabla de calificación ligada a orden_envio (una por envío entregado)
+* Puntaje 1–5 y comentario
+* Promedio por proveedor disponible para el comparador
+* dbDiagram.sql y DBdiagram.png actualizados
+
+*Fuente:* Guía Fase 1 obj. 3 y 6 (brecha con dbDiagram.sql)","High","Samuel Alarcón","E4","","plataforma","bd","",""
+"S055","Story","[BD] Consultas de analítica para los paneles","Consultas y agregaciones optimizadas para los dashboards.
+
+*Criterios de aceptación:*
+* Ventas por semana y por producto para un proveedor
+* Vistas/clicks/conversión desde evento_analitico
+* KPIs de la plataforma para el admin
+* Planes de ejecución revisados (EXPLAIN)
+
+*Fuente:* Mockups Proveedor y Administrador","Medium","Samuel Alarcón","E4","","plataforma","bd","",""
+"S056","Story","[API] Autenticación, roles y 2FA","Registro, login, JWT y autorización por permisos.
+
+*Criterios de aceptación:*
+* Registro de comprador y de proveedor; login que devuelve JWT con organizacionId y rol
+* requireRol/permisos leídos desde rol.permisos
+* 2FA TOTP para usuarios internos
+* Recuperación de contraseña por correo; actualiza ultimo_acceso
+
+*Fuente:* apps/backend/src/plugins/auth.ts; dbDiagram (usuario, rol)","Highest","Benjamín González","E4","","plataforma","backend","",""
+"S057","Story","[API] Catálogo, búsqueda y comparador","Endpoints públicos de lectura del catálogo.
+
+*Criterios de aceptación:*
+* Categorías (árbol), productos por categoría con filtros, búsqueda FULLTEXT
+* Ficha de producto con ofertas publicadas ordenadas por precio unitario y precio por kg/L normalizado
+* CRUD de producto y categoría para el admin
+
+*Fuente:* Guía Fase 1 obj. 3","Highest","Benjamín González","E4","","plataforma","backend","",""
+"S058","Story","[API] Ofertas del proveedor","Endpoints para que el proveedor publique y edite ofertas.
+
+*Criterios de aceptación:*
+* CRUD de oferta (una por producto × proveedor)
+* Valida el tope sobre el precio de referencia y abre un caso precio_fuera_rango si se excede
+* Inserta en oferta_precio_historial en cada cambio de precio/stock
+
+*Fuente:* Caso de uso 'Publicar oferta'","Highest","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S059","Story","[API] Carro y creación de orden con split por proveedor","Carro persistente y conversión a orden.
+
+*Criterios de aceptación:*
+* Carro con items JSON y precio_visto
+* Al confirmar: crea la orden y un orden_envio por proveedor con líneas congeladas (nombre, formato, precio)
+* Calcula despacho por cobertura, comisión por proveedor y totales
+* Descuenta el stock en cajas de cada oferta
+
+*Fuente:* Guía Fase 1 obj. 4 y 5 (split simulado)","Highest","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S060","Story","[Pagos] Integración con pasarela (Webpay/MercadoPago sandbox)","Cobro único de la orden en la pasarela.
+
+*Criterios de aceptación:*
+* Inicia la transacción y redirige al cliente
+* Confirma por callback/webhook y actualiza estado_pago, referencia_pasarela y pagado_en
+* Maneja pago fallido y anulado
+* Credenciales sandbox fuera del repo (env)
+
+*Fuente:* Guía Fase 1 obj. 4; Caso de uso 'Procesar pago'","Highest","Sebastián Ramírez","E4","","plataforma","backend","pagos",""
+"S061","Story","[API] Órdenes y estados de envío","Consulta de órdenes por perfil y máquina de estados de los envíos.
+
+*Criterios de aceptación:*
+* Cliente: sus órdenes; proveedor: solo sus orden_envio; admin: todas
+* Transiciones válidas del envío y recálculo del estado de la orden
+* Actualiza entregas_a_tiempo_pct del proveedor al entregar
+
+*Fuente:* dbDiagram (orden, orden_envio)","Highest","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S062","Story","[API] Proveedores: perfil, cobertura, retiro y documentos","Endpoints de gestión del proveedor y de su aprobación.
+
+*Criterios de aceptación:*
+* Perfil (columnas de proveedor en organizacion)
+* CRUD de proveedor_cobertura y punto_retiro
+* Subida de documentos con vencimiento y job que marca por_vencer/vencido
+* Aprobar/suspender proveedor (admin)
+
+*Fuente:* Casos de uso 'Gestionar cobertura' y 'Aprobar proveedor'","Highest","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S063","Story","[API] Usuarios, roles y permisos","Endpoints de administración de usuarios.
+
+*Criterios de aceptación:*
+* CRUD de usuarios con invitación por correo
+* Lectura y escritura de la matriz rol.permisos (permisos_actualizado_por/en)
+
+*Fuente:* Caso de uso 'Gestionar roles'","High","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S064","Story","[API] Liquidaciones semanales","Corte semanal automático por proveedor.
+
+*Criterios de aceptación:*
+* Job que agrupa los envíos entregados de la semana anterior por proveedor y genera la liquidación
+* Llena los montos liquidados en orden_envio
+* Endpoint para marcar como pagada
+
+*Fuente:* Caso de uso 'Ver liquidaciones'; dbDiagram (liquidacion)","High","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S065","Story","[API] Documentos tributarios simulados (SII)","Emisión simulada de DTE. La integración real con el SII queda fuera del MVP.
+
+*Criterios de aceptación:*
+* Boleta (39) o factura (33) por orden; guía de despacho (52) por envío; nota de crédito (61) en reembolsos
+* Folio único por (tipo, folio, emisor) y estado_sii simulado
+* Genera un PDF descargable
+
+*Fuente:* Caso de uso 'Emitir DTE'; Minuta 001 (SII puede quedar simulado)","Medium","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S066","Story","[API] Ingesta de eventos analíticos","Registro de vistas, clicks y búsquedas desde web y mobile.
+
+*Criterios de aceptación:*
+* Endpoint liviano que acepta vista_producto, click_oferta y busqueda con sesion_id
+* Funciona para usuarios anónimos
+* Endpoints de estadísticas para los paneles
+
+*Fuente:* dbDiagram (evento_analitico)","High","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S067","Story","[API] Auditoría y moderación automáticas","Registro transversal de acciones sensibles.
+
+*Criterios de aceptación:*
+* Hook que escribe en auditoria_log en aprobar, suspender, reembolsar, editar ficha y cambiar permisos
+* Creación automática de casos de moderación (alta de proveedor, precio fuera de rango, reembolso)
+* Endpoints de consulta
+
+*Fuente:* dbDiagram (auditoria_log, moderacion_caso)","Medium","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S068","Story","[API] Correos transaccionales","Envío de correos del sistema.
+
+*Criterios de aceptación:*
+* Invitación de usuario y recuperación de contraseña
+* Confirmación de compra con folio
+* Aviso al proveedor de una nueva orden
+
+*Fuente:* Mockup Administrador (Enviar invitación por correo)","Medium","Sebastián Ramírez","E4","","plataforma","backend","",""
+"S069","Story","[Infra] Almacenamiento de imágenes y documentos","Definir e implementar dónde se guardan las imágenes de producto y los documentos de proveedor.
+
+*Criterios de aceptación:*
+* Decisión documentada (volumen en el droplet vs. DO Spaces)
+* Endpoint de subida con validación de tipo y tamaño
+* URLs servidas por Nginx o CDN
+
+*Fuente:* dbDiagram (producto.imagenes, proveedor_documento.url)","High","Samuel Alarcón","E4","","plataforma","infra","",""
+"S070","Story","[Infra] Servir el build de apps/ecommerce en producción","Pendiente de infra/README.md: cómo se sirve el frontend.
+
+*Criterios de aceptación:*
+* Build de Angular servido por Nginx (location propio) o desde bucket/CDN, decisión documentada
+* Ruteo SPA (fallback a index.html)
+* /api proxeado al contenedor rest
+
+*Fuente:* infra/README.md (pendientes)","Highest","Samuel Alarcón","E4","","plataforma","infra","",""
+"S071","Story","[Infra] HTTPS con Let's Encrypt","Certificados TLS para el dominio.
+
+*Criterios de aceptación:*
+* Certbot con renovación automática
+* Redirección de HTTP a HTTPS
+* Requerido por la pasarela de pago para el callback
+
+*Fuente:* infra/README.md; Guía Fase 1 (Seguridad e infraestructura)","Highest","Samuel Alarcón","E4","","plataforma","infra","",""
+"S072","Story","[Infra] Respaldos automáticos de MySQL","Backups del volumen cotizapp-mysql-data.
+
+*Criterios de aceptación:*
+* mysqldump programado (diario) con retención definida
+* Copia fuera del droplet
+* Restauración probada y documentada
+
+*Fuente:* infra/README.md; Guía Fase 1 (backups automáticos)","High","Samuel Alarcón","E4","","plataforma","infra","bd",""
+"S073","Story","[Infra] Pipeline de despliegue (CI/CD)","Despliegue automático al mergear a la rama de producción (dev).
+
+*Criterios de aceptación:*
+* GitHub Actions: lint, build y tests en cada PR
+* Deploy al droplet al mergear main → dev
+* Migraciones de BD en el deploy
+* Secretos en GitHub, no en el repo
+
+*Fuente:* README raíz (flujo de ramas); Guía Fase 1 obj. 7","High","Samuel Alarcón","E4","","plataforma","infra","",""
+"S074","Story","[Infra] Hardening y control de accesos del droplet","Seguridad base del servidor.
+
+*Criterios de aceptación:*
+* Firewall (solo 22/80/443), SSH solo con llave, sin login de root
+* MySQL no expuesto a internet
+* Rate limiting en Nginx para login y API pública
+* Gestión de .env productivos documentada
+
+*Fuente:* Guía Fase 1 (control de accesos, competencia de seguridad)","High","Samuel Alarcón","E4","","plataforma","infra","",""
+"S075","Story","[Infra] Monitoreo y logs","Visibilidad del estado de producción.
+
+*Criterios de aceptación:*
+* Uptime check sobre /health-check con alerta
+* Rotación de logs de los contenedores
+* Métricas básicas del droplet (CPU, RAM, disco)
+
+*Fuente:* Guía Fase 1 (despliegue y monitoreo)","Medium","Samuel Alarcón","E4","","plataforma","infra","",""
+"S076","Story","[QA] Pruebas end-to-end del flujo de compra","Pruebas automatizadas del flujo central.
+
+*Criterios de aceptación:*
+* Colección Postman del flujo: registro → buscar → comparar → carro multiproveedor → checkout → pago sandbox → envíos por proveedor
+* Tests Jest de los casos de uso de application
+* Se corren en el CI
+
+*Fuente:* Guía Fase 1 obj. 8 (Pruebas funcionales e integración)","High","Benjamín González","E4","","plataforma","qa","",""
+"S077","Story","[QA] Pruebas de usabilidad con usuarios piloto","Validación con usuarios que representen pymes y distribuidores.
+
+*Criterios de aceptación:*
+* Guion de pruebas para cliente (web y mobile), proveedor y admin
+* Formulario de retroalimentación
+* Informe de hallazgos con mejoras priorizadas en el backlog
+
+*Fuente:* Guía Fase 1 obj. 8","Medium","Benjamín González","E4","","plataforma","qa","",""
+"S078","Story","[Admin-site] Estructura base de la app","Proyecto Angular de apps/admin-site listo para desarrollar, igual que ya existe para apps/ecommerce.
+
+*Criterios de aceptación:*
+* Rutas standalone con guards de rol administrador
+* Cliente HTTP (ApiClient) apuntando a apps/backend
+* Estado de sesión del administrador
+* Build de producción funcionando (ng build)
+
+*Fuente:* apps/admin-site/README.md","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S079","Story","[Admin-site] Shell y navegación del panel","Layout compartido del panel de administración: barra lateral de navegación entre módulos, header con usuario/rol activo y logout.
+
+*Criterios de aceptación:*
+* Sidebar con los módulos habilitados según el rol
+* Header con nombre del usuario, rol y acción de cerrar sesión
+* Estado 'cargando' y manejo de sesión expirada (redirige a login)
+
+*Fuente:* Mockup Administrador (estructura general); docs/ARCHITECTURE.md (apps/admin-site)","High","Sebastián Ramírez","E2","","admin-site","frontend","",""
+"S080","Story","[Infra] Servir el build de apps/admin-site en producción","Análogo a S070 pero para el panel de administración: cómo se sirve en el droplet.
+
+*Criterios de aceptación:*
+* Build de Angular servido por Nginx en un location propio (ej. /admin/) o subdominio, decisión documentada
+* Ruteo SPA (fallback a index.html)
+* /api proxeado al contenedor backend
+* No queda expuesto sin autenticación (mismo dominio + auth, o acceso restringido)
+
+*Fuente:* infra/README.md; docs/ARCHITECTURE.md (apps/admin-site)","High","Samuel Alarcón","E4","","plataforma","infra","admin-site",""
+"S081","Task","[Backend] Decidir Fastify vs Express","Dos de los tres integrantes del equipo conocen Express y no Fastify. Evaluar si conviene migrar apps/backend de Fastify a Express antes de que haya más rutas implementadas (hoy solo existe el ejemplo end-to-end de 'categoria').
+
+*Criterios de aceptación:*
+* Decisión documentada en docs/ARCHITECTURE.md (quedarse en Fastify o migrar a Express) con la razón
+* Si se migra: plan de migración de apps/backend/src/{server,routes,plugins,types} (domain/application/infrastructure no se tocan, ya están aislados del framework HTTP)
+* Si no se migra: plan de onboarding/documentación para que el resto del equipo pueda trabajar en Fastify
+
+*Fuente:* Conversación de equipo sobre stack conocido (Express) vs Fastify actual","Medium","Sebastián Ramírez","E4","","plataforma","backend","",""

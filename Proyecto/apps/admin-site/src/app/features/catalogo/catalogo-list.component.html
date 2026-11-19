@@ -1,0 +1,70 @@
+<header class="cabecera">
+  <h2>Catálogo maestro</h2>
+  <a class="btn btn-primary" routerLink="nuevo">Nuevo producto</a>
+</header>
+
+<div class="filtros">
+  <div class="field grow">
+    <label for="f-q">Buscar por nombre, SKU o EAN</label>
+    <input id="f-q" class="input" type="search" [value]="q()" (input)="onBusqueda($any($event.target).value)" />
+  </div>
+  <div class="field">
+    <label for="f-estado">Estado</label>
+    <select id="f-estado" class="input" (change)="onEstado($any($event.target).value)">
+      <option value="" [selected]="estado() === ''">Todos</option>
+      @for (e of estados; track e) {
+        <option [value]="e" [selected]="estado() === e">{{ e }}</option>
+      }
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-cat">Categoría</label>
+    <select id="f-cat" class="input" (change)="onCategoria($any($event.target).value)">
+      <option value="" [selected]="categoriaId() === ''">Todas</option>
+      @for (c of categorias(); track c.id) {
+        <option [value]="c.id" [selected]="categoriaId() === c.id">{{ c.etiqueta }}</option>
+      }
+    </select>
+  </div>
+</div>
+
+@if (error()) {
+  <p class="mensaje" role="alert">
+    {{ error() }} <button type="button" class="btn btn-secondary" (click)="reintentar()">Reintentar</button>
+  </p>
+} @else if (cargando() && items().length === 0) {
+  <p class="estado" role="status">Cargando productos…</p>
+} @else if (items().length === 0) {
+  <p class="estado">No hay productos que coincidan con los filtros.</p>
+} @else {
+  <div class="tabla-wrap" [class.cargando]="cargando()">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th><th>SKU</th><th>Categoría</th><th>Formato</th>
+          <th class="num">Proveedores</th><th class="num">Precio desde</th><th class="num">Imágenes</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of items(); track p.id) {
+          <tr>
+            <td><a [routerLink]="[p.id]">{{ p.nombre }}</a></td>
+            <td>{{ p.sku ?? "—" }}</td>
+            <td>{{ p.categoria?.nombre ?? "—" }}</td>
+            <td>{{ p.formato ?? "—" }}</td>
+            <td class="num">{{ p.proveedoresConOfertaActiva }}</td>
+            <td class="num">{{ formatearPrecio(p.precioDesde) }}</td>
+            <td class="num">{{ p.nImagenes }}</td>
+            <td><span class="badge" [class]="'badge ' + p.estado">{{ p.estado }}</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="paginacion" aria-label="Paginación">
+    <span>{{ total() }} productos · página {{ pagina() }} de {{ totalPaginas() }}</span>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+  </nav>
+}

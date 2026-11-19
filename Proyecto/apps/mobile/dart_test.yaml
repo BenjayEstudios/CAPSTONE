@@ -1,0 +1,3 @@
+# Un test colgado (ej. un Future que nunca avanza en el reloj falso de
+# testWidgets) falla en 1 minuto en vez de bloquear el CI 10 minutos.
+timeout: 1m

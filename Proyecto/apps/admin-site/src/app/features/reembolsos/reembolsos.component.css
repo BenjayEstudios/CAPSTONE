@@ -1,0 +1,24 @@
+.cabecera { margin-bottom: 16px; }
+.cabecera h2 { font-size: 34px; margin: 0; }
+.busqueda { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+.busqueda .field { min-width: 240px; }
+.panel { border: 1px solid var(--color-divider); padding: 16px; margin-bottom: 16px; max-width: 760px; }
+.panel h3 { margin: 0 0 10px; font-size: 22px; }
+.datos { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; font-size: 14px; margin: 0 0 14px; }
+.datos dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.datos dd { margin: 0; overflow-wrap: anywhere; }
+.form fieldset { border: 0; padding: 0; margin: 0 0 12px; display: grid; gap: 10px; }
+.form legend { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+.form textarea { width: 100%; resize: vertical; }
+.confirmacion { border: 2px solid var(--color-text); padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.confirmacion p { flex-basis: 100%; margin: 0; font-size: 14px; }
+.err { color: var(--color-accent-2-800); display: block; margin-top: 4px; }
+.tabla-wrap { overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabla th, .tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--color-divider); }
+.tabla th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 2px solid var(--color-text); }
+.tabla .num { text-align: right; white-space: nowrap; }
+.link { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-decoration: underline; cursor: pointer; }
+.estado { padding: 12px 0; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.mensaje { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.exito { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent); background: var(--color-accent-100); color: var(--color-accent-800); max-width: 760px; }

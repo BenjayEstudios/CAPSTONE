@@ -1,0 +1,2178 @@
+{
+  "info": {
+    "name": "Cotizapp API",
+    "description": "Endpoints del backend Fastify (`apps/backend`). Ver `docs/desarrollo/postman/README.md`.\n\n1. Levantar el backend y sembrar la base (`db:seed`).\n2. Correr **0 · Sesión → Login admin**: guarda `{{token}}`.\n3. Para carro y vistas de proveedor, correr los requests **Token dev** de la misma carpeta.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@cotizapp.test"
+    },
+    {
+      "key": "clave",
+      "value": "Cotizapp.2026"
+    },
+    {
+      "key": "jwtSecret",
+      "value": "dev-secret-not-for-prod"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "desafio",
+      "value": ""
+    },
+    {
+      "key": "tokenComprador",
+      "value": ""
+    },
+    {
+      "key": "tokenProveedor",
+      "value": ""
+    },
+    {
+      "key": "categoriaId",
+      "value": "1"
+    },
+    {
+      "key": "productoId",
+      "value": "1"
+    },
+    {
+      "key": "proveedorId",
+      "value": "5"
+    },
+    {
+      "key": "documentoId",
+      "value": "1"
+    },
+    {
+      "key": "rolId",
+      "value": "2"
+    },
+    {
+      "key": "usuarioId",
+      "value": "2"
+    },
+    {
+      "key": "auditoriaId",
+      "value": "1"
+    },
+    {
+      "key": "casoId",
+      "value": "1"
+    },
+    {
+      "key": "ordenId",
+      "value": "1"
+    },
+    {
+      "key": "envioId",
+      "value": "1"
+    },
+    {
+      "key": "documentoTributarioId",
+      "value": "1"
+    },
+    {
+      "key": "liquidacionId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "0 · Sesión",
+      "description": "Login del admin-site y tokens de prueba. Empezar por acá: **Login admin** guarda `{{token}}`, que usa toda la colección.",
+      "item": [
+        {
+          "name": "Login admin",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "Público. Solo usuarios de la organización interna (Cotizapp). Guarda `{{token}}`. Si el usuario tiene `mfa_estado=activo` responde `{ mfaRequerido, desafio }` y guarda `{{desafio}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"clave\": \"{{clave}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.token) {",
+                  "  pm.collectionVariables.set('token', r.token);",
+                  "  console.log('token guardado para', r.usuario && r.usuario.email);",
+                  "} else if (r.mfaRequerido) {",
+                  "  pm.collectionVariables.set('desafio', r.desafio);",
+                  "  console.log('MFA requerido: el codigo sale en la consola del backend (MAIL_DRIVER=consola)');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MFA · verificar código",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/mfa",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "mfa"
+              ]
+            },
+            "description": "Público, con límite de tasa. Segundo paso del 2FA: el código de 6 dígitos sale en la consola del backend con `MAIL_DRIVER=consola`. Guarda `{{token}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafio\": \"{{desafio}}\",\n  \"codigo\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (r.token) {",
+                  "  pm.collectionVariables.set('token', r.token);",
+                  "  console.log('token guardado para', r.usuario && r.usuario.email);",
+                  "} else if (r.mfaRequerido) {",
+                  "  pm.collectionVariables.set('desafio', r.desafio);",
+                  "  console.log('MFA requerido: el codigo sale en la consola del backend (MAIL_DRIVER=consola)');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MFA · reenviar código",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/admin/mfa/reenviar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "mfa",
+                "reenviar"
+              ]
+            },
+            "description": "Público, con límite de tasa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafio\": \"{{desafio}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Yo (sesión actual)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Cualquier token válido. Devuelve usuario, rol y matriz de permisos vigente."
+          }
+        },
+        {
+          "name": "Token dev · comprador El Fogón",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Firma localmente un JWT de **compras@elfogon.test** (usuario 8, organización 6, rol comprador) y lo guarda en `{{tokenComprador}}`. Solo funciona si `{{jwtSecret}}` = `JWT_SECRET` del backend.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenComprador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Solo dev: no hay login para organizaciones externas (POST /auth/admin/login",
+                  "// rechaza todo lo que no sea organizacion 'interna'). Se firma el JWT a mano",
+                  "// con {{jwtSecret}}, que debe ser igual al JWT_SECRET del .env del backend.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const json = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const ahora = Math.floor(Date.now() / 1000);",
+                  "const header = json({ alg: 'HS256', typ: 'JWT' });",
+                  "const payload = json({ sub: '8', organizacionId: 6, rol: 'comprador', iat: ahora, exp: ahora + 8 * 3600 });",
+                  "const firma = b64url(CryptoJS.HmacSHA256(header + '.' + payload, pm.collectionVariables.get('jwtSecret')));",
+                  "pm.collectionVariables.set('tokenComprador', header + '.' + payload + '.' + firma);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token dev · proveedor Los Andes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Firma localmente un JWT de **ventas@losandes.test** (usuario 4, organización 2, rol proveedor) y lo guarda en `{{tokenProveedor}}`.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenProveedor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Solo dev: no hay login para organizaciones externas (POST /auth/admin/login",
+                  "// rechaza todo lo que no sea organizacion 'interna'). Se firma el JWT a mano",
+                  "// con {{jwtSecret}}, que debe ser igual al JWT_SECRET del .env del backend.",
+                  "const b64url = (wa) => CryptoJS.enc.Base64.stringify(wa).replace(/=+$/, '').replace(/\\+/g, '-').replace(/\\//g, '_');",
+                  "const json = (o) => b64url(CryptoJS.enc.Utf8.parse(JSON.stringify(o)));",
+                  "const ahora = Math.floor(Date.now() / 1000);",
+                  "const header = json({ alg: 'HS256', typ: 'JWT' });",
+                  "const payload = json({ sub: '4', organizacionId: 2, rol: 'proveedor', iat: ahora, exp: ahora + 8 * 3600 });",
+                  "const firma = b64url(CryptoJS.HmacSHA256(header + '.' + payload, pm.collectionVariables.get('jwtSecret')));",
+                  "pm.collectionVariables.set('tokenProveedor', header + '.' + payload + '.' + firma);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health check",
+      "description": "",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health-check"
+              ]
+            },
+            "description": "Público.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorías",
+      "description": "Escritura: `crear_producto`. Lectura pública salvo `incluirOcultas=true`, que exige permiso de lectura de catálogo.",
+      "item": [
+        {
+          "name": "Listar categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ],
+              "query": [
+                {
+                  "key": "arbol",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "true|false: devuelve el árbol padre/hijos"
+                },
+                {
+                  "key": "incluirOcultas",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "requiere token con crear_producto o cargar_imagenes total"
+                }
+              ]
+            },
+            "description": "Público si no se piden ocultas."
+          }
+        },
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "description": "Permiso `crear_producto`. 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Congelados\",\n  \"slug\": \"congelados\",\n  \"padreId\": null,\n  \"orden\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/{{categoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoriaId}}"
+              ]
+            },
+            "description": "Permiso `crear_producto`. Al menos un campo. `estado`: activa | oculta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Congelados y helados\",\n  \"estado\": \"activa\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos (catálogo maestro)",
+      "description": "Lectura: `crear_producto` o `cargar_imagenes` total. Escritura: `crear_producto`. Imágenes: `cargar_imagenes` total.",
+      "item": [
+        {
+          "name": "Listar productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "publicado",
+                  "disabled": true,
+                  "description": "borrador | publicado | archivado"
+                },
+                {
+                  "key": "categoriaId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "q",
+                  "value": "aceite",
+                  "disabled": true,
+                  "description": "búsqueda por texto"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Obtener producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{productoId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Crear producto",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "description": "201. `unidad`: kg | L | unidad. `estado` default borrador. SKU se pasa a mayúsculas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Arroz grado 1 grano largo\",\n  \"sku\": \"ARR-G1-5KG\",\n  \"ean\": \"7801234567890\",\n  \"categoriaId\": 1,\n  \"marca\": \"Tucapel\",\n  \"formato\": \"Bolsa 5 kg\",\n  \"contenido\": 5,\n  \"unidad\": \"kg\",\n  \"descripcion\": \"Arroz grado 1 para cocina profesional.\",\n  \"precioReferencia\": 6490,\n  \"topeSobreReferenciaPct\": 30,\n  \"estado\": \"borrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar producto",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{productoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{productoId}}"
+              ]
+            },
+            "description": "Al menos un campo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precioReferencia\": 6990,\n  \"estado\": \"publicado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Subir archivo de imagen",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{productoId}}/imagenes/archivo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{productoId}}",
+                "imagenes",
+                "archivo"
+              ]
+            },
+            "description": "multipart/form-data, un archivo (campo con cualquier nombre), máx. `UPLOADS_MAX_MB` (5 MB). Devuelve `{ url, ancho, alto, clave }`; **no** lo asocia al producto: después va `PUT /productos/:id/imagenes`. Elegir el archivo en Body → form-data.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "archivo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reemplazar imágenes",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{productoId}}/imagenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{productoId}}",
+                "imagenes"
+              ]
+            },
+            "description": "Reemplaza la lista completa (máx. 10). Ancho mínimo 1200 px.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imagenes\": [\n    {\n      \"url\": \"{{baseUrl}}/uploads/ejemplo.jpg\",\n      \"textoAlt\": \"Bolsa de arroz 5 kg\",\n      \"esPrincipal\": true,\n      \"orden\": 0,\n      \"ancho\": 1200,\n      \"alto\": 1200\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proveedores",
+      "description": "Permiso `aprobar_proveedor`. `{{proveedorId}}` = id de la organización (seed: 2 Los Andes, 3 Valle Central, 4 FrigoSur, 5 Las Palmas en revisión).",
+      "item": [
+        {
+          "name": "Listar proveedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "en_revision",
+                  "disabled": true,
+                  "description": "en_revision | activa | suspendida"
+                },
+                {
+                  "key": "q",
+                  "value": "andes",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Obtener proveedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedorId}}"
+              ]
+            },
+            "description": "Incluye documentos: de acá sale `{{documentoId}}`."
+          }
+        },
+        {
+          "name": "Revisar documento",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedorId}}/documentos/{{documentoId}}/revision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedorId}}",
+                "documentos",
+                "{{documentoId}}",
+                "revision"
+              ]
+            },
+            "description": "`decision`: aprobado | rechazado. `motivo` obligatorio al rechazar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"rechazado\",\n  \"motivo\": \"La resolución sanitaria está vencida\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Aprobar proveedor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedorId}}/aprobar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedorId}}",
+                "aprobar"
+              ]
+            },
+            "description": "`comisionPct` opcional (0-100).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comisionPct\": 8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Rechazar proveedor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedorId}}/rechazar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedorId}}",
+                "rechazar"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Documentación incompleta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Suspender proveedor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedorId}}/suspender",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedorId}}",
+                "suspender"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Reclamos reiterados de despacho\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles y permisos",
+      "description": "Permiso `cambiar_permisos` total.",
+      "item": [
+        {
+          "name": "Listar roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "Roles con su matriz y el catálogo de permisos."
+          }
+        },
+        {
+          "name": "Actualizar permisos de un rol",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{rolId}}/permisos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{rolId}}",
+                "permisos"
+              ]
+            },
+            "description": "Niveles: ninguno | parcial | total. Seed: 1 admin_general, 2 editor_catalogo, 3 soporte, 4 proveedor, 5 comprador.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permisos\": {\n    \"crear_producto\": \"total\",\n    \"cargar_imagenes\": \"total\",\n    \"ver_auditoria\": \"parcial\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "description": "Lectura: `crear_usuario`. Escritura: `crear_usuario` total.",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ],
+              "query": [
+                {
+                  "key": "rolId",
+                  "value": "2",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "organizacionId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "estado",
+                  "value": "activo",
+                  "disabled": true,
+                  "description": "invitado | activo | suspendido"
+                },
+                {
+                  "key": "q",
+                  "value": "andes",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Opciones (roles y organizaciones)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/opciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "opciones"
+              ]
+            },
+            "description": "Para poblar los selects del formulario."
+          }
+        },
+        {
+          "name": "Obtener usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "description": "201. `modo`: invitacion | clave_temporal (el correo sale por consola con MAIL_DRIVER=consola). `mfa`: opcional | activo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Paula Rojas\",\n  \"email\": \"paula.rojas@cotizapp.test\",\n  \"rolId\": 3,\n  \"organizacionId\": 1,\n  \"rut\": \"12345678-5\",\n  \"telefono\": \"+56 9 1234 5678\",\n  \"modo\": \"clave_temporal\",\n  \"mfa\": \"opcional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{usuarioId}}"
+              ]
+            },
+            "description": "Al menos un campo. `mfaEstado`: inactivo | opcional | pendiente | activo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Paula Rojas M.\",\n  \"telefono\": \"+56 9 8765 4321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Suspender usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioId}}/suspender",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{usuarioId}}",
+                "suspender"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Reactivar usuario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioId}}/reactivar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "{{usuarioId}}",
+                "reactivar"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditoría",
+      "description": "Permiso `ver_auditoria`. Solo lectura.",
+      "item": [
+        {
+          "name": "Listar registros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auditoria",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auditoria"
+              ],
+              "query": [
+                {
+                  "key": "entidad",
+                  "value": "producto",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "accion",
+                  "value": "aprobar",
+                  "disabled": true,
+                  "description": "crear | editar | eliminar | aprobar | suspender | reembolsar"
+                },
+                {
+                  "key": "usuarioId",
+                  "value": "1",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "desde",
+                  "value": "2026-09-01",
+                  "disabled": true,
+                  "description": "yyyy-mm-dd"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-31",
+                  "disabled": true,
+                  "description": "yyyy-mm-dd"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Valores para filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auditoria/filtros",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auditoria",
+                "filtros"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Obtener registro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auditoria/{{auditoriaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auditoria",
+                "{{auditoriaId}}"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderación",
+      "description": "Permiso `aprobar_proveedor`.",
+      "item": [
+        {
+          "name": "Listar casos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/casos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "casos"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "alta_proveedor",
+                  "disabled": true,
+                  "description": "alta_proveedor | ficha_duplicada | precio_fuera_rango | reembolso"
+                },
+                {
+                  "key": "estado",
+                  "value": "abierto",
+                  "disabled": true,
+                  "description": "abierto | resuelto | descartado"
+                },
+                {
+                  "key": "asignadoA",
+                  "value": "sin_asignar",
+                  "disabled": true,
+                  "description": "sin_asignar o id de usuario"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Usuarios internos asignables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/usuarios-internos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "usuarios-internos"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Obtener caso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/casos/{{casoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "casos",
+                "{{casoId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Asignar caso",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/casos/{{casoId}}/asignar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "casos",
+                "{{casoId}}",
+                "asignar"
+              ]
+            },
+            "description": "`usuarioId: null` desasigna.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuarioId\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Resolver caso",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/casos/{{casoId}}/resolver",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "casos",
+                "{{casoId}}",
+                "resolver"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nota\": \"Documentación revisada y aprobada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Descartar caso",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/moderacion/casos/{{casoId}}/descartar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "moderacion",
+                "casos",
+                "{{casoId}}",
+                "descartar"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Caso duplicado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Eventos analíticos",
+      "description": "Públicos (token opcional: si viene y es válido se asocia el usuario). Límite de tasa por IP (60/min por defecto). Responden 202 sin cuerpo.",
+      "item": [
+        {
+          "name": "Registrar evento · vista de producto",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "Body máx. 2 KB. Validación estricta: campos extra → 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_evento\": \"vista_producto\",\n  \"sesion_id\": \"postman-sesion-0001\",\n  \"producto_id\": 1,\n  \"origen\": \"catalogo\",\n  \"comuna_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Registrar evento · click en oferta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_evento\": \"click_oferta\",\n  \"sesion_id\": \"postman-sesion-0001\",\n  \"producto_id\": 1,\n  \"oferta_id\": 1,\n  \"convirtio\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Registrar evento · búsqueda",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "eventos"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo_evento\": \"busqueda\",\n  \"sesion_id\": \"postman-sesion-0001\",\n  \"termino\": \"Aceite Maravilla\",\n  \"resultados\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Registrar lote de eventos",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/eventos/lote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "eventos",
+                "lote"
+              ]
+            },
+            "description": "1 a 20 eventos, body máx. 16 KB.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventos\": [\n    {\n      \"tipo_evento\": \"busqueda\",\n      \"sesion_id\": \"postman-sesion-0002\",\n      \"termino\": \"harina\",\n      \"resultados\": 2\n    },\n    {\n      \"tipo_evento\": \"vista_producto\",\n      \"sesion_id\": \"postman-sesion-0002\",\n      \"producto_id\": 2,\n      \"origen\": \"busqueda\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Estadísticas",
+      "description": "Rango máx. 366 días; sin fechas, últimos 30.",
+      "item": [
+        {
+          "name": "Estadísticas de plataforma",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/estadisticas/plataforma",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "estadisticas",
+                "plataforma"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-09-01",
+                  "disabled": true,
+                  "description": "yyyy-mm-dd"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-31",
+                  "disabled": true,
+                  "description": "yyyy-mm-dd"
+                }
+              ]
+            },
+            "description": "Permiso `ver_todas_ordenes`."
+          }
+        },
+        {
+          "name": "Estadísticas del proveedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/estadisticas/proveedor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "estadisticas",
+                "proveedor"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-09-01",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-31",
+                  "disabled": true,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Permiso `ver_ordenes_propias`; usa la organización del token.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenProveedor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carro (comprador)",
+      "description": "Permiso `ver_ordenes_propias`. Usa `{{tokenComprador}}`: correr antes **0 · Sesión → Token dev · comprador El Fogón**.",
+      "item": [
+        {
+          "name": "Ver carro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carro"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenComprador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reemplazar carro",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carro"
+              ]
+            },
+            "description": "Reemplaza todos los ítems (máx. 100). `precioVisto` permite detectar cambios de precio al confirmar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"ofertaId\": 1,\n      \"cantidad\": 2,\n      \"precioVisto\": 12490\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenComprador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirmar carro (crear orden)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/carro/confirmar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "carro",
+                "confirmar"
+              ]
+            },
+            "description": "Usa `direccionId` existente **o** `direccion` nueva. `retiros`: proveedores cuyo envío se retira en un punto en vez de despacho (seed: punto 1 Los Andes, 2 FrigoSur).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccionId\": 6,\n  \"retiros\": [],\n  \"requiereFactura\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenComprador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Órdenes",
+      "description": "Permiso `ver_ordenes_propias` (ve las de su organización) o `ver_todas_ordenes`. Con `{{token}}` admin ve todas.",
+      "item": [
+        {
+          "name": "Listar órdenes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "entregada",
+                  "disabled": true,
+                  "description": "pendiente_pago | pagada | en_preparacion | despachada | entregada | reembolsada"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Obtener orden",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes/{{ordenId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes",
+                "{{ordenId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Listar órdenes (comprador)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": "Las del comprador El Fogón.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenComprador}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cambiar estado de envío (proveedor)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes/envios/{{envioId}}/estado",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes",
+                "envios",
+                "{{envioId}}",
+                "estado"
+              ]
+            },
+            "description": "Lo hace el proveedor dueño del envío. `estado`: por_despachar | en_preparacion | listo_retiro | despachado | entregado | cancelado. Transición inválida → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_preparacion\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenProveedor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentos tributarios",
+      "description": "",
+      "item": [
+        {
+          "name": "Listar documentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documentos-tributarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos-tributarios"
+              ],
+              "query": [
+                {
+                  "key": "ordenId",
+                  "value": "{{ordenId}}",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "tipo",
+                  "value": "39",
+                  "disabled": true,
+                  "description": "33 factura | 39 boleta | 52 guía | 61 nota de crédito"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": "Permiso `ver_ordenes_propias` o `ver_todas_ordenes`."
+          }
+        },
+        {
+          "name": "Descargar PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/documentos-tributarios/{{documentoTributarioId}}/pdf",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "documentos-tributarios",
+                "{{documentoTributarioId}}",
+                "pdf"
+              ]
+            },
+            "description": "Devuelve `application/pdf` (en Postman: Save response → Save to a file)."
+          }
+        },
+        {
+          "name": "Emitir documentos de una orden",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes/{{ordenId}}/documentos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes",
+                "{{ordenId}}",
+                "documentos"
+              ]
+            },
+            "description": "Permiso `ver_todas_ordenes` total."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reembolsos",
+      "description": "Lectura: `emitir_reembolso`. Escritura: `emitir_reembolso` total.",
+      "item": [
+        {
+          "name": "Buscar orden por código",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reembolsos/buscar?codigo=CM-10001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reembolsos",
+                "buscar"
+              ],
+              "query": [
+                {
+                  "key": "codigo",
+                  "value": "CM-10001",
+                  "disabled": false,
+                  "description": "código de orden"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Listar reembolsos de una orden",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes/{{ordenId}}/reembolsos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes",
+                "{{ordenId}}",
+                "reembolsos"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Crear reembolso",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ordenes/{{ordenId}}/reembolsos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ordenes",
+                "{{ordenId}}",
+                "reembolsos"
+              ]
+            },
+            "description": "201. Sin `monto` = reembolso total; si supera lo reembolsable → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"monto\": 5000,\n  \"motivo\": \"Producto llegó dañado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Liquidaciones",
+      "description": "Lectura: `liquidar_proveedor`. Generar y pagar: `liquidar_proveedor` total.",
+      "item": [
+        {
+          "name": "Listar liquidaciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/liquidaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "liquidaciones"
+              ],
+              "query": [
+                {
+                  "key": "proveedorId",
+                  "value": "2",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "estado",
+                  "value": "pendiente",
+                  "disabled": true,
+                  "description": "pendiente | pagada"
+                },
+                {
+                  "key": "desde",
+                  "value": "2026-09-01",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-10-31",
+                  "disabled": true,
+                  "description": ""
+                },
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Mis liquidaciones (proveedor)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/liquidaciones/mias",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "liquidaciones",
+                "mias"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1",
+                  "disabled": true,
+                  "description": "default 1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20",
+                  "disabled": true,
+                  "description": "1-100, default 20"
+                }
+              ]
+            },
+            "description": "Permiso `ver_ordenes_propias`; las de la organización del token.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenProveedor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener liquidación",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/liquidaciones/{{liquidacionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "liquidaciones",
+                "{{liquidacionId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Generar liquidaciones",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/liquidaciones/generar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "liquidaciones",
+                "generar"
+              ]
+            },
+            "description": "Fechas opcionales (YYYY-MM-DD). Mismo cálculo que `pnpm --filter @cotizapp/backend job:liquidaciones`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desde\": \"2026-10-12\",\n  \"hasta\": \"2026-10-18\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Pagar liquidación",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/liquidaciones/{{liquidacionId}}/pagar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "liquidaciones",
+                "{{liquidacionId}}",
+                "pagar"
+              ]
+            },
+            "description": "Ya pagada → 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fechaPago\": \"2026-10-24\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Permiso `ver_todas_ordenes`.",
+      "item": [
+        {
+          "name": "Resumen del mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "mes",
+                  "value": "2026-10",
+                  "disabled": true,
+                  "description": "YYYY-MM"
+                }
+              ]
+            },
+            "description": "Sin `mes`, el mes actual."
+          }
+        }
+      ]
+    }
+  ]
+}

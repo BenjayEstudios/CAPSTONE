@@ -1,0 +1,130 @@
+<header class="cabecera">
+  <h2>Ficha de proveedor</h2>
+  <a class="btn btn-secondary" routerLink="/proveedores">Volver al listado</a>
+</header>
+
+@if (error()) { <p class="mensaje" role="alert">{{ error() }}</p> }
+@if (aviso()) { <p class="ok" role="status">{{ aviso() }}</p> }
+
+@if (cargando()) {
+  <p class="estado" role="status">Cargando proveedor…</p>
+} @else {
+@if (ficha(); as f) {
+  <section class="bloque">
+    <h3>
+      {{ f.razonSocial }}
+      <span class="badge" [class]="'badge ' + f.estado">{{ etiquetaEstado[f.estado] }}</span>
+    </h3>
+    <dl class="datos">
+      <div><dt>Nombre de fantasía</dt><dd>{{ f.nombreFantasia ?? "—" }}</dd></div>
+      <div><dt>RUT</dt><dd>{{ f.rut }}</dd></div>
+      <div><dt>Giro</dt><dd>{{ f.giro ?? "—" }}</dd></div>
+      <div><dt>Email de contacto</dt><dd>{{ f.emailContacto ?? "—" }}</dd></div>
+      <div><dt>Teléfono</dt><dd>{{ f.telefono ?? "—" }}</dd></div>
+      <div><dt>Banco</dt><dd>{{ f.banco ?? "—" }}</dd></div>
+      <div><dt>Cuenta bancaria</dt><dd>{{ f.cuentaBancaria ?? "—" }}</dd></div>
+      <div><dt>Comisión</dt><dd>{{ formatearComision(f.comisionPct) }}</dd></div>
+      <div><dt>Fecha de alta</dt><dd>{{ f.creadaEn | date: "dd-MM-yyyy" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="bloque">
+    <h3>Requisitos para aprobar</h3>
+    @if (puedeAprobar()) {
+      <p class="ok">Cumple todos los requisitos documentales.</p>
+    } @else {
+      <p class="mensaje">
+        No se puede aprobar todavía.
+        @if (faltantes().length) { Documentos faltantes: {{ faltantes().join(", ") }}. }
+      </p>
+    }
+  </section>
+
+  <section class="bloque">
+    <h3>Documentos</h3>
+    @if (f.documentos.length === 0) {
+      <p class="estado">El proveedor aún no ha subido documentos.</p>
+    }
+    @for (d of f.documentos; track d.id) {
+      <article class="doc">
+        <div class="doc-cab">
+          <strong>{{ etiquetaDoc(d.tipo) }}</strong>
+          <span class="badge" [class]="'badge rev-' + d.revisionEstado">{{ d.revisionEstado }}</span>
+          <span class="badge" [class]="'badge vig-' + d.vigencia">{{ d.vigencia.replace("_", " ") }}</span>
+          <a [href]="d.url" target="_blank" rel="noopener noreferrer">Ver documento</a>
+        </div>
+        <p class="meta">
+          Vence: {{ d.venceEn ? (d.venceEn | date: "dd-MM-yyyy") : "—" }}
+          @if (d.revisadoPor) { · Revisado por {{ d.revisadoPor.nombre }}@if (d.revisadoEn) { el {{ d.revisadoEn | date: "dd-MM-yyyy" }} } }
+        </p>
+        @if (d.revisionEstado === "rechazado" && d.motivoRechazo) {
+          <p class="meta">Motivo de rechazo: {{ d.motivoRechazo }}</p>
+        }
+        @if (docRechazando() === d.id) {
+          <div class="panel">
+            <label [for]="'dm-' + d.id">Motivo del rechazo (obligatorio, máx. {{ maxMotivo }} caracteres)</label>
+            <textarea [id]="'dm-' + d.id" class="input" rows="3" [attr.maxlength]="maxMotivo" [value]="docMotivo()" (input)="docMotivo.set($any($event.target).value)"></textarea>
+            @if (docError()) { <small class="err">{{ docError() }}</small> }
+            <div class="acciones">
+              <button type="button" class="btn btn-primary" [disabled]="enCurso()" (click)="confirmarRechazoDoc(d)">Confirmar rechazo</button>
+              <button type="button" class="btn btn-secondary" (click)="cancelarRechazoDoc()">Cancelar</button>
+            </div>
+          </div>
+        } @else {
+          <div class="acciones">
+            <button type="button" class="btn btn-secondary" [disabled]="enCurso() || d.revisionEstado === 'aprobado'" (click)="aprobarDocumento(d)">Aprobar</button>
+            <button type="button" class="btn btn-secondary" [disabled]="enCurso() || d.revisionEstado === 'rechazado'" (click)="abrirRechazoDoc(d)">Rechazar</button>
+          </div>
+        }
+      </article>
+    }
+  </section>
+
+  <section class="bloque">
+    <h3>Acciones sobre el proveedor</h3>
+    @if (!accion()) {
+      <div class="acciones">
+        @if (permitidas().aprobar) {
+          <button type="button" class="btn btn-primary" [disabled]="enCurso() || !puedeAprobar()" (click)="abrirAccion('aprobar')">Aprobar proveedor</button>
+        }
+        @if (permitidas().rechazar) {
+          <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="abrirAccion('rechazar')">Rechazar</button>
+        }
+        @if (permitidas().suspender) {
+          <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="abrirAccion('suspender')">Suspender</button>
+        }
+      </div>
+      @if (permitidas().aprobar && !puedeAprobar()) {
+        <p class="meta">"Aprobar proveedor" está deshabilitado hasta cumplir los requisitos.</p>
+      }
+    } @else {
+      <div class="panel">
+        @if (!confirmando()) {
+          @if (accion() === "aprobar") {
+            <label for="a-com">Comisión % (opcional, 0 a 100)</label>
+            <input id="a-com" class="input" inputmode="decimal" [value]="comision()" (input)="comision.set($any($event.target).value)" />
+          } @else {
+            <label for="a-mot">Motivo (obligatorio, máx. {{ maxMotivo }} caracteres)</label>
+            <textarea id="a-mot" class="input" rows="3" [attr.maxlength]="maxMotivo" [value]="motivo()" (input)="motivo.set($any($event.target).value)"></textarea>
+          }
+          @if (errorForm()) { <small class="err">{{ errorForm() }}</small> }
+          <div class="acciones">
+            <button type="button" class="btn btn-primary" (click)="continuar()">Continuar</button>
+            <button type="button" class="btn btn-secondary" (click)="cancelarAccion()">Cancelar</button>
+          </div>
+        } @else {
+          <p>
+            ¿Confirmas que quieres
+            {{ accion() === "aprobar" ? "aprobar" : accion() === "rechazar" ? "rechazar" : "suspender" }}
+            a {{ f.razonSocial }}?
+          </p>
+          <div class="acciones">
+            <button type="button" class="btn btn-primary" [disabled]="enCurso()" (click)="ejecutar()">Sí, confirmar</button>
+            <button type="button" class="btn btn-secondary" [disabled]="enCurso()" (click)="cancelarAccion()">Cancelar</button>
+          </div>
+        }
+      </div>
+    }
+  </section>
+}
+}

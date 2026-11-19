@@ -1,0 +1,14 @@
+{
+  "extends": "@cotizapp/shared-config/typescript/base",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "references": [
+    { "path": "../../packages/domain" },
+    { "path": "../../packages/application" },
+    { "path": "../../packages/infrastructure" }
+  ],
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

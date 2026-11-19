@@ -1,0 +1,20 @@
+.cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.cabecera h2 { font-size: 34px; margin: 0; }
+.bloque { margin-bottom: 28px; }
+.bloque h3 { font-size: 20px; margin: 0 0 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 0; }
+.datos dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.datos dd { margin: 2px 0 0; font-size: 14px; }
+.doc { border-bottom: 1px solid var(--color-divider); padding: 10px 0; }
+.doc-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.meta { font-size: 13px; margin: 6px 0; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.panel { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--color-surface); max-width: 520px; margin-top: 8px; }
+.badge { display: inline-block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; background: var(--color-surface); color: var(--color-text); }
+.badge.en_revision, .badge.rev-pendiente, .badge.vig-por_vencer { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.badge.activa, .badge.rev-aprobado, .badge.vig-al_dia { background: var(--color-accent-100); color: var(--color-accent-800); }
+.badge.rev-rechazado, .badge.vig-vencido { background: var(--color-accent-2-800); color: var(--color-accent-2-100); }
+.estado { padding: 24px 0; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.mensaje { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.ok { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent); background: var(--color-accent-100); color: var(--color-accent-800); }
+.err { color: var(--color-accent-2-800); font-size: 12px; }
