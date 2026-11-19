@@ -10,6 +10,19 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-18 | [Mobile: build de release para la demo](2026-11-18-mobile-build-de-release.md) | KAN-87 | KAN-138 |
+| 2026-11-18 | [Mobile: alertas del distribuidor](2026-11-18-mobile-alertas-del-distribuidor.md) | KAN-87 | KAN-137 |
+| 2026-11-18 | [Mobile: calificaciones recibidas del distribuidor](2026-11-18-mobile-calificaciones-recibidas.md) | KAN-87 | KAN-135 |
+| 2026-11-18 | [Mobile: visitas y conversión del distribuidor](2026-11-18-mobile-visitas-y-conversion.md) | KAN-87 | KAN-134 |
+| 2026-11-18 | [Mobile: estadísticas de venta del distribuidor](2026-11-18-mobile-estadisticas-de-venta.md) | KAN-87 | KAN-133 |
+| 2026-11-18 | [Mobile: órdenes vigentes del distribuidor](2026-11-18-mobile-ordenes-vigentes.md) | KAN-87 | KAN-136 |
+| 2026-11-18 | [Mobile: mis pedidos](2026-11-18-mobile-mis-pedidos.md) | KAN-87 | KAN-132 |
+| 2026-11-18 | [Mobile: checkout y pago](2026-11-18-mobile-checkout-y-pago.md) | KAN-87 | KAN-131 |
+| 2026-11-18 | [Mobile: carro multiproveedor (y FakeBackend)](2026-11-18-mobile-carro-multiproveedor.md) | KAN-87 | KAN-130 |
+| 2026-11-18 | [Archivos subidos en un volumen, servidos por Nginx](2026-11-18-almacenamiento-de-archivos-en-volumen.md) | KAN-88 | KAN-157 |
+| 2026-11-18 | [Recuperar lo de KAN-140 que perdió la consolidación](2026-11-18-recuperar-kan140-tras-consolidacion.md) | KAN-88 | KAN-140 |
+| 2026-11-18 | [Aiven y la base local alineadas con el esquema inicial](2026-11-18-alinear-aiven-con-esquema-inicial.md) | KAN-88 | KAN-139 |
+| 2026-11-18 | [admin-site en producción, en su propio subdominio](2026-11-18-admin-site-en-produccion.md) | KAN-88 | KAN-168 |
 | 2026-10-24 | [Colección de Postman de la API](2026-10-24-coleccion-de-postman.md) | KAN-88 | — |
 | 2026-10-24 | [Guía de CRUD de punta a punta](2026-10-24-guia-de-crud-de-punta-a-punta.md) | KAN-86 | KAN-118 |
 | 2026-10-23 | [Consultas de analítica para los paneles](2026-10-23-consultas-de-analitica.md) | KAN-88 | KAN-143 |

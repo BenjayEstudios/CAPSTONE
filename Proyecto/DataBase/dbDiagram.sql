@@ -318,7 +318,7 @@ Table producto {
   creado_en                 datetime [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
-    nombre [name: 'ix_producto_nombre_fulltext', note: 'FULLTEXT en MySQL (DBML no soporta el tipo): creado a mano en la migración 0003 con ALTER TABLE ... ADD FULLTEXT (KAN-140)']
+    nombre [name: 'ix_producto_nombre_fulltext', note: 'FULLTEXT en MySQL (DBML no soporta el tipo): creado a mano en la migración 0001 con ALTER TABLE ... ADD FULLTEXT (KAN-140)']
     estado
   }
 
@@ -524,7 +524,7 @@ Table orden_envio {
     proveedor ve en su panel. punto_retiro_id se exige si modalidad =
     retiro; direccion_entrega_id si modalidad = despacho; nunca ambos.
     Lo garantiza el CHECK ck_orden_envio_destino (KAN-140, migración
-    0003). FUSIÓN: incluye lo que antes era la tabla
+    0001). FUSIÓN: incluye lo que antes era la tabla
     liquidacion_detalle (liquidacion_id + montos liquidados), ya que un
     envío se liquida una sola vez (relación 1:1 real con liquidacion).
   '''
@@ -679,7 +679,7 @@ Table evento_analitico {
     catálogo. Trade-off: se pierde algo de tipado estricto por columna
     a cambio de una sola tabla con un solo set de índices que mantener.
 
-    PARTICIONADA por mes (KAN-140, migración 0004): PARTITION BY RANGE
+    PARTICIONADA por mes (KAN-140, migración 0001): PARTITION BY RANGE
     COLUMNS(creado_en), una partición pAAAAMM por mes + pmax (MAXVALUE)
     de resguardo para que un insert nunca falle. `pnpm db:particiones`
     crea los meses siguientes (correrlo una vez al mes). DBML no expresa

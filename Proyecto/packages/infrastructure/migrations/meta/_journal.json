@@ -8,6 +8,13 @@
       "when": 1792849833888,
       "tag": "0000_schema_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1795050941215,
+      "tag": "0001_kan140_indices_restricciones_particiones",
+      "breakpoints": true
     }
   ]
 }

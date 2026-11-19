@@ -53,8 +53,9 @@ class ApiClient {
   }
 }
 
-// El backend responde los errores como {"error": {"code", "message"}} (ver
-// setErrorHandler en apps/backend/src/server/app.ts y plugins/auth.ts).
+// El backend responde los errores como {"error": {"code", "message",
+// "detalle"?}} (ver apps/backend/src/lib/error-handler.ts). detalle trae el
+// contexto de los 409 de negocio (ej. las líneas con PRECIO_CAMBIO).
 Failure failureDesdeDio(DioException e) {
   final response = e.response;
   if (response == null) {
@@ -63,18 +64,20 @@ Failure failureDesdeDio(DioException e) {
 
   String? code;
   String? message;
+  Object? detalle;
   final data = response.data;
   if (data is Map && data['error'] is Map) {
     code = data['error']['code'] as String?;
     message = data['error']['message'] as String?;
+    detalle = data['error']['detalle'];
   }
 
   return switch (response.statusCode ?? 0) {
-    401 => UnauthorizedFailure(message ?? 'Tu sesión expiró. Vuelve a ingresar.'),
-    403 => ForbiddenFailure(message ?? 'No tienes permiso para esto.'),
-    404 => NotFoundFailure(message ?? 'No encontramos lo que buscabas.'),
-    400 || 409 || 422 => ValidationFailure(message ?? 'Revisa los datos ingresados.', code: code),
-    _ => ServerFailure(message ?? 'El servidor tuvo un problema. Intenta de nuevo.'),
+    401 => UnauthorizedFailure(message ?? 'Tu sesión expiró. Vuelve a ingresar.', code: code),
+    403 => ForbiddenFailure(message ?? 'No tienes permiso para esto.', code: code),
+    404 => NotFoundFailure(message ?? 'No encontramos lo que buscabas.', code: code, detalle: detalle),
+    400 || 409 || 422 => ValidationFailure(message ?? 'Revisa los datos ingresados.', code: code, detalle: detalle),
+    _ => ServerFailure(message ?? 'El servidor tuvo un problema. Intenta de nuevo.', code: code),
   };
 }
 

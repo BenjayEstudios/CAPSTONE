@@ -1,17 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/alertas/presentation/alertas_page.dart';
 import '../../features/auth/presentation/cuenta_page.dart';
+import '../../features/calificaciones/presentation/calificaciones_page.dart';
 import '../../features/auth/presentation/login_page.dart';
-import '../../features/auth/presentation/saludo.dart';
 import '../../features/auth/presentation/sesion_controller.dart';
 import '../../features/auth/presentation/splash_page.dart';
+import '../../features/carro/presentation/carro_page.dart';
+import '../../features/carro/presentation/widgets/icono_carro.dart';
 import '../../features/catalogo/domain/catalogo_repository.dart';
 import '../../features/catalogo/presentation/inicio_comprador_page.dart';
 import '../../features/catalogo/presentation/listado_page.dart';
 import '../../features/catalogo/presentation/producto_page.dart';
+import '../../features/checkout/presentation/checkout_page.dart';
+import '../../features/checkout/presentation/pasarela_simulada_page.dart';
+import '../../features/checkout/presentation/resultado_pago_page.dart';
 import '../../features/conexion/presentation/conexion_page.dart';
-import '../widgets/pantalla_pendiente.dart';
+import '../../features/estadisticas/presentation/resumen_proveedor_page.dart';
+import '../../features/ordenes/domain/orden.dart';
+import '../../features/ordenes/presentation/cliente/mis_pedidos_page.dart';
+import '../../features/ordenes/presentation/cliente/pedido_page.dart';
+import '../../features/ordenes/presentation/proveedor/orden_proveedor_page.dart';
+import '../../features/ordenes/presentation/proveedor/ordenes_vigentes_page.dart';
 import 'perfil_shell.dart';
 import 'redireccion.dart';
 import 'rutas.dart';
@@ -30,6 +41,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Rutas.splash, builder: (context, state) => const SplashPage()),
       GoRoute(path: Rutas.login, builder: (context, state) => const LoginPage()),
       GoRoute(path: Rutas.conexion, builder: (context, state) => const ConexionPage()),
+      // Fuera del shell: la pasarela ocupa toda la pantalla, como una externa.
+      GoRoute(
+        path: '/comprador/pasarela/:id',
+        builder: (context, state) => PasarelaSimuladaPage(
+          ordenId: int.parse(state.pathParameters['id']!),
+          medio: MedioPago.desdeCodigo(state.uri.queryParameters['medio']) ?? MedioPago.tarjeta,
+        ),
+      ),
       _shellComprador,
       _shellProveedor,
     ],
@@ -42,26 +61,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
-GoRoute _pendiente(String path, String titulo, String ticket, String descripcion, IconData icono,
-        {bool saludo = false}) =>
-    GoRoute(
-      path: path,
-      builder: (context, state) => PantallaPendiente(
-        titulo: titulo,
-        ticket: ticket,
-        descripcion: descripcion,
-        icono: icono,
-        encabezado: saludo ? const Saludo() : null,
-      ),
-    );
-
 final _shellComprador = StatefulShellRoute.indexedStack(
   builder: (context, state, shell) => PerfilShell(
     shell: shell,
     destinos: const [
       NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Inicio'),
-      NavigationDestination(
-          icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Carro'),
+      NavigationDestination(icon: IconoCarro(), selectedIcon: IconoCarro(seleccionado: true), label: 'Carro'),
       NavigationDestination(
           icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Pedidos'),
       NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Cuenta'),
@@ -97,11 +102,35 @@ final _shellComprador = StatefulShellRoute.indexedStack(
       ),
     ]),
     StatefulShellBranch(routes: [
-      _pendiente(Rutas.compradorCarro, 'Tu carro', 'KAN-130', 'Carro multiproveedor', Icons.shopping_cart_rounded),
+      GoRoute(
+        path: Rutas.compradorCarro,
+        builder: (context, state) => const CarroPage(),
+        routes: [
+          GoRoute(
+            path: 'checkout',
+            builder: (context, state) => const CheckoutPage(),
+          ),
+        ],
+      ),
     ]),
     StatefulShellBranch(routes: [
-      _pendiente(Rutas.compradorPedidos, 'Mis pedidos', 'KAN-132', 'Historial y estado de tus pedidos',
-          Icons.receipt_long_rounded),
+      GoRoute(
+        path: Rutas.compradorPedidos,
+        builder: (context, state) => const MisPedidosPage(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => PedidoPage(ordenId: int.parse(state.pathParameters['id']!)),
+          ),
+          GoRoute(
+            path: ':id/pago',
+            builder: (context, state) => ResultadoPagoPage(
+              ordenId: int.parse(state.pathParameters['id']!),
+              error: state.uri.queryParameters['error'],
+            ),
+          ),
+        ],
+      ),
     ]),
     StatefulShellBranch(routes: [
       GoRoute(path: Rutas.compradorCuenta, builder: (context, state) => const CuentaPage()),
@@ -118,28 +147,31 @@ final _shellProveedor = StatefulShellRoute.indexedStack(
           icon: Icon(Icons.local_shipping_outlined), selectedIcon: Icon(Icons.local_shipping), label: 'Órdenes'),
       // "Calificaciones" no cabe en una barra de 5 pestañas (se partía en dos líneas).
       NavigationDestination(icon: Icon(Icons.star_outline), selectedIcon: Icon(Icons.star), label: 'Reseñas'),
-      NavigationDestination(
-          icon: Icon(Icons.notifications_outlined), selectedIcon: Icon(Icons.notifications), label: 'Alertas'),
+      NavigationDestination(icon: IconoAlertas(), selectedIcon: IconoAlertas(seleccionado: true), label: 'Alertas'),
       NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Cuenta'),
     ],
   ),
   branches: [
     StatefulShellBranch(routes: [
-      _pendiente(
-          Rutas.proveedor, 'Resumen', 'KAN-133 / KAN-134', 'Ventas, visitas y conversión', Icons.insights_rounded,
-          saludo: true),
+      GoRoute(path: Rutas.proveedor, builder: (context, state) => const ResumenProveedorPage()),
     ]),
     StatefulShellBranch(routes: [
-      _pendiente(Rutas.proveedorOrdenes, 'Órdenes vigentes', 'KAN-136', 'Órdenes por preparar y despachar',
-          Icons.local_shipping_rounded),
+      GoRoute(
+        path: Rutas.proveedorOrdenes,
+        builder: (context, state) => const OrdenesVigentesPage(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) => OrdenProveedorPage(ordenId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      ),
     ]),
     StatefulShellBranch(routes: [
-      _pendiente(
-          Rutas.proveedorCalificaciones, 'Calificaciones', 'KAN-135', 'Reseñas de tus clientes', Icons.star_rounded),
+      GoRoute(path: Rutas.proveedorCalificaciones, builder: (context, state) => const CalificacionesPage()),
     ]),
     StatefulShellBranch(routes: [
-      _pendiente(Rutas.proveedorAlertas, 'Alertas', 'KAN-137', 'Lo que requiere tu atención',
-          Icons.notifications_active_rounded),
+      GoRoute(path: Rutas.proveedorAlertas, builder: (context, state) => const AlertasPage()),
     ]),
     StatefulShellBranch(routes: [
       GoRoute(path: Rutas.proveedorCuenta, builder: (context, state) => const CuentaPage()),

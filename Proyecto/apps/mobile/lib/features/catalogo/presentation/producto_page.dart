@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/analitica/analitica.dart';
+import '../../../core/error/failure.dart';
 import '../../../core/format/formatos.dart';
+import '../../../core/router/rutas.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/estado_views.dart';
 import '../domain/catalogo_repository.dart';
 import '../domain/categoria.dart';
 import '../domain/producto.dart';
+import '../../carro/presentation/carro_providers.dart';
 import 'catalogo_providers.dart';
 import 'widgets/calificacion_view.dart';
 import 'widgets/visual_categoria.dart';
@@ -34,6 +39,12 @@ class ProductoPage extends ConsumerStatefulWidget {
 
 class _ProductoPageState extends ConsumerState<ProductoPage> {
   OrdenComparador _orden = OrdenComparador.precio;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(analiticaProvider).vistaProducto(widget.productoId, origen: widget.origen.name);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -325,19 +336,8 @@ class _TarjetaOferta extends ConsumerWidget {
             ],
             const SizedBox(height: 12),
             SizedBox(
-              width: double.infinity,
-              child: masBajo
-                  ? FilledButton.icon(
-                      onPressed: () => _agregar(context),
-                      icon: const Icon(Icons.add_shopping_cart_rounded),
-                      label: const Text('Agregar al carro'),
-                    )
-                  : OutlinedButton.icon(
-                      onPressed: () => _agregar(context),
-                      icon: const Icon(Icons.add_shopping_cart_rounded),
-                      label: const Text('Agregar al carro'),
-                    ),
-            ),
+                width: double.infinity,
+                child: _BotonAgregar(oferta: oferta, productoId: producto.id, destacado: masBajo)),
           ],
         ),
       ),
@@ -353,12 +353,58 @@ class _TarjetaOferta extends ConsumerWidget {
     ];
     return partes.isEmpty ? null : partes.join(' · ');
   }
+}
 
-  // El carro multiproveedor llega con KAN-130.
-  void _agregar(BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('El carro multiproveedor llega con KAN-130.')));
+// Agrega la oferta al carro (KAN-130) con la cantidad mínima; si ya está,
+// suma. Muestra cuántas hay y un atajo al carro.
+class _BotonAgregar extends ConsumerStatefulWidget {
+  const _BotonAgregar({required this.oferta, required this.productoId, required this.destacado});
+
+  final OfertaProducto oferta;
+  final int productoId;
+  final bool destacado;
+
+  @override
+  ConsumerState<_BotonAgregar> createState() => _BotonAgregarState();
+}
+
+class _BotonAgregarState extends ConsumerState<_BotonAgregar> {
+  bool _agregando = false;
+
+  Future<void> _agregar() async {
+    setState(() => _agregando = true);
+    final mensajero = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    try {
+      ref.read(analiticaProvider).clickOferta(widget.productoId, widget.oferta.id);
+      await ref.read(carroProvider.notifier).agregar(widget.oferta);
+      mensajero
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text('Agregado al carro: ${widget.oferta.proveedor.nombre}'),
+          action: SnackBarAction(label: 'Ver carro', onPressed: () => router.go(Rutas.compradorCarro)),
+        ));
+    } on Failure catch (f) {
+      mensajero
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(f.message)));
+    } finally {
+      if (mounted) setState(() => _agregando = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enCarro =
+        ref.watch(carroProvider).valueOrNull?.items.where((i) => i.ofertaId == widget.oferta.id).firstOrNull;
+    final icono = _agregando
+        ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+        : Icon(enCarro == null ? Icons.add_shopping_cart_rounded : Icons.shopping_cart_checkout_rounded);
+    final texto = Text(enCarro == null ? 'Agregar al carro' : 'Agregar otra (${enCarro.cantidad} en el carro)');
+    final onPressed = _agregando ? null : _agregar;
+    return widget.destacado
+        ? FilledButton.icon(onPressed: onPressed, icon: icono, label: texto)
+        : OutlinedButton.icon(onPressed: onPressed, icon: icono, label: texto);
   }
 }
 
