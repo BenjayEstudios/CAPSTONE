@@ -1,4 +1,4 @@
-import { mysqlTable, bigint, int, smallint, decimal, mysqlEnum, datetime, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, bigint, int, smallint, decimal, mysqlEnum, datetime, index, check } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { orden } from "./orden.schema.js";
 import { organizacion } from "./organizacion.schema.js";
@@ -9,7 +9,8 @@ import { liquidacion } from "./liquidacion.schema.js";
 // Traduccion 1:1 de DataBase/dbDiagram.sql -> Table orden_envio. Incluye
 // liquidacion_detalle fusionado (liquidacion_id + montos liquidados).
 // punto_retiro_id si modalidad = retiro; direccion_entrega_id si despacho;
-// nunca ambos (validado en aplicacion). proveedor_id debe ser tipo proveedor.
+// nunca ambos (CHECK ck_orden_envio_destino, KAN-140). proveedor_id debe ser
+// tipo proveedor.
 export const ordenEnvio = mysqlTable(
   "orden_envio",
   {
@@ -44,5 +45,12 @@ export const ordenEnvio = mysqlTable(
     montoNetoLiquidado: int("monto_neto_liquidado", { unsigned: true }),
     actualizadoEn: datetime("actualizado_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
-  (t) => [index("orden_envio_proveedor_estado_idx").on(t.proveedorId, t.estado)]
+  (t) => [
+    index("orden_envio_proveedor_estado_idx").on(t.proveedorId, t.estado),
+    check(
+      "ck_orden_envio_destino",
+      sql`(${t.modalidad} = 'retiro' AND ${t.puntoRetiroId} IS NOT NULL AND ${t.direccionEntregaId} IS NULL)
+        OR (${t.modalidad} = 'despacho' AND ${t.direccionEntregaId} IS NOT NULL AND ${t.puntoRetiroId} IS NULL)`
+    )
+  ]
 );

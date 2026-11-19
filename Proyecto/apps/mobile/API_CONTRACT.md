@@ -1,72 +1,93 @@
 # Contrato de API — app mobile
 
-Endpoints de `apps/backend` que necesita `apps/mobile`. Mientras un endpoint
-no exista, la app usa un datasource fake que devuelve **exactamente** el
-JSON descrito acá (armado con los datos del seed), así que al implementarlo
-basta con respetar esta forma y correr la app con `--dart-define=USE_FAKES=false`.
+Endpoints de `apps/backend` que usa `apps/mobile`. Cada feature tiene dos
+datasources detrás de la misma interfaz: el **fake** (default,
+`USE_FAKES=true`, datos del seed en `lib/core/fake/`) y el **remoto**, que
+llama exactamente lo que dice este archivo. Para pasar a la API real basta
+`--dart-define=USE_FAKES=false`; no se tocan pantallas.
 
-Estado: ✅ existe en el backend · ⏳ pendiente (la app usa fake).
+Estado: ✅ existe en el backend (forma real, sacada de `apps/backend/src/routes/**`
+y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
+
+> **Bloqueo principal**: el único login es `POST /auth/admin/login`, que
+> rechaza a quien no sea de la organización interna. Sin
+> [`POST /auth/login`](#-post-authlogin--kan-126) los compradores y
+> distribuidores no obtienen token, así que ni los endpoints ✅ se pueden usar
+> desde la app todavía.
+
+## Índice
+
+| Endpoint | Estado | Lo usa |
+|---|---|---|
+| `GET /health-check` | ✅ | Conexión |
+| `GET /categorias` | ✅ | Catálogo (KAN-127) |
+| `POST /auth/login` | ⏳ | Login (KAN-126) |
+| `GET /catalogo/productos` | ⏳ | Inicio, listado y búsqueda (KAN-127, 128) |
+| `GET /catalogo/productos/:id` | ⏳ | Ficha con comparador (KAN-129) |
+| `GET /carro` · `PUT /carro` | ✅ | Carro (KAN-130) |
+| `GET /carro/opciones-entrega` | ⏳ | Checkout (KAN-131) |
+| `GET /comunas` | ⏳ | Checkout (KAN-131) |
+| `POST /carro/confirmar` | ✅ | Checkout (KAN-131) |
+| `POST /ordenes/:id/pago` | ⏳ | Checkout y pago (KAN-131, KAN-148) |
+| `GET /ordenes` · `GET /ordenes/:id` | ✅ + campos ⏳ | Mis pedidos (KAN-132), órdenes vigentes (KAN-136) |
+| `PATCH /ordenes/envios/:id/estado` | ✅ | Órdenes vigentes (KAN-136) |
+| `POST /ordenes/envios/:id/calificacion` | ⏳ | Mis pedidos (KAN-132) |
+| `GET /estadisticas/proveedor/ventas` | ⏳ | Estadísticas de venta (KAN-133) |
+| `GET /estadisticas/proveedor` | ✅ + campo ⏳ | Visitas y conversión (KAN-134) |
+| `POST /eventos/lote` | ✅ | Vistas, búsquedas y clicks del comprador (KAN-134) |
+| `GET /calificaciones/recibidas` | ⏳ | Calificaciones recibidas (KAN-135) |
+| `GET /alertas/proveedor` | ⏳ | Alertas (KAN-137) |
 
 ## Convenciones
 
-- **Base URL**: `http://localhost:8000` (emulador Android: `http://10.0.2.2:8000`).
-- **JSON en camelCase**, igual que las entidades de `@cotizapp/domain`
-  (ej. `padreId`, `precioUnitario`).
-- **Montos**: enteros en CLP, sin decimales (como `int unsigned` en el schema).
-- **Fechas**: string ISO 8601 (`2026-10-20T17:40:00.000Z`).
-- **IDs**: number, los mismos del seed.
-- **Auth**: rutas protegidas reciben `Authorization: Bearer <token>`; el
-  token es el JWT que ya valida `plugins/auth.ts` (claims `sub`,
-  `organizacionId`, `rol`).
-- **Errores**: el formato que ya usa el backend:
+- **Base URL**: local `http://localhost:8000` (emulador Android:
+  `http://10.0.2.2:8000`); producción `http://<APP_DOMAIN>/api` (nginx quita
+  el prefijo `/api`, ver `infra/nginx/snippets/api-proxy.conf`).
+- **JSON en camelCase**, salvo `/eventos`, que va en snake_case como las
+  columnas (así lo define `eventoEntradaSchema`).
+- **Montos**: enteros en CLP. **Fechas**: ISO 8601 (`2026-10-20T20:40:00.000Z`);
+  los rangos de estadísticas usan `AAAA-MM-DD`.
+- **Auth**: `Authorization: Bearer <JWT>` con claims `sub`, `organizacionId`,
+  `rol` (`plugins/auth.ts`).
+- **Errores** (`lib/error-handler.ts`):
 
   ```json
-  { "error": { "code": "UNAUTHORIZED", "message": "Falta el token" } }
+  { "error": { "code": "PRECIO_CAMBIO", "message": "El precio de algunas ofertas cambio", "detalle": { "lineas": [] } } }
   ```
 
-  La app muestra `message` al usuario y decide por status: 401 → vuelve al
-  login, 403 → sin permiso, 404 → no encontrado, 400/409/422 → error de
-  validación, resto → error de servidor.
+  La app decide por status (401 vuelve al login, 403 sin permiso, 404 no
+  encontrado, 400/409/422 validación) y por `code` para el texto: los
+  `message` del backend van sin tildes y pensados para desarrolladores, así
+  que las pantallas traducen los `code` conocidos y usan `detalle` cuando
+  existe.
 
-## Endpoints
+---
 
-### ✅ `GET /health-check`
+## ✅ `GET /health-check`
 
-Público. Lo usa la pantalla de diagnóstico **Conexión**.
+Público. `{ "status": "ok", "timestamp": "2026-10-23T15:00:00.000Z" }`
 
-```json
-{ "status": "ok", "timestamp": "2026-10-23T15:00:00.000Z" }
-```
+## ✅ `GET /categorias`
 
-### ✅ `GET /categorias`
-
-Público. Árbol de 2 niveles plano (raíces con `padreId: null`). La app
-lo usa para el inicio, los filtros y las migas de la ficha, y descarta las
-que vienen con `estado: "oculta"`.
+Público. Lista plana del árbol de 2 niveles; la app descarta las `oculta`.
 
 ```json
-[
-  { "id": 1, "padreId": null, "nombre": "Abarrotes", "slug": "abarrotes", "orden": 1, "estado": "activa" },
-  { "id": 8, "padreId": 1, "nombre": "Aceites", "slug": "aceites", "orden": 1, "estado": "activa" }
-]
+[{ "id": 8, "padreId": 1, "nombre": "Aceites", "slug": "aceites", "orden": 1, "estado": "activa" }]
 ```
 
-### ⏳ `POST /auth/login` — KAN-126
+## ⏳ `POST /auth/login` — KAN-126
 
-Público. Valida contra `usuario.email` + `usuario.hash_clave` (bcrypt) y
-emite el JWT que ya verifica `plugins/auth.ts`, con claims
-`{ sub: "<usuario.id>", organizacionId, rol: "<rol.codigo>" }`. El mismo
-endpoint sirve a admin-site: el backend no filtra por rol; la app mobile
-rechaza por su cuenta los roles internos (`admin_general`,
-`editor_catalogo`, `soporte`).
+Login de comprador y distribuidor. Mismas reglas que `loginAdmin`
+(`packages/application/src/use-cases/login-admin.use-case.ts`: bcrypt,
+mensaje genérico, MFA si `mfa_estado = activo`) **sin** exigir organización
+interna: acepta organizaciones `cliente` y `proveedor`. La app rechaza por su
+cuenta los roles internos.
 
-Request:
+Request: `{ "email": "compras@elfogon.test", "clave": "Cotizapp.2026" }`
 
-```json
-{ "email": "compras@elfogon.test", "clave": "Cotizapp.2026" }
-```
-
-Response `200`:
+Response `200`: la misma forma que `/auth/admin/login` (`UsuarioSesionDto`)
+**más el objeto `organizacion`**, que la app necesita para el saludo y la
+cuenta:
 
 ```json
 {
@@ -75,151 +96,359 @@ Response `200`:
     "id": 8,
     "nombre": "Compras El Fogón",
     "email": "compras@elfogon.test",
+    "organizacionId": 6,
     "rol": "comprador",
+    "permisos": { "ver_ordenes_propias": "total" },
     "organizacion": { "id": 6, "nombre": "El Fogón", "tipo": "cliente" }
   }
 }
 ```
 
-- `usuario.rol` = `rol.codigo` (`comprador`, `proveedor`, `admin_general`, ...).
 - `organizacion.nombre` = `nombre_fantasia` (o `razon_social` si es NULL).
-- `organizacion.tipo` = `cliente` | `proveedor` | `interna`.
-- El email se compara sin distinguir mayúsculas (la app lo manda con `trim()`).
+- Errores: `401 CREDENCIALES_INVALIDAS` (email o clave), `403 USUARIO_NO_ACTIVO`
+  (usuario no `activo` u organización no `activa`, ej. `contacto@laspalmas.test`),
+  `400 VALIDACION`. Sin `POST /auth/logout`: el JWT no guarda estado.
 
-Errores:
+## ⏳ `GET /catalogo/productos` — KAN-127, KAN-128
 
-| Status | `code` | Cuándo | `message` que muestra la app |
-|---|---|---|---|
-| 401 | `CREDENCIALES_INVALIDAS` | email no existe o clave no calza (mismo error para ambos) | `Correo o clave incorrectos.` |
-| 403 | `USUARIO_NO_ACTIVO` | `usuario.estado` ≠ `activo` u `organizacion.estado` ≠ `activa` (ej. `contacto@laspalmas.test`, invitado y en revisión) | `Tu cuenta todavía no está activa. Te avisaremos cuando se apruebe.` |
-| 400 | `VALIDATION_ERROR` | body sin `email` o `clave` | — |
+Público. **No es** `GET /productos`, que ya existe como listado de
+administración (exige `crear_producto` y devuelve fichas sin precios). Este es
+el catálogo del comprador: cada producto con el rango de precios de sus
+ofertas visibles. **Oferta visible** = `oferta.estado = 'publicada'` y
+`organizacion.estado = 'activa'`. Producto sin ofertas visibles no aparece.
 
-La sesión es stateless: no hace falta `POST /auth/logout` (la app borra el
-token del dispositivo). Cuando el JWT expira, cualquier ruta protegida debe
-responder **401**; la app lo detecta y vuelve al login.
+| Param | Regla |
+|---|---|
+| `q` | Busca en `nombre` (FULLTEXT `ix_producto_nombre_fulltext`) y `marca`, sin mayúsculas ni tildes |
+| `categoriaId` | Esa categoría **y sus subcategorías** |
+| `plazoMaxHoras` | Solo cuentan ofertas con `plazo_horas <= N` |
+| `maxUnidadesPorCaja` | Solo cuentan ofertas con `unidades_por_caja <= N` ("caja chica", la app manda 6) |
+| `orden` | `relevancia` (default), `precio` (precioDesde asc), `diferencia` (precioHasta − precioDesde desc, solo productos con 2+ ofertas), `nombre` |
+| `pagina` / `porPagina` | Default `1` / `20` |
 
-### ⏳ `GET /productos` — KAN-127, KAN-128
-
-Público. Listado y búsqueda del catálogo: cada producto con el rango de
-precios de sus ofertas visibles. **Oferta visible** = `oferta.estado =
-'publicada'` y `organizacion.estado = 'activa'` del proveedor (deja fuera la
-palta y el tomate de Las Palmas, en borrador y en revisión, y la bebida
-pausada de Valle Central). Un producto sin ofertas visibles no aparece.
-
-Query params (todos opcionales):
-
-| Param | Ejemplo | Regla |
-|---|---|---|
-| `q` | `aceite` | Busca en `nombre` (FULLTEXT `ix_producto_nombre_fulltext`) y `marca`, sin distinguir mayúsculas ni tildes |
-| `categoriaId` | `1` | Esa categoría **y sus subcategorías** (1 = Abarrotes incluye Aceites y Arroz y legumbres) |
-| `plazoMaxHoras` | `24` | Solo cuentan las ofertas con `plazo_horas <= 24` |
-| `maxUnidadesPorCaja` | `6` | Solo cuentan las ofertas con `unidades_por_caja <= 6` ("caja chica") |
-| `orden` | `precio` | `relevancia` (default), `precio` (precioDesde asc), `diferencia` (precioHasta - precioDesde desc, **solo productos con 2+ ofertas**), `nombre` |
-| `pagina` / `porPagina` | `1` / `50` | Paginación; default `1` / `20` |
-
-`plazoMaxHoras` y `maxUnidadesPorCaja` filtran **ofertas**: el producto
-aparece si al menos una oferta cumple, y `precioDesde`, `precioHasta`,
-`ofertas` y `plazoMinHoras` se calculan solo con esas.
-
-Response `200`:
+Los filtros de plazo y caja se aplican **por oferta**: el producto aparece si
+al menos una cumple, y los campos de precio se calculan solo con esas.
 
 ```json
 {
-  "items": [
-    {
-      "id": 1,
-      "sku": "ACE-0001",
-      "nombre": "Aceite vegetal maravilla",
-      "marca": "Belmont",
-      "formato": "Bidón 5 L",
-      "contenido": 5,
-      "unidad": "L",
-      "categoriaId": 8,
-      "imagenUrl": null,
-      "precioDesde": 12490,
-      "precioHasta": 12890,
-      "ofertas": 2,
-      "plazoMinHoras": 24
+  "items": [{
+    "id": 1, "sku": "ACE-0001", "nombre": "Aceite vegetal maravilla", "marca": "Belmont",
+    "formato": "Bidón 5 L", "contenido": 5, "unidad": "L", "categoriaId": 8, "imagenUrl": null,
+    "precioDesde": 12490, "precioHasta": 12890, "ofertas": 2, "plazoMinHoras": 24
+  }],
+  "total": 17, "pagina": 1, "porPagina": 50
+}
+```
+
+`contenido` como number (`decimal` llega como string desde mysql2: convertir).
+El inicio pide `?orden=diferencia&porPagina=5`.
+
+## ⏳ `GET /catalogo/productos/:id` — KAN-129
+
+Público. Ficha con todas las ofertas visibles ordenadas por `precioUnitario`
+asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
+`vista_producto` (la app también lo manda por `/eventos/lote`).
+
+```json
+{
+  "id": 1, "sku": "ACE-0001", "nombre": "Aceite vegetal maravilla", "marca": "Belmont",
+  "formato": "Bidón 5 L", "contenido": 5, "unidad": "L", "categoriaId": 8, "imagenUrl": null,
+  "descripcion": null, "precioReferencia": 12990,
+  "categoria": { "id": 8, "nombre": "Aceites", "padre": { "id": 1, "nombre": "Abarrotes" } },
+  "ofertas": [{
+    "id": 1, "precioUnitario": 12490, "unidadesPorCaja": 4, "cajasDisponibles": 40, "minimoCompra": 1,
+    "plazoHoras": 24, "modalidadEntrega": "ambos", "notasCliente": null,
+    "proveedor": {
+      "id": 2, "nombre": "Los Andes Food Service", "entregasATiempoPct": 96.5,
+      "despachoGratisDesde": 150000, "costoDespacho": 4990,
+      "calificacion": { "promedio": 4.67, "cantidad": 6 }
     }
+  }]
+}
+```
+
+- `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la región
+  del comprador (RM si no se conoce).
+- `proveedor.calificacion` = `CalificacionRepository.resumenPorProveedor`.
+- `404 PRODUCTO_NO_ENCONTRADO`.
+
+## ✅ `GET /carro` · `PUT /carro` — KAN-130
+
+Token de usuario de organización `cliente` (`403` si no). `PUT` reemplaza
+todos los ítems (`reemplazarCarroSchema`):
+
+```json
+{ "items": [{ "ofertaId": 17, "cantidad": 24, "precioVisto": 1090 }] }
+```
+
+Respuesta de ambos (`detalleItems` en `carro.use-cases.ts`):
+
+```json
+{
+  "id": 1, "estado": "abierto", "actualizadoEn": "2026-10-23T12:00:00.000Z",
+  "items": [{
+    "ofertaId": 17, "cantidad": 24, "precioVisto": 1090, "precioActual": 1090,
+    "productoId": 9, "nombreProducto": "Leche entera", "formato": "Caja 1 L",
+    "proveedorId": 2, "disponible": true, "cajasDisponibles": 20
+  }]
+}
+```
+
+Errores de `PUT`: `400 ITEM_DUPLICADO`, `404 OFERTA_NO_ENCONTRADA`,
+`409 OFERTA_NO_DISPONIBLE` (`detalle.ofertaIds`). La app completa cada línea
+con la ficha del catálogo (nombre del proveedor, plazo, mínimo, despacho,
+ahorro). **Ojo con el seed**: el carro de El Fogón pide 24 cajas de leche y
+la oferta tiene 20; la app lo marca y no deja pagar hasta ajustar.
+
+## ⏳ `GET /carro/opciones-entrega` — KAN-131
+
+Token cliente. Direcciones guardadas de la organización y puntos de retiro
+de los proveedores (los ids que piden `direccionId` y `retiros` de
+`POST /carro/confirmar`).
+
+```json
+{
+  "direcciones": [{
+    "id": 6, "calle": "Av. Irarrázaval", "numero": "3450", "complemento": "Local 2",
+    "referencia": "Entrada de proveedores por calle lateral", "comunaId": 20, "comuna": "Ñuñoa",
+    "region": "Metropolitana de Santiago"
+  }],
+  "puntosRetiro": [{
+    "id": 1, "proveedorId": 2, "nombre": "Bodega Quilicura",
+    "horario": "Lun a Vie 08:00-17:00, Sáb 09:00-13:00",
+    "direccion": "Av. Presidente Eduardo Frei Montalva 9650, Bodega 12, Quilicura"
+  }]
+}
+```
+
+Direcciones: las de la organización del token (incluidas las creadas con
+`direccion` en un checkout anterior). Puntos de retiro: los activos.
+
+## ⏳ `GET /comunas` — KAN-131
+
+Público. Para escribir una dirección nueva:
+`[{ "id": 20, "nombre": "Ñuñoa", "regionCodigo": "13", "regionNombre": "Metropolitana de Santiago" }]`
+
+## ✅ `POST /carro/confirmar` — KAN-131
+
+Token cliente. Body (`confirmarCarroSchema`):
+
+```json
+{
+  "direccionId": 6,
+  "retiros": [{ "proveedorId": 2, "puntoRetiroId": 1 }],
+  "requiereFactura": false
+}
+```
+
+o `"direccion": { "comunaId": 23, "calle": "Av. Providencia", "numero": "2000" }`
+en vez de `direccionId`. Respuesta `201`: orden `pendiente_pago`, un envío
+por proveedor:
+
+```json
+{
+  "ordenId": 12, "codigo": "CM-90012", "estado": "pendiente_pago",
+  "subtotal": 67170, "costoDespachoTotal": 12980, "total": 80150,
+  "envios": [{ "proveedorId": 2, "modalidad": "retiro", "plazoHoras": 24, "costoDespacho": 0, "subtotal": 21800, "lineas": [] }]
+}
+```
+
+Errores `409` en este orden (`planificarOrden`): `CARRO_VACIO`,
+`OFERTA_NO_DISPONIBLE`, `PRECIO_CAMBIO`, `MINIMO_COMPRA`, `SIN_STOCK`,
+`PROVEEDOR_NO_DISPONIBLE`, `RETIRO_NO_DISPONIBLE`, `MODALIDAD_NO_DISPONIBLE`,
+`SIN_COBERTURA`; `400 DIRECCION_REQUERIDA`. Nombre, RUT y correo que pide el
+checkout **no** van en el body (el schema no los acepta): la factura sale de
+los datos de la organización.
+
+## ⏳ `POST /ordenes/:id/pago` — KAN-131 / KAN-148
+
+Token cliente dueño de la orden. Inicia el pago en la pasarela y devuelve
+adónde mandar al usuario.
+
+Request: `{ "medioPago": "tarjeta", "urlRetorno": "cotizapp://pago" }`
+(`tarjeta | transferencia | linea_credito`).
+
+Response `201`: `{ "ordenId": 12, "urlPago": "https://webpay3gint.transbank.cl/...", "expiraEn": "2026-11-18T15:15:00.000Z" }`
+
+La app abre `urlPago` en el navegador y, al volver, relee
+`GET /ordenes/:id`: el backend debe dejar `estado = pagada`,
+`estadoPago = pagado`, `pagadoEn` y `medioPago` al confirmar la pasarela, o
+`estadoPago = fallido` (la orden sigue `pendiente_pago` y se puede
+reintentar). Errores: `409 ORDEN_YA_PAGADA`, `404 ORDEN_NO_ENCONTRADA`. La
+app todavía no registra el esquema `cotizapp://` (el usuario vuelve a mano).
+
+## ✅ `GET /ordenes` · `GET /ordenes/:id` — KAN-132, KAN-136
+
+`?estado=&pagina=&tamano=` (la app pide `tamano=100`). Forma de
+`presentar()` en `ordenes.use-cases.ts`: el cliente ve sus órdenes sin
+comisiones (`comisionPct`, `comisionMonto`, `montoALiquidar` y
+`comisionTotal` en `null`); el proveedor ve solo su envío, sus montos y
+`cliente: { nombre, organizacion }`.
+
+```json
+{
+  "items": [{
+    "id": 11, "codigo": "CM-10011", "estado": "pagada", "estadoPago": "pagado",
+    "creadaEn": "2026-10-21T21:05:00.000Z", "pagadoEn": "2026-10-21T21:07:00.000Z",
+    "requiereFactura": false, "medioPago": "tarjeta", "comuna": "Ñuñoa",
+    "subtotal": 28920, "costoDespachoTotal": 5990, "comisionTotal": null, "total": 34910,
+    "montoALiquidarTotal": null,
+    "envios": [{
+      "id": 21, "proveedorId": 3, "proveedorNombre": "Valle Central Mayorista", "modalidad": "despacho",
+      "puntoRetiroId": null, "plazoHoras": 48, "costoDespacho": 5990, "subtotal": 28920,
+      "comisionPct": null, "comisionMonto": null, "montoEnvio": 34910, "montoALiquidar": null,
+      "estado": "por_despachar", "actualizadoEn": "2026-10-21T23:05:00.000Z"
+    }]
+  }],
+  "pagina": 1, "tamano": 100, "total": 6, "totalPaginas": 1
+}
+```
+
+`GET /ordenes/:id` agrega `direccionEntrega` y `lineas` por envío.
+
+**⏳ Campos aditivos que pide la app en `GET /ordenes/:id`** (no rompen a
+nadie; mientras no estén, la app los trata como desconocidos):
+
+- `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
+  o `null` (hoy solo viene `puntoRetiroId`).
+- `envios[].calificacion` (solo para el cliente): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
+  o `null`. Sin el campo, la app ofrece calificar y espera un `409 YA_CALIFICADO`.
+
+## ✅ `PATCH /ordenes/envios/:id/estado` — KAN-136
+
+Token proveedor (o admin). Body `{ "estado": "en_preparacion" }`. Respuesta
+`{ "id": 21, "ordenId": 11, "estado": "en_preparacion", "ordenEstado": "en_preparacion" }`.
+Transiciones (`transicionesPermitidas`): `por_despachar → en_preparacion →
+despachado | listo_retiro → entregado`; cancelar desde los dos primeros.
+Errores: `404 ENVIO_NO_ENCONTRADO` (también si es de otro proveedor),
+`409 ORDEN_NO_PAGADA`, `409 ORDEN_REEMBOLSADA`, `409 TRANSICION_INVALIDA`
+(`detalle.permitidas`).
+
+## ⏳ `POST /ordenes/envios/:id/calificacion` — KAN-132
+
+Token cliente. `CalificacionRepository.registrar` ya existe (KAN-142); falta
+la ruta. Body (`registrarCalificacionSchema` sin `usuarioId`, que sale del
+token): `{ "puntaje": 4, "comentario": "Buena cadena de frío" }`.
+
+Response `201`:
+`{ "id": 17, "ordenEnvioId": 19, "usuarioId": 9, "puntaje": 4, "comentario": "Buena cadena de frío", "creadaEn": "..." }`.
+Errores (`CalificacionError`): `409 ENVIO_NO_CALIFICABLE`, `409 YA_CALIFICADO`,
+`400 VALIDACION`.
+
+## ⏳ `GET /estadisticas/proveedor/ventas` — KAN-133
+
+Token proveedor (`ver_ordenes_propias`). `?desde=AAAA-MM-DD&hasta=AAAA-MM-DD`
+(inclusivos; mismo `resolverRango` que `/estadisticas/proveedor`). Solo hay
+que exponer `AnaliticaRepository.ventasPorSemana` y `ventasPorProducto`
+(KAN-143), que ya existen: venta = envío no cancelado de orden con
+`estado_pago = pagado`, fechado por `orden.creada_en`.
+
+```json
+{
+  "desde": "2026-10-01", "hasta": "2026-10-31",
+  "totales": { "envios": 3, "ventas": 218070, "despacho": 9980, "comision": 17446, "neto": 210604 },
+  "semanas": [{ "semana": "2026-10-05", "envios": 1, "ventas": 84710, "despacho": 4990, "comision": 6777, "neto": 82923 }],
+  "productos": [{ "productoId": 1, "nombre": "Aceite vegetal maravilla", "unidades": 12, "ventas": 149880 }]
+}
+```
+
+La app lo llama tres veces: el mes elegido, el mismo tramo del mes anterior
+(KPIs) y las últimas 12 semanas (gráfico y top de productos).
+
+## ✅ `GET /estadisticas/proveedor` — KAN-134
+
+Token proveedor. `?desde&hasta` (default últimos 30 días). Forma de
+`estadisticasProveedor`:
+
+```json
+{
+  "desde": "2026-08-21", "hasta": "2026-11-18",
+  "totales": { "vistas": 1094, "clicks": 213 }, "conversionVistaClick": 0.1947,
+  "porDia": [{ "fecha": "2026-09-01", "vistas": 12, "clicks": 3 }],
+  "porOferta": [{ "ofertaId": 1, "productoId": 1, "producto": "Aceite vegetal maravilla", "vistas": 173, "clicks": 48, "conversionVistaClick": 0.2775, "porDia": [] }]
+}
+```
+
+**⏳ Campo aditivo `porComuna`** ("clientes potenciales por ubicación"):
+
+```json
+"porComuna": [{ "comunaId": 20, "comuna": "Ñuñoa", "vistas": 140, "clicks": 31, "cubre": true }]
+```
+
+Mismas vistas y clicks que `porOferta`, agrupados por
+`evento_analitico.comuna_id` (sin los NULL), ordenado por vistas desc.
+`cubre` = el proveedor tiene `proveedor_cobertura` para esa comuna o su
+región. Sin el campo, la app oculta esa sección.
+
+## ✅ `POST /eventos/lote` — KAN-134
+
+Público (token opcional), `202` sin cuerpo, 1 a 20 eventos, snake_case
+(`eventoLoteSchema`). La app manda uno por request:
+
+```json
+{ "eventos": [{ "tipo_evento": "vista_producto", "sesion_id": "9f2c…", "producto_id": 1, "origen": "catalogo" }] }
+```
+
+También `busqueda` (`termino`, `resultados`) y `click_oferta` (`producto_id`,
+`oferta_id`, `convirtio: false`) al agregar una oferta al carro. Si falla, la
+app lo ignora.
+
+## ⏳ `GET /calificaciones/recibidas` — KAN-135
+
+Token proveedor. Usa `resumenPorProveedor` y `listarPorProveedor` (KAN-142)
+más el `entregas_a_tiempo_pct` de la organización.
+
+```json
+{
+  "resumen": { "promedio": 4.67, "cantidad": 6, "distribucion": { "1": 0, "2": 0, "3": 0, "4": 2, "5": 4 } },
+  "entregasATiempoPct": 96.5,
+  "items": [{
+    "id": 15, "ordenEnvioId": 17, "ordenCodigo": "CM-10009", "cliente": "El Fogón",
+    "puntaje": 5, "comentario": null, "creadaEn": "2026-10-15T15:45:00.000Z"
+  }]
+}
+```
+
+`items` de la más nueva a la más antigua; `cliente` = nombre de la
+organización compradora (no el usuario); `promedio` y `entregasATiempoPct`
+en `null` si no hay datos.
+
+## ⏳ `GET /alertas/proveedor` — KAN-137
+
+Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
+
+```json
+{
+  "documentos": [
+    { "tipo": "carpeta_tributaria", "venceEn": null, "estado": "al_dia", "diasParaVencer": null },
+    { "tipo": "resolucion_sanitaria", "venceEn": "2026-11-15", "estado": "vencido", "diasParaVencer": -3 }
   ],
-  "total": 17,
-  "pagina": 1,
-  "porPagina": 50
-}
-```
-
-- `contenido` como **number** (en la tabla es `decimal(10,3)`, que mysql2 devuelve como string: convertir).
-- `unidad` = `kg` | `L` | `unidad`. La app calcula el precio por kg/L con `precio / contenido`.
-- `imagenUrl` = la imagen con `es_principal` de `producto.imagenes`, o `null` (hoy todas son NULL, KAN-157).
-- Solo productos con `estado = 'publicado'`.
-
-El inicio usa `GET /productos?orden=diferencia&porPagina=5` para "Mayor
-diferencia de precio hoy".
-
-### ⏳ `GET /productos/:id` — KAN-129
-
-Público. Ficha con el comparador: todas las ofertas visibles (mismo
-criterio que arriba) **ordenadas por `precioUnitario` ascendente**, cada una
-con los datos del proveedor y su calificación.
-
-Query param `origen` = `catalogo` | `busqueda` | `directo`: de dónde viene
-la visita. Sugerencia: registrar aquí el `evento_analitico` de tipo
-`vista_producto` con ese `origen` (lo van a leer las visitas y conversión
-del distribuidor, KAN-134).
-
-Response `200`:
-
-```json
-{
-  "id": 1,
-  "sku": "ACE-0001",
-  "nombre": "Aceite vegetal maravilla",
-  "marca": "Belmont",
-  "formato": "Bidón 5 L",
-  "contenido": 5,
-  "unidad": "L",
-  "categoriaId": 8,
-  "imagenUrl": null,
-  "descripcion": null,
-  "precioReferencia": 12990,
-  "categoria": {
-    "id": 8,
-    "nombre": "Aceites",
-    "padre": { "id": 1, "nombre": "Abarrotes" }
+  "stockBajo": [{ "ofertaId": 17, "productoId": 9, "producto": "Leche entera", "cajasDisponibles": 20, "cajasIniciales": 39 }],
+  "porCobrar": {
+    "entregadoSinLiquidar": 0, "liquidacionesPendientes": 97367, "total": 97367,
+    "proximaLiquidacion": "2026-11-24"
   },
-  "ofertas": [
-    {
-      "id": 1,
-      "precioUnitario": 12490,
-      "unidadesPorCaja": 4,
-      "cajasDisponibles": 40,
-      "minimoCompra": 1,
-      "plazoHoras": 24,
-      "modalidadEntrega": "ambos",
-      "notasCliente": null,
-      "proveedor": {
-        "id": 2,
-        "nombre": "Los Andes Food Service",
-        "entregasATiempoPct": 96.5,
-        "despachoGratisDesde": 150000,
-        "costoDespacho": 4990,
-        "calificacion": { "promedio": 4.67, "cantidad": 6 }
-      }
-    }
-  ]
+  "enviosPorDespachar": 1
 }
 ```
 
-- `categoria.padre` es `null` si la categoría del producto ya es raíz (ej. Huevos, categoría 2).
-- `proveedor.nombre` = `nombre_fantasia` (o `razon_social`).
-- `proveedor.costoDespacho` = `proveedor_cobertura.costo_despacho` para la región del comprador. Si no hay comprador logueado o no se conoce su comuna, la tarifa de la RM (todos los clientes del seed están en la RM).
-- `proveedor.calificacion` = lo que devuelve `CalificacionRepository.resumenPorProveedor` (KAN-142): `promedio` es `null` y `cantidad` es `0` si no tiene calificaciones. Con el seed: Los Andes 4,67 (6), FrigoSur 4,4 (5), Valle Central 3,8 (5).
-- `entregasATiempoPct` como number (es `decimal(5,2)`).
-
-Errores: `404` `PRODUCTO_NO_ENCONTRADO` si no existe o no está publicado.
+- `documentos.estado` se calcula al consultar: `vencido` si `vence_en` ya
+  pasó, `por_vencer` si vence en **45 días o menos**, si no `al_dia` (la
+  columna `proveedor_documento.estado` del seed usa otra regla).
+- `stockBajo`: ofertas `publicada` con `cajas_disponibles <= 20`.
+- `porCobrar.entregadoSinLiquidar`: neto (subtotal + despacho − comisión) de
+  envíos `entregado` sin `liquidacion_id`; `liquidacionesPendientes`: suma de
+  `monto_neto` de liquidaciones `pendiente` (`/liquidaciones/mias` ya las
+  lista); `proximaLiquidacion`: el próximo martes.
+- `enviosPorDespachar`: envíos `por_despachar` de órdenes pagadas.
+- Los umbrales (20 cajas, 45 días) son una decisión abierta: ver
+  `docs/decisiones/DECISIONES-ABIERTAS.md`.
 
 ## Notas para backend
 
-- `POST /categorias` usa `requireRol("administrador")`, pero en el seed el
-  código del rol es `admin_general` (`catalogo.ts`), así que con un token
-  real ese guard rechazaría al admin.
+- `POST /categorias` usa `requireRol("administrador")`, pero el código del
+  rol en el seed es `admin_general`.
+- `cantidad` del carro está en **cajas** y `planificarOrden` multiplica
+  `precio_unitario × cantidad`, mientras el mockup del proveedor define
+  "precio por unidad" y "unidades por caja". Ver decisión abierta en
+  `docs/decisiones/DECISIONES-ABIERTAS.md`.

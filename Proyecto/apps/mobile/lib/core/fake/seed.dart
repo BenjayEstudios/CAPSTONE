@@ -10,8 +10,20 @@ typedef SeedOrganizacion = ({int id, String tipo, String nombre, String razonSoc
 
 const seedOrganizaciones = <SeedOrganizacion>[
   (id: 1, tipo: 'interna', nombre: 'Cotizapp', razonSocial: 'Cotizapp SpA', estado: 'activa'),
-  (id: 2, tipo: 'proveedor', nombre: 'Los Andes Food Service', razonSocial: 'Distribuidora Los Andes Ltda.', estado: 'activa'),
-  (id: 3, tipo: 'proveedor', nombre: 'Valle Central Mayorista', razonSocial: 'Comercial Valle Central SpA', estado: 'activa'),
+  (
+    id: 2,
+    tipo: 'proveedor',
+    nombre: 'Los Andes Food Service',
+    razonSocial: 'Distribuidora Los Andes Ltda.',
+    estado: 'activa'
+  ),
+  (
+    id: 3,
+    tipo: 'proveedor',
+    nombre: 'Valle Central Mayorista',
+    razonSocial: 'Comercial Valle Central SpA',
+    estado: 'activa'
+  ),
   (id: 4, tipo: 'proveedor', nombre: 'FrigoSur', razonSocial: 'Frigorífico del Sur S.A.', estado: 'activa'),
   (id: 5, tipo: 'proveedor', nombre: 'Las Palmas', razonSocial: 'Agrícola Las Palmas Ltda.', estado: 'en_revision'),
   (id: 6, tipo: 'cliente', nombre: 'El Fogón', razonSocial: 'Restaurante El Fogón Ltda.', estado: 'activa'),
@@ -22,15 +34,78 @@ const seedOrganizaciones = <SeedOrganizacion>[
 typedef SeedUsuario = ({int id, int organizacionId, String rol, String nombre, String email, String estado});
 
 const seedUsuarios = <SeedUsuario>[
-  (id: 1, organizacionId: 1, rol: 'admin_general', nombre: 'Administrador Cotizapp', email: 'admin@cotizapp.test', estado: 'activo'),
-  (id: 2, organizacionId: 1, rol: 'editor_catalogo', nombre: 'Editor de Catálogo', email: 'catalogo@cotizapp.test', estado: 'activo'),
-  (id: 3, organizacionId: 1, rol: 'soporte', nombre: 'Soporte Cotizapp', email: 'soporte@cotizapp.test', estado: 'activo'),
-  (id: 4, organizacionId: 2, rol: 'proveedor', nombre: 'Ventas Los Andes', email: 'ventas@losandes.test', estado: 'activo'),
-  (id: 5, organizacionId: 3, rol: 'proveedor', nombre: 'Pedidos Valle Central', email: 'pedidos@vallecentral.test', estado: 'activo'),
-  (id: 6, organizacionId: 4, rol: 'proveedor', nombre: 'Comercial FrigoSur', email: 'comercial@frigosur.test', estado: 'activo'),
-  (id: 7, organizacionId: 5, rol: 'proveedor', nombre: 'Contacto Las Palmas', email: 'contacto@laspalmas.test', estado: 'invitado'),
-  (id: 8, organizacionId: 6, rol: 'comprador', nombre: 'Compras El Fogón', email: 'compras@elfogon.test', estado: 'activo'),
-  (id: 9, organizacionId: 7, rol: 'comprador', nombre: 'Compras Dulce Hogar', email: 'compras@dulcehogar.test', estado: 'activo'),
+  (
+    id: 1,
+    organizacionId: 1,
+    rol: 'admin_general',
+    nombre: 'Administrador Cotizapp',
+    email: 'admin@cotizapp.test',
+    estado: 'activo'
+  ),
+  (
+    id: 2,
+    organizacionId: 1,
+    rol: 'editor_catalogo',
+    nombre: 'Editor de Catálogo',
+    email: 'catalogo@cotizapp.test',
+    estado: 'activo'
+  ),
+  (
+    id: 3,
+    organizacionId: 1,
+    rol: 'soporte',
+    nombre: 'Soporte Cotizapp',
+    email: 'soporte@cotizapp.test',
+    estado: 'activo'
+  ),
+  (
+    id: 4,
+    organizacionId: 2,
+    rol: 'proveedor',
+    nombre: 'Ventas Los Andes',
+    email: 'ventas@losandes.test',
+    estado: 'activo'
+  ),
+  (
+    id: 5,
+    organizacionId: 3,
+    rol: 'proveedor',
+    nombre: 'Pedidos Valle Central',
+    email: 'pedidos@vallecentral.test',
+    estado: 'activo'
+  ),
+  (
+    id: 6,
+    organizacionId: 4,
+    rol: 'proveedor',
+    nombre: 'Comercial FrigoSur',
+    email: 'comercial@frigosur.test',
+    estado: 'activo'
+  ),
+  (
+    id: 7,
+    organizacionId: 5,
+    rol: 'proveedor',
+    nombre: 'Contacto Las Palmas',
+    email: 'contacto@laspalmas.test',
+    estado: 'invitado'
+  ),
+  (
+    id: 8,
+    organizacionId: 6,
+    rol: 'comprador',
+    nombre: 'Compras El Fogón',
+    email: 'compras@elfogon.test',
+    estado: 'activo'
+  ),
+  (
+    id: 9,
+    organizacionId: 7,
+    rol: 'comprador',
+    nombre: 'Compras Dulce Hogar',
+    email: 'compras@dulcehogar.test',
+    estado: 'activo'
+  ),
 ];
 
 SeedOrganizacion seedOrganizacion(int id) => seedOrganizaciones.firstWhere((o) => o.id == id);
@@ -104,7 +179,17 @@ const seedProductos = <SeedProducto>[
     unidad: 'kg',
     precioReferencia: 7490
   ),
-  (id: 4, categoriaId: 9, sku: 'LEG-0001', nombre: 'Lentejas 6 mm', marca: null, formato: 'Bolsa 1 kg', contenido: 1, unidad: 'kg', precioReferencia: 2690),
+  (
+    id: 4,
+    categoriaId: 9,
+    sku: 'LEG-0001',
+    nombre: 'Lentejas 6 mm',
+    marca: null,
+    formato: 'Bolsa 1 kg',
+    contenido: 1,
+    unidad: 'kg',
+    precioReferencia: 2690
+  ),
   (
     id: 5,
     categoriaId: 14,
@@ -149,7 +234,17 @@ const seedProductos = <SeedProducto>[
     unidad: 'kg',
     precioReferencia: 8990
   ),
-  (id: 9, categoriaId: 11, sku: 'LEC-0001', nombre: 'Leche entera', marca: 'Colún', formato: 'Caja 1 L', contenido: 1, unidad: 'L', precioReferencia: 1190),
+  (
+    id: 9,
+    categoriaId: 11,
+    sku: 'LEC-0001',
+    nombre: 'Leche entera',
+    marca: 'Colún',
+    formato: 'Caja 1 L',
+    contenido: 1,
+    unidad: 'L',
+    precioReferencia: 1190
+  ),
   (
     id: 10,
     categoriaId: 11,
@@ -254,13 +349,51 @@ typedef SeedProveedor = ({
 });
 
 const seedProveedores = <SeedProveedor>[
-  (id: 2, plazoHoras: 24, despachoGratisDesde: 150000, costoDespachoRM: 4990, modalidad: 'ambos', entregasATiempoPct: 96.5, horaCorte: '14:00'),
-  (id: 3, plazoHoras: 48, despachoGratisDesde: 200000, costoDespachoRM: 5990, modalidad: 'despacho', entregasATiempoPct: 91.2, horaCorte: '12:00'),
-  (id: 4, plazoHoras: 24, despachoGratisDesde: 120000, costoDespachoRM: 6990, modalidad: 'ambos', entregasATiempoPct: 94.0, horaCorte: '13:00'),
-  (id: 5, plazoHoras: 48, despachoGratisDesde: 80000, costoDespachoRM: 2990, modalidad: 'despacho', entregasATiempoPct: 0.0, horaCorte: '11:00'),
+  (
+    id: 2,
+    plazoHoras: 24,
+    despachoGratisDesde: 150000,
+    costoDespachoRM: 4990,
+    modalidad: 'ambos',
+    entregasATiempoPct: 96.5,
+    horaCorte: '14:00'
+  ),
+  (
+    id: 3,
+    plazoHoras: 48,
+    despachoGratisDesde: 200000,
+    costoDespachoRM: 5990,
+    modalidad: 'despacho',
+    entregasATiempoPct: 91.2,
+    horaCorte: '12:00'
+  ),
+  (
+    id: 4,
+    plazoHoras: 24,
+    despachoGratisDesde: 120000,
+    costoDespachoRM: 6990,
+    modalidad: 'ambos',
+    entregasATiempoPct: 94.0,
+    horaCorte: '13:00'
+  ),
+  (
+    id: 5,
+    plazoHoras: 48,
+    despachoGratisDesde: 80000,
+    costoDespachoRM: 2990,
+    modalidad: 'despacho',
+    entregasATiempoPct: 0.0,
+    horaCorte: '11:00'
+  ),
 ];
 
 SeedProveedor seedProveedor(int id) => seedProveedores.firstWhere((p) => p.id == id);
+
+SeedOferta seedOferta(int id) => seedOfertas.firstWhere((o) => o.id == id);
+
+// ofertaDe(productoId, proveedorId) de seed.ts.
+SeedOferta seedOfertaDe(int productoId, int proveedorId) =>
+    seedOfertas.firstWhere((o) => o.productoId == productoId && o.proveedorId == proveedorId);
 
 typedef SeedOferta = ({
   int id,
@@ -268,6 +401,7 @@ typedef SeedOferta = ({
   int proveedorId,
   int precioUnitario,
   int unidadesPorCaja,
+  int cajasIniciales,
   int cajasDisponibles,
   int minimoCompra,
   int plazoHoras,
@@ -323,6 +457,7 @@ final List<SeedOferta> seedOfertas = [
       proveedorId: proveedorId,
       precioUnitario: precio,
       unidadesPorCaja: porCaja,
+      cajasIniciales: 30 + ((i + 1) * 17) % 70,
       cajasDisponibles: (30 + ((i + 1) * 17) % 70) - (((i + 1) * 7) % 20),
       minimoCompra: 1,
       plazoHoras: seedProveedor(proveedorId).plazoHoras,
@@ -336,20 +471,62 @@ final List<SeedOferta> seedOfertas = [
 typedef SeedCalificacion = ({String ordenCodigo, int proveedorId, int clienteId, int puntaje, String? comentario});
 
 const seedCalificaciones = <SeedCalificacion>[
-  (ordenCodigo: 'CM-10001', proveedorId: 2, clienteId: 6, puntaje: 5, comentario: 'Llegó todo antes de la hora de corte y bien embalado.'),
-  (ordenCodigo: 'CM-10001', proveedorId: 4, clienteId: 6, puntaje: 4, comentario: 'Buena cadena de frío; el camión llegó una hora tarde.'),
+  (
+    ordenCodigo: 'CM-10001',
+    proveedorId: 2,
+    clienteId: 6,
+    puntaje: 5,
+    comentario: 'Llegó todo antes de la hora de corte y bien embalado.'
+  ),
+  (
+    ordenCodigo: 'CM-10001',
+    proveedorId: 4,
+    clienteId: 6,
+    puntaje: 4,
+    comentario: 'Buena cadena de frío; el camión llegó una hora tarde.'
+  ),
   (ordenCodigo: 'CM-10003', proveedorId: 2, clienteId: 6, puntaje: 5, comentario: null),
   (ordenCodigo: 'CM-10003', proveedorId: 3, clienteId: 6, puntaje: 4, comentario: 'Paltas en buen punto.'),
-  (ordenCodigo: 'CM-10004', proveedorId: 3, clienteId: 7, puntaje: 3, comentario: 'Llegaron 4 kg de tomate machucados, reclamo resuelto con nota de crédito.'),
-  (ordenCodigo: 'CM-10004', proveedorId: 4, clienteId: 7, puntaje: 5, comentario: 'Crema con buena fecha de vencimiento.'),
+  (
+    ordenCodigo: 'CM-10004',
+    proveedorId: 3,
+    clienteId: 7,
+    puntaje: 3,
+    comentario: 'Llegaron 4 kg de tomate machucados, reclamo resuelto con nota de crédito.'
+  ),
+  (
+    ordenCodigo: 'CM-10004',
+    proveedorId: 4,
+    clienteId: 7,
+    puntaje: 5,
+    comentario: 'Crema con buena fecha de vencimiento.'
+  ),
   (ordenCodigo: 'CM-10005', proveedorId: 4, clienteId: 6, puntaje: 4, comentario: null),
-  (ordenCodigo: 'CM-10005', proveedorId: 2, clienteId: 6, puntaje: 4, comentario: 'Retiro rápido, pero hubo fila en la bodega.'),
+  (
+    ordenCodigo: 'CM-10005',
+    proveedorId: 2,
+    clienteId: 6,
+    puntaje: 4,
+    comentario: 'Retiro rápido, pero hubo fila en la bodega.'
+  ),
   (ordenCodigo: 'CM-10006', proveedorId: 2, clienteId: 7, puntaje: 5, comentario: 'Siempre puntuales.'),
   (ordenCodigo: 'CM-10006', proveedorId: 3, clienteId: 7, puntaje: 4, comentario: null),
   (ordenCodigo: 'CM-10007', proveedorId: 3, clienteId: 6, puntaje: 5, comentario: 'Despacho gratis y a tiempo.'),
   (ordenCodigo: 'CM-10007', proveedorId: 4, clienteId: 6, puntaje: 5, comentario: null),
-  (ordenCodigo: 'CM-10008', proveedorId: 2, clienteId: 7, puntaje: 4, comentario: 'Faltó una botella; la repusieron al día siguiente.'),
+  (
+    ordenCodigo: 'CM-10008',
+    proveedorId: 2,
+    clienteId: 7,
+    puntaje: 4,
+    comentario: 'Faltó una botella; la repusieron al día siguiente.'
+  ),
   (ordenCodigo: 'CM-10008', proveedorId: 4, clienteId: 7, puntaje: 4, comentario: null),
   (ordenCodigo: 'CM-10009', proveedorId: 2, clienteId: 6, puntaje: 5, comentario: null),
-  (ordenCodigo: 'CM-10009', proveedorId: 3, clienteId: 6, puntaje: 3, comentario: 'Llegó al día siguiente de lo prometido.'),
+  (
+    ordenCodigo: 'CM-10009',
+    proveedorId: 3,
+    clienteId: 6,
+    puntaje: 3,
+    comentario: 'Llegó al día siguiente de lo prometido.'
+  ),
 ];

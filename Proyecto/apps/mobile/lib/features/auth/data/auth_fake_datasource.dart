@@ -16,11 +16,11 @@ class AuthFakeDatasource implements AuthDatasource {
 
     final usuario = seedUsuarios.where((u) => u.email == email.trim().toLowerCase()).firstOrNull;
     if (usuario == null || clave != claveSeed) {
-      throw const UnauthorizedFailure('Correo o clave incorrectos.');
+      throw const UnauthorizedFailure('Credenciales invalidas', code: 'CREDENCIALES_INVALIDAS');
     }
     final organizacion = seedOrganizacion(usuario.organizacionId);
     if (usuario.estado != 'activo' || organizacion.estado != 'activa') {
-      throw const ForbiddenFailure('Tu cuenta todavía no está activa. Te avisaremos cuando se apruebe.');
+      throw const ForbiddenFailure('Usuario no activo', code: 'USUARIO_NO_ACTIVO');
     }
 
     return {
@@ -29,7 +29,11 @@ class AuthFakeDatasource implements AuthDatasource {
         'id': usuario.id,
         'nombre': usuario.nombre,
         'email': usuario.email,
+        // Misma forma que UsuarioSesionDto de POST /auth/admin/login, más
+        // el objeto organizacion (API_CONTRACT.md).
+        'organizacionId': organizacion.id,
         'rol': usuario.rol,
+        'permisos': const <String, String>{},
         'organizacion': {'id': organizacion.id, 'nombre': organizacion.nombre, 'tipo': organizacion.tipo},
       },
     };
