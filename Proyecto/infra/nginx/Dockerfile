@@ -12,10 +12,11 @@ WORKDIR /repo
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm fetch
 COPY . .
-RUN pnpm install --offline --frozen-lockfile --filter "@cotizapp/ecommerce"
+RUN pnpm install --offline --frozen-lockfile --filter "@cotizapp/ecommerce" --filter "@cotizapp/admin-site"
 # Configuración "production" (default de angular.json): environment.ts con
-# apiUrl "/api", es decir, mismo origen que el frontend.
-RUN pnpm --filter "@cotizapp/ecommerce" build
+# apiUrl "/api", es decir, mismo origen que cada frontend. Cada app se sirve
+# en la raíz de su propio (sub)dominio, así que no hace falta --base-href.
+RUN pnpm --filter "@cotizapp/ecommerce" --filter "@cotizapp/admin-site" build
 
 FROM nginx:1.30-alpine
 # La imagen oficial pasa /etc/nginx/templates/*.template por envsubst al
@@ -23,5 +24,8 @@ FROM nginx:1.30-alpine
 # variables de entorno definidas, así que $uri, $host, etc. quedan intactas.
 COPY infra/nginx/templates /etc/nginx/templates
 COPY infra/nginx/snippets /etc/nginx/snippets
+# Script que el entrypoint ejecuta antes de envsubst (tope de subidas).
+COPY --chmod=755 infra/nginx/entrypoint/19-limite-subidas.envsh /docker-entrypoint.d/
 # Angular 18 (builder "application") deja los estáticos en <outputPath>/browser.
 COPY --from=build /repo/apps/ecommerce/dist/ecommerce/browser /usr/share/nginx/html/ecommerce
+COPY --from=build /repo/apps/admin-site/dist/admin-site/browser /usr/share/nginx/html/admin-site

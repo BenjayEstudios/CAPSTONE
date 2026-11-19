@@ -157,6 +157,36 @@ pueden desfasarse) y bucket + CDN (costo y otra pieza sin beneficio real
 para este tráfico). Con la imagen, una versión es un tag y el rollback es
 volver al anterior.
 
+### admin-site en su propio subdominio
+
+`apps/admin-site` se sirve en `ADMIN_DOMAIN` (ej. `admin.<dominio>`), no en
+`/admin/` del ecommerce. El panel guarda su JWT en `localStorage`, que es por
+origen: en otro origen, un XSS en el ecommerce (público, más superficie) no
+alcanza el token de un administrador. Tampoco hay que tocar la app
+(`--base-href`), y el panel se puede restringir por separado. El costo es un
+registro DNS más y que el certificado cubra los dos nombres. El control de
+acceso real sigue en el backend (`requireAuth` + permisos). KAN-168.
+
+### Archivos subidos en un volumen del droplet, servidos por Nginx
+
+Imágenes de producto (y a futuro documentos) en el volumen Docker
+`cotizapp-uploads`, no en DO Spaces. El backend escribe en `/data/uploads`;
+Nginx monta el mismo volumen de solo lectura y sirve `/uploads/` sin pasar
+por Node, con caché inmutable (nombres con UUID).
+
+Por qué no Spaces, por ahora: el adaptador local ya existe y Spaces no
+(habría que escribir `AlmacenSpaces` en el backend); Spaces cuesta US$5/mes
+fijos y suma credenciales; el volumen es gratis y se respalda junto con la
+base (KAN-160). Lo que se pierde: el CDN y que los archivos sobrevivan aunque
+se pierda el droplet (eso lo cubre el respaldo fuera del droplet). Cambiar
+después es otro adaptador detrás del puerto `AlmacenArchivos`, sin tocar
+casos de uso, más reescribir las URL ya guardadas.
+
+Solo `/uploads/productos/<id>/<uuid>.jpg|png` es público. Los documentos de
+proveedor (KAN-150) no deben servirse por `/uploads/` sino por un endpoint
+con auth; el static del backend (`/api/uploads/`) queda bloqueado en Nginx.
+KAN-157.
+
 ### MySQL del compose en producción; Aiven para desarrollo
 
 En producción la base queda en la red interna de Docker, sin exponerse; sin

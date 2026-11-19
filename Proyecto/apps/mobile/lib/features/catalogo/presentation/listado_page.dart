@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/analitica/analitica.dart';
 import '../../../core/router/rutas.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/estado_views.dart';
 import '../domain/categoria.dart';
 import '../domain/filtros_catalogo.dart';
+import '../domain/producto.dart';
 import 'catalogo_providers.dart';
 import 'widgets/filtros_sheet.dart';
 import 'widgets/producto_card.dart';
@@ -30,6 +32,7 @@ class _ListadoPageState extends ConsumerState<ListadoPage> {
   late FiltrosCatalogo _filtros;
   late final TextEditingController _busqueda;
   Timer? _debounce;
+  String? _ultimaBusqueda;
 
   @override
   void initState() {
@@ -74,6 +77,13 @@ class _ListadoPageState extends ConsumerState<ListadoPage> {
     final categorias = ref.watch(categoriasProvider).valueOrNull ?? const <Categoria>[];
     final categoria = _filtros.categoriaId == null ? null : categorias.porId(_filtros.categoriaId!);
     final resultados = ref.watch(resultadosProvider(_filtros));
+    ref.listen(resultadosProvider(_filtros), (_, r) {
+      final texto = _filtros.texto.trim();
+      if (r is AsyncData<PaginaProductos> && texto.isNotEmpty && texto != _ultimaBusqueda) {
+        _ultimaBusqueda = texto;
+        ref.read(analiticaProvider).busqueda(texto, resultados: r.value.total);
+      }
+    });
     final porUnidad = ref.watch(verPrecioPorUnidadProvider);
     final origen = _filtros.texto.trim().isNotEmpty ? 'busqueda' : 'catalogo';
 

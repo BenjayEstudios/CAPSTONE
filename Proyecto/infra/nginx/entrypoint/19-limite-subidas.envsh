@@ -1,0 +1,14 @@
+#!/bin/sh
+# Lo ejecuta (con source) el entrypoint de la imagen oficial antes de
+# 20-envsubst-on-templates.sh, así que la variable exportada acá queda
+# disponible en la plantilla.
+#
+# Tope del body en Nginx = UPLOADS_MAX_MB del backend + 1 MB de holgura para
+# el envoltorio multipart. Así un archivo apenas sobre el límite llega al
+# backend, que responde su propio 413 en JSON; Nginx solo corta lo que es
+# claramente demasiado grande (y también responde JSON, ver api-proxy.conf).
+UPLOADS_MAX_MB="${UPLOADS_MAX_MB:-5}"
+case "$UPLOADS_MAX_MB" in
+    ''|*[!0-9]*) echo "UPLOADS_MAX_MB debe ser un entero en MB (es '$UPLOADS_MAX_MB')" >&2; exit 1 ;;
+esac
+export NGINX_BODY_MAX_MB=$((UPLOADS_MAX_MB + 1))

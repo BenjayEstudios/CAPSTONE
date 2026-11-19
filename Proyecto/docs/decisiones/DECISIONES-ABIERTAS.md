@@ -41,22 +41,22 @@ Webpay o MercadoPago, ambas en sandbox. Ya está decidido que el split entre
 proveedores es simulado en la base propia (ver
 [cerradas](DECISIONES-CERRADAS.md)); falta elegir la pasarela.
 
-## 4. Dónde viven imágenes y documentos
-
-**Aplica en:** KAN-157 (y KAN-150, documentos del proveedor)
-
-Disco del droplet (volumen Docker, respaldado junto con la base) o DO
-Spaces. Si se implementa detrás de un puerto en `domain`, cambiarlo después
-es escribir otro adaptador, sin tocar casos de uso.
-
 ## 5. Dominio y HTTPS
 
 **Aplica en:** KAN-159
 
 Let's Encrypt con Certbot necesita un dominio apuntando al droplet.
-`APP_DOMAIN` ya está en `infra/.env` y la config de Nginx es plantilla, así
-que falta definir el dominio y cómo se renuevan los certificados (contenedor
-certbot o en el host).
+`APP_DOMAIN` y `ADMIN_DOMAIN` ya están en `infra/.env` y la config de Nginx
+es plantilla, así que falta definir el dominio y cómo se renuevan los
+certificados (contenedor certbot o en el host).
+
+**Ojo con las imágenes ya subidas**: `producto.imagenes` guarda la URL
+**absoluta** (`http://<APP_DOMAIN>/uploads/...`, armada con
+`PUBLIC_BASE_URL`). Si cambia el dominio (de nip.io al definitivo) o el
+esquema (`http` → `https`), esas URL quedan rotas. O se define dominio y
+HTTPS antes de cargar datos reales, o el backend pasa a guardar la ruta
+relativa/clave y arma la URL al leer (ver
+[cambio de KAN-157](../cambios/2026-11-18-almacenamiento-de-archivos-en-volumen.md)).
 
 ## 6. Destino de los respaldos
 
@@ -92,3 +92,55 @@ El FULLTEXT de `producto.nombre` no hace stemming: "quesos" no encuentra
 "Queso". La propuesta es `MATCH ... AGAINST('ques*' IN BOOLEAN MODE)`
 (prefijo); falta confirmarla al implementar el endpoint. El fake de mobile
 busca por subcadena sin tildes, así que puede haber diferencias.
+
+## 10. Login de clientes y proveedores
+
+**Aplica en:** KAN-144 · **Bloquea:** la integración real de mobile (KAN-87) y del ecommerce (KAN-85)
+
+El único login es `POST /auth/admin/login`, que rechaza a quien no sea de la
+organización interna. Sin un login para organizaciones `cliente` y
+`proveedor`, nadie fuera del equipo obtiene token, y endpoints que ya existen
+(`/carro`, `/ordenes`, `/estadisticas/proveedor`) no se pueden usar desde las
+apps. La propuesta está en
+[`apps/mobile/API_CONTRACT.md`](../../apps/mobile/API_CONTRACT.md#-post-authlogin--kan-126):
+mismas reglas que `loginAdmin` sin exigir organización interna, y la misma
+respuesta más el objeto `organizacion`. Falta decidir si es una ruta aparte o
+`/auth/admin/login` generalizado.
+
+## 11. Ruta del catálogo público
+
+**Aplica en:** KAN-145 · **Afecta:** mobile (KAN-127 a 129) y ecommerce
+
+`GET /productos` ya existe, pero es el listado de **administración** (exige
+`crear_producto`, devuelve fichas sin ofertas ni precios). El comprador
+necesita otro: público, con el rango de precios de las ofertas visibles y el
+comparador con calificaciones. Mobile lo especificó como
+`GET /catalogo/productos` y `GET /catalogo/productos/:id`
+([contrato](../../apps/mobile/API_CONTRACT.md#-get-catalogoproductos--kan-127-kan-128));
+el ecommerce debería usar los mismos. Falta confirmarlo con backend.
+
+## 12. Unidad de `cantidad` y de `precio_unitario`
+
+**Aplica en:** KAN-145, KAN-147 · **Afecta:** precios por kg/L, mínimos y stock en las tres apps
+
+`planificarOrden` trata `cantidad` como **cajas** (la compara con
+`cajas_disponibles`) y cobra `precio_unitario × cantidad`, es decir,
+`precio_unitario` sería el precio **por caja**. Pero el mínimo de compra se
+compara en unidades (`cantidad × unidades_por_caja`), el seed carga
+`precio_unitario` como precio del formato ("Bidón 5 L a $12.490", igual que
+`precio_referencia`) y el mockup del proveedor pide "precio por unidad" y
+"unidades por caja". Con la regla actual, una caja de 4 bidones se cobra como
+un bidón. Mobile sigue la matemática del backend (total = precio × cantidad)
+y muestra "c/u" sin decir "caja" hasta que se decida. Hay que fijar qué es
+cada campo y alinear seed, casos de uso y pantallas.
+
+## 13. Umbrales de las alertas del proveedor
+
+**Aplica en:** el endpoint de alertas de KAN-137
+
+Mobile propone (y su fake aplica) **stock bajo** = oferta publicada con 20
+cajas o menos, y **documento por vencer** = vence en 45 días o menos
+(`vencido` si ya pasó, calculado al consultar, no con la columna `estado`
+del seed). Son números de partida: falta validarlos con el equipo, y decidir
+si el umbral de stock debería ser relativo (por ejemplo, 25% de las cajas
+iniciales).

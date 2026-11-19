@@ -1,9 +1,8 @@
+import 'package:cotizapp_mobile/core/fake/fake_providers.dart';
 import 'package:cotizapp_mobile/features/auth/data/auth_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/data/auth_fake_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/data/sesion_local_datasource.dart';
 import 'package:cotizapp_mobile/features/auth/presentation/auth_providers.dart';
-import 'package:cotizapp_mobile/features/catalogo/data/catalogo_fake_datasource.dart';
-import 'package:cotizapp_mobile/features/catalogo/presentation/catalogo_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,12 +23,14 @@ class SesionEnMemoria implements SesionLocalDatasource {
   Future<void> borrar() async => guardada = null;
 }
 
-// Overrides base para levantar la app en tests: storage en memoria y fakes
-// sin latencia.
+// Overrides base para levantar la app en tests: storage en memoria, fakes
+// sin latencia y un reloj fijo (18 nov 2026) para que las estadísticas no
+// dependan del día en que corre el test.
 List<Override> overridesDePrueba({SesionLocalDatasource? local, AuthDatasource? auth}) => [
       sesionLocalDatasourceProvider.overrideWithValue(local ?? SesionEnMemoria()),
       authDatasourceProvider.overrideWithValue(auth ?? const AuthFakeDatasource(latencia: Duration.zero)),
-      catalogoDatasourceProvider.overrideWithValue(const CatalogoFakeDatasource(latencia: Duration.zero)),
+      latenciaFakeProvider.overrideWithValue(Duration.zero),
+      ahoraProvider.overrideWithValue(() => DateTime(2026, 11, 18, 12)),
     ];
 
 // La superficie por defecto de flutter test es 800x600; con esto las

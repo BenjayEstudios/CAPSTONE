@@ -15,6 +15,11 @@ services:
       - "${HTTP_PORT:-80}:80"
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Falta APP_DOMAIN en infra/.env}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Falta ADMIN_DOMAIN en infra/.env}
+      UPLOADS_MAX_MB: ${UPLOADS_MAX_MB:-5}
+    # Nginx sirve /uploads/ directo del volumen, sin pasar por el backend.
+    volumes:
+      - cotizapp-uploads:/srv/uploads:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -36,8 +41,19 @@ services:
       DATABASE_URL: mysql://cotizapp:${MYSQL_PASSWORD:?Falta MYSQL_PASSWORD en infra/.env}@mysql:3306/cotizapp
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en infra/.env}
       # Los frontends llaman a /api en su mismo origen, así que CORS no entra
-      # en juego para ellos; se deja el dominio por si algo llama desde fuera.
-      CORS_ORIGINS: http://${APP_DOMAIN}
+      # en juego para ellos; se dejan sus dominios por si algo llama desde
+      # fuera. Ojo: el backend lee CORS_ORIGIN (singular), lista con comas.
+      CORS_ORIGIN: http://${APP_DOMAIN},http://${ADMIN_DOMAIN}
+      # Link al panel que va en los correos de invitación.
+      ADMIN_SITE_URL: http://${ADMIN_DOMAIN}
+      # Archivos subidos: disco local (volumen cotizapp-uploads). Las URL
+      # públicas quedan como http://APP_DOMAIN/uploads/... y las sirve Nginx.
+      STORAGE_DRIVER: local
+      UPLOADS_DIR: /data/uploads
+      UPLOADS_MAX_MB: ${UPLOADS_MAX_MB:-5}
+      PUBLIC_BASE_URL: http://${APP_DOMAIN}
+    volumes:
+      - cotizapp-uploads:/data/uploads
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/health-check"]
       interval: 10s
@@ -71,3 +87,6 @@ volumes:
     # Nombre fijo (sin prefijo de proyecto) para que los scripts de respaldo
     # y la documentación lo encuentren siempre igual.
     name: cotizapp-mysql-data
+  # Archivos subidos (imágenes de producto). Se respalda junto con la base (KAN-160).
+  cotizapp-uploads:
+    name: cotizapp-uploads

@@ -1,4 +1,6 @@
 import '../../../core/error/failure.dart';
+import '../../../core/fake/fake_backend.dart';
+import '../../../core/fake/fake_panel_proveedor.dart';
 import '../../../core/fake/seed.dart';
 import 'catalogo_datasource.dart';
 
@@ -7,9 +9,12 @@ import 'catalogo_datasource.dart';
 // mismas reglas que API_CONTRACT.md le pide al backend: solo ofertas
 // "publicada" de proveedores "activa", filtros y orden.
 class CatalogoFakeDatasource implements CatalogoDatasource {
-  const CatalogoFakeDatasource({this.latencia = const Duration(milliseconds: 300)});
+  const CatalogoFakeDatasource({this.latencia = const Duration(milliseconds: 300), this.backend});
 
   final Duration latencia;
+  // Con backend, el stock y las calificaciones salen del estado vivo de
+  // FakeBackend (lo que se vendió o calificó en esta sesión); sin él, del seed.
+  final FakeBackend? backend;
 
   @override
   Future<List<Map<String, dynamic>>> categorias() async {
@@ -101,7 +106,7 @@ class CatalogoFakeDatasource implements CatalogoDatasource {
             'id': o.id,
             'precioUnitario': o.precioUnitario,
             'unidadesPorCaja': o.unidadesPorCaja,
-            'cajasDisponibles': o.cajasDisponibles,
+            'cajasDisponibles': backend?.stock[o.id] ?? o.cajasDisponibles,
             'minimoCompra': o.minimoCompra,
             'plazoHoras': o.plazoHoras,
             'modalidadEntrega': o.modalidadEntrega,
@@ -131,9 +136,10 @@ class CatalogoFakeDatasource implements CatalogoDatasource {
         'imagenUrl': null,
       };
 
-  static Map<String, dynamic> _proveedorJson(int id) {
+  Map<String, dynamic> _proveedorJson(int id) {
     final org = seedOrganizacion(id);
     final datos = seedProveedor(id);
+    final resumen = backend?.resumenCalificaciones(id);
     final puntajes = seedCalificaciones.where((c) => c.proveedorId == id).map((c) => c.puntaje).toList();
     return {
       'id': id,
@@ -141,10 +147,12 @@ class CatalogoFakeDatasource implements CatalogoDatasource {
       'entregasATiempoPct': datos.entregasATiempoPct,
       'despachoGratisDesde': datos.despachoGratisDesde,
       'costoDespacho': datos.costoDespachoRM,
-      'calificacion': {
-        'promedio': puntajes.isEmpty ? null : puntajes.reduce((a, b) => a + b) / puntajes.length,
-        'cantidad': puntajes.length,
-      },
+      'calificacion': resumen != null
+          ? {'promedio': resumen.promedio, 'cantidad': resumen.cantidad}
+          : {
+              'promedio': puntajes.isEmpty ? null : puntajes.reduce((a, b) => a + b) / puntajes.length,
+              'cantidad': puntajes.length,
+            },
     };
   }
 }
