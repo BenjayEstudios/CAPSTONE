@@ -60,3 +60,44 @@ export interface FiltrosCatalogo {
   pagina?: number;
   porPagina?: number;
 }
+
+// GET /catalogo/productos/:id (KAN-92): ficha con el comparador.
+export interface OfertaFicha {
+  id: number;
+  precioUnitario: number;
+  precioNormalizado: { valor: number; por: Unidad } | null;
+  unidadesPorCaja: number | null;
+  cajasDisponibles: number | null;
+  minimoCompra: number | null;
+  plazoHoras: number | null;
+  modalidadEntrega: "despacho" | "retiro" | "ambos";
+  notasCliente: string | null;
+  proveedor: {
+    id: number;
+    nombre: string;
+    entregasATiempoPct: number | null;
+    despachoGratisDesde: number | null;
+    costoDespacho: number | null;
+    zona: { comuna: string; region: string } | null;
+    calificacion: { promedio: number | null; cantidad: number };
+  };
+}
+
+export interface FichaProducto {
+  id: number;
+  sku: string;
+  nombre: string;
+  marca: string | null;
+  formato: string | null;
+  contenido: number | null;
+  unidad: Unidad;
+  categoriaId: number;
+  imagenUrl: string | null;
+  descripcion: string | null;
+  precioReferencia: number | null;
+  categoria: { id: number; nombre: string; padre: { id: number; nombre: string } | null };
+  /** Ordenadas por precio unitario ascendente. */
+  ofertas: OfertaFicha[];
+}
+
+export type OrigenVisita = "catalogo" | "busqueda" | "directo";

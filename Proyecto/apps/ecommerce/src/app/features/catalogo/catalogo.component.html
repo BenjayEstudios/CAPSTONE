@@ -85,16 +85,16 @@
           <ul class="tarjetas">
             @for (prod of p.items; track prod.id) {
               <li class="tarjeta">
-                <a [routerLink]="['/producto', prod.id]" class="imagen" [attr.aria-label]="prod.nombre">
+                <a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'catalogo' }" class="imagen" [attr.aria-label]="prod.nombre">
                   @if (prod.imagenUrl) { <img [src]="prod.imagenUrl" [alt]="prod.nombre" loading="lazy" /> }
                   @else { <span aria-hidden="true">{{ prod.formato }}</span> }
                 </a>
                 <p class="etiqueta">{{ nombreCategoria(prod.categoriaId) }}</p>
-                <h2><a [routerLink]="['/producto', prod.id]">{{ prod.nombre }}</a></h2>
+                <h2><a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'catalogo' }">{{ prod.nombre }}</a></h2>
                 <p class="formato">{{ prod.formato }}@if (prod.marca) { · {{ prod.marca }} }</p>
                 <p class="precio"><span class="desde">Desde</span> {{ clp(prod.precioDesde) }}</p>
                 <p class="detalle">{{ porUnidad(prod.precioDesde, prod.contenido, prod.unidad) }} · entrega desde {{ plazo(prod.plazoMinHoras) }}</p>
-                <a [routerLink]="['/producto', prod.id]" class="btn btn-primary btn-block">
+                <a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'catalogo' }" class="btn btn-primary btn-block">
                   Comparar {{ prod.ofertas }} {{ prod.ofertas === 1 ? "distribuidor" : "distribuidores" }}
                 </a>
               </li>
@@ -118,14 +118,14 @@
               <tbody>
                 @for (prod of p.items; track prod.id) {
                   <tr>
-                    <th scope="row"><a [routerLink]="['/producto', prod.id]">{{ prod.nombre }}</a></th>
+                    <th scope="row"><a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'catalogo' }">{{ prod.nombre }}</a></th>
                     <td>{{ prod.formato }}</td>
                     <td>{{ nombreCategoria(prod.categoriaId) }}</td>
                     <td class="num">{{ prod.ofertas }}</td>
                     <td class="num fuerte">{{ clp(prod.precioDesde) }}</td>
                     <td class="num suave">{{ porUnidad(prod.precioDesde, prod.contenido, prod.unidad) }}</td>
                     <td class="suave">{{ plazo(prod.plazoMinHoras) }}</td>
-                    <td><a [routerLink]="['/producto', prod.id]" class="btn btn-secondary">Comparar</a></td>
+                    <td><a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'catalogo' }" class="btn btn-secondary">Comparar</a></td>
                   </tr>
                 }
               </tbody>

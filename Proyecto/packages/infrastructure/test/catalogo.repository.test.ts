@@ -109,7 +109,8 @@ describeDb("DrizzleCatalogoRepository", (db) => {
     });
     expect(f!.ofertas.map((o) => [o.precioUnitario, o.proveedor.id])).toEqual([[12490, ORG.losAndes], [12890, ORG.valleCentral]]);
     expect(f!.ofertas[0]!.proveedor).toEqual({
-      id: ORG.losAndes, nombre: "Los Andes Food Service", entregasATiempoPct: 96.5, despachoGratisDesde: 150000, costoDespacho: 4990
+      id: ORG.losAndes, nombre: "Los Andes Food Service", entregasATiempoPct: 96.5, despachoGratisDesde: 150000, costoDespacho: 4990,
+      zona: { comuna: "Quilicura", region: "Metropolitana de Santiago" }
     });
     expect(await repo().obtenerFicha(99999, RM)).toBeNull();
   });

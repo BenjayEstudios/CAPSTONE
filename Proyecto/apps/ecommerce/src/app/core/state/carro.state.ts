@@ -45,6 +45,21 @@ export class CarroState {
     });
   }
 
+  /**
+   * Agrega una oferta al carro (KAN-92/93). PUT /carro reemplaza todos los
+   * items, asi que se manda el carro actual con esta oferta sumada. Si ya
+   * estaba, suma la cantidad. `cantidad` va en cajas, como en el backend.
+   */
+  async agregar(ofertaId: number, cantidad: number, precioVisto: number): Promise<void> {
+    const actuales = this.items().map((i) => ({ ofertaId: i.ofertaId, cantidad: i.cantidad, precioVisto: i.precioVisto }));
+    const existente = actuales.find((i) => i.ofertaId === ofertaId);
+    const items = existente
+      ? actuales.map((i) => (i.ofertaId === ofertaId ? { ...i, cantidad: i.cantidad + cantidad, precioVisto } : i))
+      : [...actuales, { ofertaId, cantidad, precioVisto }];
+    const carro = await firstValueFrom(this.api.put<CarroResponse>("/carro", { items }));
+    this.items.set(carro.items ?? []);
+  }
+
   async recargar(): Promise<void> {
     try {
       const carro = await firstValueFrom(this.api.get<CarroResponse>("/carro"));

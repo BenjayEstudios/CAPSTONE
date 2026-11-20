@@ -2,7 +2,7 @@ import { HttpParams } from "@angular/common/http";
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import { ApiClient } from "../api/api.client";
-import { CategoriaConConteo, FiltrosCatalogo, PaginaCatalogo, ProductoCatalogo, ResumenCatalogo } from "../models/catalogo.models";
+import { CategoriaConConteo, FichaProducto, FiltrosCatalogo, PaginaCatalogo, ProductoCatalogo, ResumenCatalogo } from "../models/catalogo.models";
 
 // Lectura del catalogo publico. El resumen (contadores y categorias) lo usan
 // la cabecera, el inicio y los filtros: se pide una vez por carga y se comparte.
@@ -44,6 +44,11 @@ export class CatalogoService {
     }
     const qs = params.toString();
     return firstValueFrom(this.api.get<PaginaCatalogo>(`/catalogo/productos${qs ? `?${qs}` : ""}`));
+  }
+
+  /** Ficha con el comparador. Con sesion de comprador, el costo de despacho es el de su comuna. */
+  ficha(id: number): Promise<FichaProducto> {
+    return firstValueFrom(this.api.get<FichaProducto>(`/catalogo/productos/${id}`));
   }
 
   /** "Mayor diferencia de precio hoy": productos con 2+ ofertas, de mayor a menor diferencia. */

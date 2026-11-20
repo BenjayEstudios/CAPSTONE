@@ -165,6 +165,7 @@ los dos lados lo contaría doble).
     "proveedor": {
       "id": 2, "nombre": "Los Andes Food Service", "entregasATiempoPct": 96.5,
       "despachoGratisDesde": 150000, "costoDespacho": 4990,
+      "zona": { "comuna": "Quilicura", "region": "Metropolitana de Santiago" },
       "calificacion": { "promedio": 4.67, "cantidad": 6 }
     }
   }]
@@ -176,6 +177,8 @@ los dos lados lo contaría doble).
 - `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la comuna
   del comprador (con token de comprador; si no, la de su región, y sin sesión
   la RM). `null` si el proveedor no despacha a esa región.
+- `proveedor.zona` (agregado en KAN-92): comuna y región de la dirección del
+  distribuidor; `null` si no tiene dirección.
 - `proveedor.calificacion` = `CalificacionRepository.resumenPorProveedor`.
 - `404 PRODUCTO_NO_ENCONTRADO`.
 

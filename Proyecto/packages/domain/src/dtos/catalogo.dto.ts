@@ -99,6 +99,8 @@ export interface OfertaCatalogoDto {
     despachoGratisDesde: number | null;
     /** Tarifa de proveedor_cobertura para la zona del comprador (RM si no se conoce); null si no despacha ahi. */
     costoDespacho: number | null;
+    /** Desde donde despacha: comuna y region de la direccion del distribuidor (KAN-92); null si no tiene. */
+    zona: { comuna: string; region: string } | null;
     calificacion: { promedio: number | null; cantidad: number };
   };
 }

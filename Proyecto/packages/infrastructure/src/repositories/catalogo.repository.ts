@@ -165,6 +165,7 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
       sql`SELECT o.id, o.precio_unitario, o.unidades_por_caja, o.cajas_disponibles, o.minimo_compra, o.plazo_horas,
                  o.modalidad_entrega, o.notas_cliente, org.id AS proveedor_id,
                  COALESCE(org.nombre_fantasia, org.razon_social) AS proveedor_nombre,
+                 cz.nombre AS zona_comuna, cz.region_nombre AS zona_region,
                  org.entregas_a_tiempo_pct, org.despacho_gratis_desde,
                  COALESCE(
                    (SELECT pc.costo_despacho FROM proveedor_cobertura pc
@@ -176,6 +177,8 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
                  ) AS costo_despacho
           FROM oferta o
           JOIN organizacion org ON org.id = o.proveedor_id
+          LEFT JOIN direccion dz ON dz.id = org.direccion_id
+          LEFT JOIN comuna cz ON cz.id = dz.comuna_id
           WHERE o.producto_id = ${productoId} AND o.estado = 'publicada' AND org.estado = 'activa'
           ORDER BY o.precio_unitario ASC, o.id ASC`
     );
@@ -212,7 +215,8 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
             nombre: String(o.proveedor_nombre),
             entregasATiempoPct: num(o.entregas_a_tiempo_pct),
             despachoGratisDesde: num(o.despacho_gratis_desde),
-            costoDespacho: num(o.costo_despacho)
+            costoDespacho: num(o.costo_despacho),
+            zona: o.zona_region ? { comuna: String(o.zona_comuna), region: String(o.zona_region) } : null
           }
         })
       )

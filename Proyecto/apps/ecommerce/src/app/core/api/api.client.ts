@@ -17,4 +17,8 @@ export class ApiClient {
   post<T>(path: string, body: unknown) {
     return this.http.post<T>(`${this.baseUrl}${path}`, body);
   }
+
+  put<T>(path: string, body: unknown) {
+    return this.http.put<T>(`${this.baseUrl}${path}`, body);
+  }
 }

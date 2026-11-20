@@ -21,8 +21,11 @@ documentos, liquidaciones).
   ([entrada](../cambios/2026-11-20-ecommerce-inicio.md)).
 - Catálogo con filtros y búsqueda (KAN-90, KAN-91)
   ([entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md)).
-- Ficha, carro y checkout son pantallas provisorias hasta KAN-92 a
-  KAN-95; ya aplican la regla de acceso (catálogo público, checkout con sesión).
+- Ficha de producto con comparador en tabla y lado a lado; Comprar agrega la
+  oferta al carro (KAN-92, KAN-93)
+  ([entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md)).
+- Carro y checkout son pantallas provisorias hasta KAN-94 y KAN-95; ya
+  aplican la regla de acceso (catálogo público, checkout con sesión).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -35,8 +38,8 @@ documentos, liquidaciones).
 | KAN-89 | Home del ecommerce | ✅ [entrada](../cambios/2026-11-20-ecommerce-inicio.md) |
 | KAN-90 | Catálogo por categoría con filtros | ✅ [entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md) |
 | KAN-91 | Búsqueda de productos | ✅ [entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md) (marca propia como filtro por marca) |
-| KAN-92 | Ficha de producto con comparador de proveedores | ⏳ |
-| KAN-93 | Comparación lado a lado | ⏳ |
+| KAN-92 | Ficha de producto con comparador de proveedores | ✅ [entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md) |
+| KAN-93 | Comparación lado a lado | ✅ [entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md) |
 | KAN-94 | Carro multiproveedor | ⏳ |
 | KAN-95 | Checkout único | ⏳ |
 | KAN-96 | Confirmación y detalle de compra consolidado | ⏳ |

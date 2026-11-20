@@ -48,11 +48,11 @@ pnpm test
 
 `features/catalogo/`: `/catalogo` (filtros por categoría, plazo y mínimo; tarjetas o tabla; orden por precio) y `/buscar?q=` (refinar por 24 h, sin mínimo, retiro y marca; más barato y diferencia con el más caro). Los filtros viven en la URL. Cada término nuevo se registra con `core/analitica/analitica.service.ts` (`POST /eventos/lote`, evento `busqueda` con `resultados`).
 
-## Catálogo y búsqueda (KAN-90, KAN-91)
+## Ficha de producto y comparador (KAN-92, KAN-93)
 
-`features/catalogo/`: `/catalogo` (filtros por categoría, plazo y mínimo; tarjetas o tabla; orden por precio) y `/buscar?q=` (refinar por 24 h, sin mínimo, retiro y marca; más barato y diferencia con el más caro). Los filtros viven en la URL. Cada término nuevo se registra con `core/analitica/analitica.service.ts` (`POST /eventos/lote`, evento `busqueda` con `resultados`).
+`features/producto/`: `/producto/:id` con el precio más bajo hoy, la diferencia entre el más barato y el más caro, y el comparador en **tabla** (todos los distribuidores por precio unitario) o **lado a lado** (`?vista=lado`, los 3 más baratos). Comprar agrega la oferta al carro con `CarroState.agregar` (`PUT /carro` con lo que ya había más la oferta; las cajas cumplen el mínimo de compra). Registra `vista_producto` (con `?origen=catalogo|busqueda`, si no `directo`) y `click_oferta`.
 
-Rutas provisorias hasta su historia: `/producto/:id` (KAN-92), `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
+Rutas provisorias hasta su historia: `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
 
 ## Tests
 

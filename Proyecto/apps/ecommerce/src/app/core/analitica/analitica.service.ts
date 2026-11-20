@@ -30,6 +30,16 @@ export class AnaliticaService {
     void this.enviar({ tipo_evento: "busqueda", termino, resultados: Math.min(resultados, 65535) });
   }
 
+  /** KAN-92: visita a la ficha, con de donde viene (la analitica de visitas del proveedor). */
+  vistaProducto(productoId: number, origen: "catalogo" | "busqueda" | "directo"): void {
+    void this.enviar({ tipo_evento: "vista_producto", producto_id: productoId, origen });
+  }
+
+  /** KAN-92: clic en una oferta (Comprar). convirtio = false: todavia no hay compra. */
+  clickOferta(productoId: number, ofertaId: number): void {
+    void this.enviar({ tipo_evento: "click_oferta", producto_id: productoId, oferta_id: ofertaId, convirtio: false });
+  }
+
   private async enviar(evento: Record<string, unknown>): Promise<void> {
     try {
       await firstValueFrom(this.api.post("/eventos/lote", { eventos: [{ ...evento, sesion_id: this.sesion }] }));

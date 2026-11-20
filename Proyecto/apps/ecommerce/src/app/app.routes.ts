@@ -29,7 +29,8 @@ export const routes: Routes = [
   },
   {
     path: "producto/:id",
-    ...pendiente({ titulo: "Ficha del producto", ticket: "KAN-92", texto: "Aquí va la ficha con el comparador de distribuidores." })
+    loadComponent: () => import("./features/producto/producto.component").then((m) => m.ProductoComponent),
+    title: "Producto · Cotizapp"
   },
   {
     path: "carro",
