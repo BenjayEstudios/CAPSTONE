@@ -188,3 +188,13 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
   Cada reembolso emite una nota de credito (61) y registra `auditoria_log` (accion `reembolsar`, antes/despues, motivo) en la misma transaccion. 409 `ORDEN_NO_PAGADA` / `MONTO_EXCEDE_SALDO`.
   Sin tabla de reembolsos: el acumulado es la suma de las notas de credito. Parcial: `estado_pago` sigue `pagado` (el enum no tiene "parcial"); al cubrir el total: `estado_pago = reembolsado` y `orden.estado = reembolsada`.
 - Punto de extension para devolver el dinero por pasarela (KAN-148): dependencia opcional `devolverDinero` de `crearReembolso` (se invoca tras confirmar la transaccion; resultado en `devolucionPasarela`).
+
+## Imagen de producción (`Dockerfile`)
+
+Multi-stage, construida desde `Proyecto/` (el CI la publica en
+`ghcr.io/benjayestudios/cotizapp-backend`, ver `infra/README.md`). En runtime
+quedan solo los `dist/`, las dependencias de producción y
+`packages/infrastructure/migrations/`, que usa el paso de migraciones del
+deploy (`node packages/infrastructure/dist/db/migrar/run.js`, ver
+`packages/infrastructure/README.md`). Corre como `node`, en el puerto 8000, y
+guarda los archivos subidos en `/data/uploads`.

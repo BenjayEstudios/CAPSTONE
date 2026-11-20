@@ -12,7 +12,7 @@ Authy) a partir de un secreto compartido una vez mediante un QR.
 **Base de datos.** Columna nueva `usuario.mfa_secreto varchar(255)` (NULL =
 sin enrolar), en `DataBase/dbDiagram.sql`, el schema de Drizzle,
 `DataBase/init/01-schema.sql` y la migración
-`packages/infrastructure/migrations/0001_usuario_mfa_secreto.sql`. Guarda el
+`packages/infrastructure/migrations/0002_usuario_mfa_secreto.sql`. Guarda el
 secreto **cifrado** con AES-256-GCM; nunca en claro.
 
 **API** (todo en `/auth/admin/mfa*`):
@@ -90,7 +90,7 @@ al leer usuarios, porque la columna no existe.
 ## Toca
 
 `DataBase/{dbDiagram.sql,init/01-schema.sql}`,
-`packages/infrastructure/{migrations/0001_usuario_mfa_secreto.sql,migrations/meta/*,src/db/schema/usuario.schema.ts,src/repositories/{cuenta,usuario-admin}.repository.ts}`,
+`packages/infrastructure/{migrations/0002_usuario_mfa_secreto.sql,migrations/meta/*,src/db/schema/usuario.schema.ts,src/repositories/{cuenta,usuario-admin}.repository.ts}`,
 `packages/domain/src/{entities/usuario.entity.ts,dtos/auth.dto.ts,repositories/cuenta.repository.ts}`,
 `packages/application/src/use-cases/{mfa-admin,login-admin,login,usuarios}.use-case(s).ts`,
 `apps/backend/src/{lib/totp.ts,lib/mfa.ts,routes/auth/{mfa,login,login-admin,index}.ts}`,

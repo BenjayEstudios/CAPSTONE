@@ -34,7 +34,8 @@ FROM node:22-alpine AS runtime
 WORKDIR /repo
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=8000
+    PORT=8000 \
+    UPLOADS_DIR=/data/uploads
 # Solo lo necesario para ejecutar: manifests, dist/ y node_modules (los
 # symlinks de pnpm son relativos, así que se respeta la misma estructura).
 COPY --from=prod-deps /repo/package.json /repo/pnpm-workspace.yaml ./
@@ -48,9 +49,17 @@ COPY --from=prod-deps /repo/packages/application/node_modules ./packages/applica
 COPY --from=prod-deps /repo/packages/infrastructure/package.json ./packages/infrastructure/
 COPY --from=prod-deps /repo/packages/infrastructure/dist ./packages/infrastructure/dist
 COPY --from=prod-deps /repo/packages/infrastructure/node_modules ./packages/infrastructure/node_modules
+# Migraciones SQL + journal: las aplica el paso de migraciones del deploy con
+#   node packages/infrastructure/dist/db/migrar/run.js
+# (drizzle-orm, dependencia de producción; drizzle-kit no está en la imagen).
+COPY --from=prod-deps /repo/packages/infrastructure/migrations ./packages/infrastructure/migrations
 COPY --from=prod-deps /repo/apps/backend/package.json ./apps/backend/
 COPY --from=prod-deps /repo/apps/backend/dist ./apps/backend/dist
 COPY --from=prod-deps /repo/apps/backend/node_modules ./apps/backend/node_modules
+# Archivos subidos (UPLOADS_DIR). /repo es de root y el proceso corre como
+# node, así que va en un directorio propio. Al montar un volumen nuevo
+# encima, Docker copia este dueño, así que el volumen también queda de node.
+RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
 EXPOSE 8000
 CMD ["node", "apps/backend/dist/server/index.js"]

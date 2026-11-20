@@ -162,6 +162,36 @@ pueden desfasarse) y bucket + CDN (costo y otra pieza sin beneficio real
 para este tráfico). Con la imagen, una versión es un tag y el rollback es
 volver al anterior.
 
+### admin-site en su propio subdominio
+
+`apps/admin-site` se sirve en `ADMIN_DOMAIN` (ej. `admin.<dominio>`), no en
+`/admin/` del ecommerce. El panel guarda su JWT en `localStorage`, que es por
+origen: en otro origen, un XSS en el ecommerce (público, más superficie) no
+alcanza el token de un administrador. Tampoco hay que tocar la app
+(`--base-href`), y el panel se puede restringir por separado. El costo es un
+registro DNS más y que el certificado cubra los dos nombres. El control de
+acceso real sigue en el backend (`requireAuth` + permisos). KAN-168.
+
+### Archivos subidos en un volumen del droplet, servidos por Nginx
+
+Imágenes de producto (y a futuro documentos) en el volumen Docker
+`cotizapp-uploads`, no en DO Spaces. El backend escribe en `/data/uploads`;
+Nginx monta el mismo volumen de solo lectura y sirve `/uploads/` sin pasar
+por Node, con caché inmutable (nombres con UUID).
+
+Por qué no Spaces, por ahora: el adaptador local ya existe y Spaces no
+(habría que escribir `AlmacenSpaces` en el backend); Spaces cuesta US$5/mes
+fijos y suma credenciales; el volumen es gratis y se respalda junto con la
+base (KAN-160). Lo que se pierde: el CDN y que los archivos sobrevivan aunque
+se pierda el droplet (eso lo cubre el respaldo fuera del droplet). Cambiar
+después es otro adaptador detrás del puerto `AlmacenArchivos`, sin tocar
+casos de uso, más reescribir las URL ya guardadas.
+
+Solo `/uploads/productos/<id>/<uuid>.jpg|png` es público. Los documentos de
+proveedor (KAN-150) no deben servirse por `/uploads/` sino por un endpoint
+con auth; el static del backend (`/api/uploads/`) queda bloqueado en Nginx.
+KAN-157.
+
 ### MySQL del compose en producción; Aiven para desarrollo
 
 En producción la base queda en la red interna de Docker, sin exponerse; sin
@@ -191,8 +221,54 @@ GitHub solo busca `.github/workflows/` en la raíz. El job de Flutter es
 caro y casi nunca aplica, así que corre solo si el cambio toca
 `apps/mobile`. Solo runners `ubuntu-latest` (repo público, minutos gratis).
 
+### Imágenes construidas en el runner y publicadas en GHCR
+
+El droplet no compila: `deploy-dev.yml` construye backend y nginx en GitHub
+Actions (buildx, caché `type=gha`) y los publica en GHCR con tag = SHA del
+commit y `dev`; el droplet hace `pull` y `up --no-build`. Un `ng build`
+puede quedarse sin RAM en un droplet chico, y con tags por SHA el rollback
+es redesplegar un tag anterior sin construir nada. GHCR: gratis para un repo
+público y sin credenciales extra (`GITHUB_TOKEN`). KAN-161.
+
+### Migraciones en el deploy con el migrator de drizzle-orm, no drizzle-kit
+
+Un contenedor de una sola vez con la imagen nueva corre
+`packages/infrastructure/dist/db/migrar/run.js` antes del `up`. Usa
+`drizzle-orm/mysql2/migrator`, el mismo que usa `drizzle-kit migrate`
+(historial idéntico, intercambiables), sin meter drizzle-kit (devDependency)
+en la imagen. Antes de migrar compara el historial **completo** con
+`migrations/` y se niega si hay filas desconocidas, migraciones salteadas o
+tablas sin historial: el migrator de drizzle solo mira la última fila y con
+un historial ajeno (pasó en Aiven) falla en silencio. Los rollbacks no
+corren migraciones: son solo hacia adelante. KAN-161.
+
 ### Deploy por SSH con llave dedicada y `known_hosts` fijo
 
 `deploy-dev.yml` usa un usuario `deploy` sin sudo, una llave solo para eso y
 el fingerprint del servidor guardado como secret, para no aceptar a ciegas
 la llave del host. Queda apagado hasta `DEPLOY_ENABLED=true`.
+El fingerprint se verifica contra `ssh-keygen -lf` dentro del droplet antes de
+guardarlo (ver `infra/deploy/README.md`).
+
+### QA en Oracle Always Free con workflow propio; Digital Ocean como plan B
+
+La cuenta de DO no tiene créditos (≈ US$7,14/mes con IVA el droplet más
+barato que sirve). Oracle Always Free da una VM ARM gratis en Santiago. Se
+agrega como destino aparte (`deploy-oracle.yml`, `infra/oracle/`) sin tocar
+lo de DO: imágenes `-arm64` construidas en un runner ARM nativo, no
+multi-arch con QEMU. Riesgos aceptados: Oracle puede recuperar VMs
+inactivas, quedarse sin capacidad o cambiar los límites; por eso DO queda
+listo como plan B y los respaldos (KAN-160) van fuera de la VM. KAN-161.
+
+### El `.env` de producción vive en el droplet, no en GitHub Secrets
+
+Las variables de la app en el droplet (`MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`,
+`JWT_SECRET`, dominios) están en `/opt/cotizapp/Proyecto/infra/.env`,
+generado por el cloud-init dentro del droplet. GitHub Secrets solo guarda lo
+necesario para entrar (`DEPLOY_*`). Cada deploy reutiliza ese `.env` sin
+tocarlo, así que desplegar seguido no cambia nada. Una variable nueva se
+agrega una vez por SSH (y al `docker-compose.prod.yml` en un commit). Se
+descartó escribir el `.env` desde Secrets en cada deploy: dependería del
+único admin del repo para cada cambio y movería los secretos en cada deploy;
+solo valdría la pena si el droplet se recreara seguido. Los `.env` locales y
+el de mobile no van a Secrets (no son del servidor). 2026-11-20, KAN-161.

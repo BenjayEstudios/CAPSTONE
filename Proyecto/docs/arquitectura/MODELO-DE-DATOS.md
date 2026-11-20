@@ -29,15 +29,13 @@ del schema; `db:migrate` lo aplica contra `DATABASE_URL`.
 
 | Migración | Qué hace | Ticket |
 |---|---|---|
-| `0000_blue_spirit.sql` | `categoria` | — |
-| `0001_tense_next_avengers.sql` | Las 20 tablas restantes, con FKs e índices | KAN-139 |
-| `0002_calificacion.sql` | `calificacion` | KAN-142 |
-| `0003_indices_restricciones.sql` | FULLTEXT de `producto.nombre`, CHECK de `orden_envio` | KAN-140 |
-| `0004_particion_evento_analitico.sql` | Particionado mensual de `evento_analitico` | KAN-140 |
-| `0005_indices_analitica.sql` | 4 índices compuestos para las consultas de analítica | KAN-143 |
+| `0000_schema_inicial.sql` | Todo el modelo (consolidación del 24-oct de las migraciones anteriores) | KAN-139 |
+| `0001_kan140_indices_restricciones_particiones.sql` | CHECK de `orden_envio`, FULLTEXT de `producto.nombre` y particionado mensual de `evento_analitico` (lo que la consolidación dejó fuera) | KAN-140 |
 
-`0003` y `0004` llevan DDL escrito a mano que drizzle-kit no genera ni
-conoce. Por eso **no se usa `drizzle-kit push`**: al comparar el schema
+Los índices compuestos de analítica (KAN-143, ver más abajo) también
+quedaron fuera de la consolidación y **todavía no se recuperaron**.
+
+`0001` lleva DDL escrito a mano que drizzle-kit no genera ni conoce. Por eso **no se usa `drizzle-kit push`**: al comparar el schema
 contra la base, borraría el FULLTEXT y las particiones. `generate` no los
 toca.
 

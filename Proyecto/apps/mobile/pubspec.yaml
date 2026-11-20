@@ -1,7 +1,7 @@
 name: cotizapp_mobile
 description: App móvil de Cotizapp para compradores (catálogo, comparador, carro multiproveedor, pedidos) y distribuidores (ventas, visitas, calificaciones, órdenes, alertas).
 publish_to: "none"
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -16,6 +16,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: ^11.2.0
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

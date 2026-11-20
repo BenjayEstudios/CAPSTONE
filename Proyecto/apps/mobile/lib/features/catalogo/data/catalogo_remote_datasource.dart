@@ -14,13 +14,13 @@ class CatalogoRemoteDatasource implements CatalogoDatasource {
 
   @override
   Future<Map<String, dynamic>> productos(Map<String, dynamic> query) async {
-    final data = await _api.get('/productos', query: query);
+    final data = await _api.get('/catalogo/productos', query: query);
     return Map<String, dynamic>.from(data as Map);
   }
 
   @override
   Future<Map<String, dynamic>> producto(int id, {required String origen}) async {
-    final data = await _api.get('/productos/$id', query: {'origen': origen});
+    final data = await _api.get('/catalogo/productos/$id', query: {'origen': origen});
     return Map<String, dynamic>.from(data as Map);
   }
 }

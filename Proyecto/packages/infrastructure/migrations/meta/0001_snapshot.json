@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "0032ee95-3155-4650-a687-052ceb68abd2",
+  "id": "6707b3a7-bb22-451c-a7c2-553af2a38a13",
   "prevId": "5f0d36c6-e374-4da8-9e81-1d4407bf01e4",
   "tables": {
     "categoria": {
@@ -581,13 +581,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'inactivo'"
-        },
-        "mfa_secreto": {
-          "name": "mfa_secreto",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         },
         "ultimo_acceso": {
           "name": "ultimo_acceso",
@@ -2229,7 +2222,12 @@
         }
       },
       "uniqueConstraints": {},
-      "checkConstraint": {}
+      "checkConstraint": {
+        "ck_orden_envio_destino": {
+          "name": "ck_orden_envio_destino",
+          "value": "(`orden_envio`.`modalidad` = 'retiro' AND `orden_envio`.`punto_retiro_id` IS NOT NULL AND `orden_envio`.`direccion_entrega_id` IS NULL)\n        OR (`orden_envio`.`modalidad` = 'despacho' AND `orden_envio`.`direccion_entrega_id` IS NOT NULL AND `orden_envio`.`punto_retiro_id` IS NULL)"
+        }
+      }
     },
     "orden_linea": {
       "name": "orden_linea",
@@ -2659,65 +2657,13 @@
           "isUnique": false
         }
       },
-      "foreignKeys": {
-        "evento_analitico_producto_id_producto_id_fk": {
-          "name": "evento_analitico_producto_id_producto_id_fk",
-          "tableFrom": "evento_analitico",
-          "tableTo": "producto",
-          "columnsFrom": [
-            "producto_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "evento_analitico_oferta_id_oferta_id_fk": {
-          "name": "evento_analitico_oferta_id_oferta_id_fk",
-          "tableFrom": "evento_analitico",
-          "tableTo": "oferta",
-          "columnsFrom": [
-            "oferta_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "evento_analitico_usuario_id_usuario_id_fk": {
-          "name": "evento_analitico_usuario_id_usuario_id_fk",
-          "tableFrom": "evento_analitico",
-          "tableTo": "usuario",
-          "columnsFrom": [
-            "usuario_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "evento_analitico_comuna_id_comuna_id_fk": {
-          "name": "evento_analitico_comuna_id_comuna_id_fk",
-          "tableFrom": "evento_analitico",
-          "tableTo": "comuna",
-          "columnsFrom": [
-            "comuna_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {
-        "evento_analitico_id": {
-          "name": "evento_analitico_id",
+        "evento_analitico_id_creado_en_pk": {
+          "name": "evento_analitico_id_creado_en_pk",
           "columns": [
-            "id"
+            "id",
+            "creado_en"
           ]
         }
       },

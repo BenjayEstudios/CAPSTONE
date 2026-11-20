@@ -18,7 +18,8 @@ import { usuario } from "./usuario.schema.js";
 // Traduccion 1:1 de DataBase/dbDiagram.sql -> Table producto.
 // imagenes: JSON [{url, texto_alt, orden, es_principal, subida_por, subida_en}].
 // El indice FULLTEXT ix_producto_nombre_fulltext sobre nombre NO se puede
-// declarar en Drizzle; se agrega a mano al final de la migracion (ALTER TABLE).
+// declarar en Drizzle; esta escrito a mano en migrations/0001_kan140_*.sql
+// (KAN-140). drizzle-kit no lo ve: NO usar drizzle-kit push, que lo borraria.
 export const producto = mysqlTable(
   "producto",
   {

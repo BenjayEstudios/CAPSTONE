@@ -41,22 +41,22 @@ Webpay o MercadoPago, ambas en sandbox. Ya está decidido que el split entre
 proveedores es simulado en la base propia (ver
 [cerradas](DECISIONES-CERRADAS.md)); falta elegir la pasarela.
 
-## 4. Dónde viven imágenes y documentos
-
-**Aplica en:** KAN-157 (y KAN-150, documentos del proveedor)
-
-Disco del droplet (volumen Docker, respaldado junto con la base) o DO
-Spaces. Si se implementa detrás de un puerto en `domain`, cambiarlo después
-es escribir otro adaptador, sin tocar casos de uso.
-
 ## 5. Dominio y HTTPS
 
 **Aplica en:** KAN-159
 
 Let's Encrypt con Certbot necesita un dominio apuntando al droplet.
-`APP_DOMAIN` ya está en `infra/.env` y la config de Nginx es plantilla, así
-que falta definir el dominio y cómo se renuevan los certificados (contenedor
-certbot o en el host).
+`APP_DOMAIN` y `ADMIN_DOMAIN` ya están en `infra/.env` y la config de Nginx
+es plantilla, así que falta definir el dominio y cómo se renuevan los
+certificados (contenedor certbot o en el host).
+
+**Ojo con las imágenes ya subidas**: `producto.imagenes` guarda la URL
+**absoluta** (`http://<APP_DOMAIN>/uploads/...`, armada con
+`PUBLIC_BASE_URL`). Si cambia el dominio (de nip.io al definitivo) o el
+esquema (`http` → `https`), esas URL quedan rotas. O se define dominio y
+HTTPS antes de cargar datos reales, o el backend pasa a guardar la ruta
+relativa/clave y arma la URL al leer (ver
+[cambio de KAN-157](../cambios/2026-11-18-almacenamiento-de-archivos-en-volumen.md)).
 
 ## 6. Destino de los respaldos
 
@@ -66,23 +66,16 @@ Ya está decidido que son `mysqldump` programados con copia fuera del
 droplet. Falta el destino (Spaces, otro proveedor, máquina del equipo), la
 retención y probar una restauración end-to-end.
 
-## 7. Imágenes construidas en el runner o en el droplet
-
-**Aplica en:** KAN-161
-
-Hoy el deploy hace `up -d --build` en el droplet. Lo previsto es construir en
-GitHub Actions y publicar en GHCR para que el droplet no compile (un
-`ng build` puede quedarse sin RAM en un droplet chico). Falta implementarlo y
-decidir cómo correr las migraciones de Drizzle en el deploy.
-
 ## 8. Automatizar `db:particiones`
 
 **Aplica en:** KAN-143 / KAN-163
 
 `pnpm db:particiones` hay que correrlo una vez al mes en cada base. Si nadie
 lo hace no se pierden datos (caen en `pmax`), pero se pierde el pruning.
-Opciones: cron en el droplet, paso del deploy, o job programado en GitHub
-Actions.
+Desde KAN-161 el paso de migraciones de cada deploy también asegura las
+particiones (mes actual + 3), pero los deploys no tienen fecha fija: falta la
+corrida mensual garantizada. Opciones: cron en el droplet o job programado en
+GitHub Actions (KAN-163).
 
 ## 9. Búsqueda sin stemming
 
@@ -92,3 +85,93 @@ El FULLTEXT de `producto.nombre` no hace stemming: "quesos" no encuentra
 "Queso". La propuesta es `MATCH ... AGAINST('ques*' IN BOOLEAN MODE)`
 (prefijo); falta confirmarla al implementar el endpoint. El fake de mobile
 busca por subcadena sin tildes, así que puede haber diferencias.
+
+## 10. Login de clientes y proveedores
+
+**Aplica en:** KAN-144 · **Bloquea:** la integración real de mobile (KAN-87) y del ecommerce (KAN-85)
+
+El único login es `POST /auth/admin/login`, que rechaza a quien no sea de la
+organización interna. Sin un login para organizaciones `cliente` y
+`proveedor`, nadie fuera del equipo obtiene token, y endpoints que ya existen
+(`/carro`, `/ordenes`, `/estadisticas/proveedor`) no se pueden usar desde las
+apps. La propuesta está en
+[`apps/mobile/API_CONTRACT.md`](../../apps/mobile/API_CONTRACT.md#-post-authlogin--kan-126):
+mismas reglas que `loginAdmin` sin exigir organización interna, y la misma
+respuesta más el objeto `organizacion`. Falta decidir si es una ruta aparte o
+`/auth/admin/login` generalizado.
+
+## 11. Ruta del catálogo público
+
+**Aplica en:** KAN-145 · **Afecta:** mobile (KAN-127 a 129) y ecommerce
+
+`GET /productos` ya existe, pero es el listado de **administración** (exige
+`crear_producto`, devuelve fichas sin ofertas ni precios). El comprador
+necesita otro: público, con el rango de precios de las ofertas visibles y el
+comparador con calificaciones. Mobile lo especificó como
+`GET /catalogo/productos` y `GET /catalogo/productos/:id`
+([contrato](../../apps/mobile/API_CONTRACT.md#-get-catalogoproductos--kan-127-kan-128));
+el ecommerce debería usar los mismos. Falta confirmarlo con backend.
+
+## 12. Unidad de `cantidad` y de `precio_unitario`
+
+**Aplica en:** KAN-145, KAN-147 · **Afecta:** precios por kg/L, mínimos y stock en las tres apps
+
+`planificarOrden` trata `cantidad` como **cajas** (la compara con
+`cajas_disponibles`) y cobra `precio_unitario × cantidad`, es decir,
+`precio_unitario` sería el precio **por caja**. Pero el mínimo de compra se
+compara en unidades (`cantidad × unidades_por_caja`), el seed carga
+`precio_unitario` como precio del formato ("Bidón 5 L a $12.490", igual que
+`precio_referencia`) y el mockup del proveedor pide "precio por unidad" y
+"unidades por caja". Con la regla actual, una caja de 4 bidones se cobra como
+un bidón. Mobile sigue la matemática del backend (total = precio × cantidad)
+y muestra "c/u" sin decir "caja" hasta que se decida. Hay que fijar qué es
+cada campo y alinear seed, casos de uso y pantallas.
+
+## 13. Umbrales de las alertas del proveedor
+
+**Aplica en:** el endpoint de alertas de KAN-137
+
+Mobile propone (y su fake aplica) **stock bajo** = oferta publicada con 20
+cajas o menos, y **documento por vencer** = vence en 45 días o menos
+(`vencido` si ya pasó, calculado al consultar, no con la columna `estado`
+del seed). Son números de partida: falta validarlos con el equipo, y decidir
+si el umbral de stock debería ser relativo (por ejemplo, 25% de las cajas
+iniciales).
+
+## 14. Tecnología emergente que pide la rúbrica
+
+**Aplica en:** informe final de Fase 2 · **Tickets:** por crear en Jira (KAN-88)
+
+La rúbrica pide incorporar al menos una tecnología emergente (análisis
+descriptivo/BI, data science, minería de datos, IA generativa, 3D, AR, IoT,
+MLOps, GenAI en procesos de negocio, digital twins, blockchain, huella de
+carbono; se pueden combinar). Propuesta (2026-11-19):
+
+1. **BI con Metabase (punto a)** — infraestructura, Samuel. Un contenedor
+   más del stack, con usuario MySQL de solo lectura y dashboards sobre lo que
+   ya existe: las consultas de analítica de KAN-143 (ventas por semana, embudo
+   vistas → clics → conversión, KPIs, búsquedas sin resultado) y
+   `oferta_precio_historial`. El análisis descriptivo ya está en el código;
+   Metabase lo hace reconocible como BI.
+2. **Asistente de catálogo con IA generativa (puntos d + i)** — backend. A
+   partir del texto libre con que un distribuidor describe un producto, un
+   LLM propone nombre normalizado, categoría, marca, formato, unidad y
+   descripción, y señala si ya existe un `producto` equivalente. Ataca el
+   problema central de un comparador (el mismo producto con nombres
+   distintos según el distribuidor). Solo sugiere: la persona confirma y se
+   guarda por el `POST /productos` existente.
+3. **Opcional, si sobra tiempo:** web scraping de precios públicos para
+   alimentar `precio_referencia` (punto c; ojo con términos de uso y
+   `robots.txt`), o estimación de huella de carbono del droplet (punto m).
+
+**Descartado:** 3D, AR, Arduino/IoT, TinyML, digital twins y blockchain no
+tienen relación con una plataforma B2B de cotización. ML predictivo (b, h) no
+se puede validar en serio: los datos de órdenes y eventos son sintéticos.
+
+**Falta decidir:**
+
+- Confirmarlo con el equipo y crear los tickets en Jira.
+- Proveedor y costo del LLM, y dónde vive la API key (secreto del droplet,
+  nunca en el repo).
+- Si Metabase cabe en la RAM del droplet (su JVM pide ~1 GB) o corre solo en
+  local para la demo.

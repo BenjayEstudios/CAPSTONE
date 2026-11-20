@@ -1,6 +1,7 @@
 # Plantilla de Nginx de producción. Al arrancar el contenedor, la imagen
 # oficial la pasa por envsubst y la deja en /etc/nginx/conf.d/default.conf
-# (contexto http). Variables que se reemplazan: ${APP_DOMAIN}.
+# (contexto http). Variables que se reemplazan: ${APP_DOMAIN}, ${ADMIN_DOMAIN}
+# y ${NGINX_BODY_MAX_MB} (la calcula nginx/entrypoint/19-limite-subidas.envsh).
 # Las variables propias de Nginx ($uri, $host...) no se tocan porque no
 # existen como variables de entorno del contenedor.
 
@@ -12,6 +13,9 @@ gzip_proxied any;
 gzip_comp_level 5;
 gzip_min_length 1024;
 gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
+
+# Tope del body de cualquier request (subidas de archivos incluidas).
+client_max_body_size ${NGINX_BODY_MAX_MB}m;
 
 # DNS interno de Docker. Con "resolve" Nginx vuelve a resolver "backend"
 # cuando el contenedor se recrea y cambia de IP (sin esto, queda apuntando a
@@ -32,5 +36,27 @@ server {
     root /usr/share/nginx/html/ecommerce;
 
     include /etc/nginx/snippets/api-proxy.conf;
+    include /etc/nginx/snippets/uploads.conf;
+    include /etc/nginx/snippets/spa.conf;
+}
+
+# apps/admin-site: panel interno, en su propio subdominio (ver
+# docs/decisiones/DECISIONES-CERRADAS.md, "admin-site en subdominio"). El
+# acceso real lo controla el backend (requireAuth + permisos por rol): estos
+# estáticos solo son la pantalla de login y no contienen datos.
+server {
+    listen 80;
+    server_name ${ADMIN_DOMAIN};
+
+    root /usr/share/nginx/html/admin-site;
+
+    # Panel interno: fuera de los buscadores.
+    location = /robots.txt {
+        default_type text/plain;
+        return 200 "User-agent: *\nDisallow: /\n";
+    }
+
+    include /etc/nginx/snippets/api-proxy.conf;
+    include /etc/nginx/snippets/uploads.conf;
     include /etc/nginx/snippets/spa.conf;
 }
