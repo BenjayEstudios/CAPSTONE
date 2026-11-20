@@ -72,14 +72,23 @@ describe("AuthService", () => {
     expect(auth.desafioMfa()).toBe("d1");
   });
 
-  it("reenviarMfa reemplaza el desafio", async () => {
-    await login({ mfaRequerido: true, desafio: "d1" });
-    const p = auth.reenviarMfa();
-    const req = ctrl.expectOne(url("/auth/admin/mfa/reenviar"));
-    expect(req.request.body).toEqual({ desafio: "d1" });
-    req.flush({ mfaRequerido: true, desafio: "d2" });
-    await p;
+  it("enrolamiento: pide el QR y confirma el primer codigo en /auth/admin/mfa/confirmar", async () => {
+    expect(await login({ mfaRequerido: true, enrolar: true, desafio: "d1" })).toBe("enrolar");
+    const pq = auth.iniciarEnrolamiento();
+    const rq = ctrl.expectOne(url("/auth/admin/mfa/enrolar"));
+    expect(rq.request.body).toEqual({ desafio: "d1" });
+    rq.flush({ secreto: "ABCD", otpauthUrl: "otpauth://x", qrDataUrl: "data:image/png;base64,AA", desafio: "d2" });
+    await pq;
+    expect(auth.enrolamiento()).toEqual({ secreto: "ABCD", qrDataUrl: "data:image/png;base64,AA" });
     expect(auth.desafioMfa()).toBe("d2");
+
+    const pv = auth.verificarMfa("123456");
+    const rv = ctrl.expectOne(url("/auth/admin/mfa/confirmar"));
+    expect(rv.request.body).toEqual({ desafio: "d2", codigo: "123456" });
+    rv.flush({ token: "t", usuario });
+    await pv;
+    expect(session.token()).toBe("t");
+    expect(auth.enrolamiento()).toBeNull();
   });
 });
 

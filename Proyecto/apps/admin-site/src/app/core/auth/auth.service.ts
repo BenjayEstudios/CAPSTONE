@@ -2,7 +2,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable, signal } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import { ApiClient } from "../api/api.client";
-import { ApiErrorBody, LoginRequest, LoginResponse, LoginRespuesta, MeResponse, MfaRequeridoResponse, UsuarioSesion } from "../models/auth.models";
+import { ApiErrorBody, EnrolamientoMfaResponse, LoginRequest, LoginResponse, LoginRespuesta, MeResponse, UsuarioSesion } from "../models/auth.models";
 import { SessionState } from "../state/session.state";
 
 export class AuthError extends Error {
@@ -22,10 +22,15 @@ export class AuthService {
 
   /** Desafio 2FA pendiente (solo en memoria; el token no existe hasta completar el paso 2). */
   readonly desafioMfa = signal<string | null>(null);
+  /** Durante el enrolamiento: QR y secreto para la app autenticadora. null = usuario ya enrolado. */
+  readonly enrolamiento = signal<Pick<EnrolamientoMfaResponse, "secreto" | "qrDataUrl"> | null>(null);
 
-  /** Paso 1. Devuelve "mfa" si hay que ingresar el codigo; "sesion" si ya entro. */
-  async login(credenciales: LoginRequest): Promise<"sesion" | "mfa"> {
-    this.desafioMfa.set(null);
+  /**
+   * Paso 1. "sesion" si ya entro; "mfa" si hay que ingresar el codigo de la
+   * app; "enrolar" si debe configurar la app primero (luego llamar a iniciarEnrolamiento).
+   */
+  async login(credenciales: LoginRequest): Promise<"sesion" | "mfa" | "enrolar"> {
+    this.cancelarMfa();
     let res: LoginRespuesta;
     try {
       res = await firstValueFrom(this.api.post<LoginRespuesta>("/auth/admin/login", credenciales));
@@ -34,44 +39,51 @@ export class AuthService {
     }
     if ("mfaRequerido" in res) {
       this.desafioMfa.set(res.desafio);
-      return "mfa";
+      return res.enrolar ? "enrolar" : "mfa";
     }
     this.session.iniciar(res.token, res.usuario);
     return "sesion";
   }
 
-  /** Paso 2: codigo de 6 digitos. Un fallo (invalido/expirado/bloqueado) descarta el desafio. */
+  /** Enrolamiento: pide el QR; el desafio pasa a ser el de confirmacion. */
+  async iniciarEnrolamiento(): Promise<void> {
+    const desafio = this.desafioMfa();
+    if (!desafio) throw new AuthError("MFA_INVALIDO", "La verificación expiró. Vuelve a iniciar sesión.");
+    let res: EnrolamientoMfaResponse;
+    try {
+      res = await firstValueFrom(this.api.post<EnrolamientoMfaResponse>("/auth/admin/mfa/enrolar", { desafio }));
+    } catch (err) {
+      const e = this.traducirError(err);
+      if (e.code !== "RED" && e.code !== "SERVIDOR") this.cancelarMfa();
+      throw e;
+    }
+    this.desafioMfa.set(res.desafio);
+    this.enrolamiento.set({ secreto: res.secreto, qrDataUrl: res.qrDataUrl });
+  }
+
+  /**
+   * Paso 2: codigo de 6 digitos de la app. Si se esta enrolando, confirma el
+   * enrolamiento. Un fallo (invalido/expirado/bloqueado) descarta el desafio.
+   */
   async verificarMfa(codigo: string): Promise<void> {
     const desafio = this.desafioMfa();
     if (!desafio) throw new AuthError("MFA_INVALIDO", "La verificación expiró. Vuelve a iniciar sesión.");
+    const ruta = this.enrolamiento() ? "/auth/admin/mfa/confirmar" : "/auth/admin/mfa";
     let res: LoginResponse;
     try {
-      res = await firstValueFrom(this.api.post<LoginResponse>("/auth/admin/mfa", { desafio, codigo }));
+      res = await firstValueFrom(this.api.post<LoginResponse>(ruta, { desafio, codigo }));
     } catch (err) {
       const e = this.traducirError(err);
-      if (e.code !== "RED" && e.code !== "SERVIDOR") this.desafioMfa.set(null);
+      if (e.code !== "RED" && e.code !== "SERVIDOR") this.cancelarMfa();
       throw e;
     }
-    this.desafioMfa.set(null);
+    this.cancelarMfa();
     this.session.iniciar(res.token, res.usuario);
-  }
-
-  /** Pide un codigo nuevo; reemplaza el desafio anterior. */
-  async reenviarMfa(): Promise<void> {
-    const desafio = this.desafioMfa();
-    if (!desafio) throw new AuthError("MFA_INVALIDO", "La verificación expiró. Vuelve a iniciar sesión.");
-    try {
-      const res = await firstValueFrom(this.api.post<MfaRequeridoResponse>("/auth/admin/mfa/reenviar", { desafio }));
-      this.desafioMfa.set(res.desafio);
-    } catch (err) {
-      const e = this.traducirError(err);
-      if (e.code !== "RED" && e.code !== "SERVIDOR") this.desafioMfa.set(null);
-      throw e;
-    }
   }
 
   cancelarMfa(): void {
     this.desafioMfa.set(null);
+    this.enrolamiento.set(null);
   }
 
   logout(): void {

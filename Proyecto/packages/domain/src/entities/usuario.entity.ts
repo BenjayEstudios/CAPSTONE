@@ -14,6 +14,8 @@ export interface Usuario {
   telefono: string | null;
   hashClave: string;
   mfaEstado: UsuarioMfaEstado;
+  /** Secreto TOTP cifrado (nunca en claro ni en respuestas HTTP). null/ausente = sin enrolar. */
+  mfaSecreto?: string | null;
   ultimoAcceso: Date | null;
   estado: UsuarioEstado;
 }

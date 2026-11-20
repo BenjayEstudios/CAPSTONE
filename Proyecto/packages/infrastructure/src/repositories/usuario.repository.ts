@@ -8,7 +8,7 @@ import { usuario } from "../db/schema/usuario.schema.js";
 type Fila = {
   usuario: typeof usuario.$inferSelect;
   rol: typeof rol.$inferSelect;
-  organizacion: Pick<typeof organizacion.$inferSelect, "id" | "tipo" | "estado">;
+  organizacion: Pick<typeof organizacion.$inferSelect, "id" | "tipo" | "estado" | "razonSocial" | "nombreFantasia">;
 };
 
 function toContexto(f: Fila): UsuarioConContexto {
@@ -23,7 +23,8 @@ function toContexto(f: Fila): UsuarioConContexto {
     permisosActualizadoPor: f.rol.permisosActualizadoPor,
     permisosActualizadoEn: f.rol.permisosActualizadoEn
   };
-  return { usuario: u, rol: r, organizacion: f.organizacion };
+  const { razonSocial, nombreFantasia, ...org } = f.organizacion;
+  return { usuario: u, rol: r, organizacion: { ...org, nombre: nombreFantasia ?? razonSocial } };
 }
 
 // Implementacion Drizzle/MySQL del puerto UsuarioRepository.
@@ -35,7 +36,13 @@ export class DrizzleUsuarioRepository implements UsuarioRepository {
       .select({
         usuario,
         rol,
-        organizacion: { id: organizacion.id, tipo: organizacion.tipo, estado: organizacion.estado }
+        organizacion: {
+          id: organizacion.id,
+          tipo: organizacion.tipo,
+          estado: organizacion.estado,
+          razonSocial: organizacion.razonSocial,
+          nombreFantasia: organizacion.nombreFantasia
+        }
       })
       .from(usuario)
       .innerJoin(rol, eq(usuario.rolId, rol.id))

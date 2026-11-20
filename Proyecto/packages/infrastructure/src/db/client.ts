@@ -4,7 +4,16 @@ import type { SQL } from "drizzle-orm";
 import * as schema from "./schema/index.js";
 
 export function createDbClient(connectionUri: string) {
-  const pool = mysql.createPool(connectionUri);
+  // Keepalive y descarte de conexiones ociosas: Aiven (y cualquier proxy)
+  // corta las conexiones inactivas, y sin esto el pool entregaba una conexion
+  // muerta y la primera query despues de un rato fallaba con ECONNRESET.
+  const pool = mysql.createPool({
+    uri: connectionUri,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10_000,
+    maxIdle: 2,
+    idleTimeout: 60_000
+  });
   const db = drizzle(pool, { schema, mode: "default" });
   return { db, pool };
 }

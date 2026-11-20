@@ -34,6 +34,7 @@ export async function buildApp(env: Env) {
   app.decorate("almacenArchivos", crearAlmacenArchivos(env));
   app.decorate("servicioCorreo", crearServicioCorreo(env));
   app.decorate("adminSiteUrl", env.ADMIN_SITE_URL);
+  app.decorate("ecommerceUrl", env.ECOMMERCE_URL);
   await app.register(multipart, { limits: { fileSize: uploadsMaxBytes, files: 1, fields: 5 } });
   // Solo lectura y sin listado de directorios. (Con STORAGE_DRIVER=spaces
   // esto no aplica: las URL apuntan al CDN.)

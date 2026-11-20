@@ -208,7 +208,8 @@ Table usuario {
   rut             varchar(12)
   telefono        varchar(24)
   hash_clave      char(60) [not null]
-  mfa_estado      usuario_mfa_estado [not null, default: 'inactivo']
+  mfa_estado      usuario_mfa_estado [not null, default: 'inactivo', note: 'pendiente = 2FA exigido sin enrolar; activo = TOTP enrolado (KAN-144)']
+  mfa_secreto     varchar(255) [note: 'secreto TOTP cifrado con AES-256-GCM (nunca en claro); NULL si no hay enrolamiento']
   ultimo_acceso   datetime
   estado          usuario_estado [not null, default: 'invitado']
 

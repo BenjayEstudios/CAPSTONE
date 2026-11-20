@@ -7,7 +7,8 @@ import type { Usuario } from "../entities/usuario.entity.js";
 export interface UsuarioConContexto {
   usuario: Usuario;
   rol: Rol;
-  organizacion: Pick<Organizacion, "id" | "tipo" | "estado">;
+  // nombre = nombre_fantasia o razon_social (opcional: los fakes de tests pueden omitirlo).
+  organizacion: Pick<Organizacion, "id" | "tipo" | "estado"> & { nombre?: string };
 }
 
 // Puerto de persistencia de usuarios. Implementacion en @cotizapp/infrastructure.

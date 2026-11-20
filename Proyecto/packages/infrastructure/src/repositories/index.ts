@@ -6,6 +6,7 @@ export * from "./categoria.repository.js";
 export * from "./calificacion.repository.js";
 export * from "./analitica.repository.js";
 export * from "./usuario.repository.js";
+export * from "./cuenta.repository.js";
 export * from "./producto.repository.js";
 export * from "./proveedor.repository.js";
 export * from "./rol.repository.js";

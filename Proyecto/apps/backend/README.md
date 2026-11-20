@@ -14,7 +14,7 @@ src/
 │                    infrastructure, los pasa a los casos de uso de
 │                    application, registra plugins y el error handler
 ├── routes/          # un grupo de rutas por módulo de negocio
-│   ├── auth/          # (pendiente)
+│   ├── auth/          # login, registro, recuperacion de clave y 2FA TOTP
 │   ├── catalogo/       # (pendiente)
 │   ├── pedidos/        # (pendiente)
 │   └── pagos/           # (pendiente)
@@ -120,19 +120,36 @@ Correo (`ServicioCorreo`, `packages/domain/src/services`; selector en `src/lib/m
 
 Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva orden al proveedor, confirmacion de compra con folio, recuperacion de contrasena); las tres ultimas aun sin disparador. Tests usan `CorreoEnMemoria`.
 
-## Segundo factor (2FA) por correo (KAN-112)
+## Cuentas: login, registro y recuperacion de clave (KAN-144)
 
-Aplica a usuarios con `mfa_estado = 'activo'` (los demas estados no lo exigen). No hay columna de secreto, asi que es un codigo por correo sin estado en BD:
+Rutas publicas, todas con limite por IP:
 
-1. `POST /auth/admin/login` valida la clave y responde `200 { mfaRequerido: true, desafio }` (sin token). El codigo de 6 digitos (CSPRNG) se envia por `ServicioCorreo` y nunca aparece en logs ni respuestas.
-2. `POST /auth/admin/mfa { desafio, codigo }` verifica el desafio (JWT de 5 min con `{ sub, tipo: 'mfa', hash, jti }`, `hash` = HMAC-SHA256 del codigo con `JWT_SECRET` y el `sub`), compara en tiempo constante, registra `ultimo_acceso` y emite el JWT de sesion.
-3. `POST /auth/admin/mfa/reenviar { desafio }` envia un codigo nuevo (invalida el desafio previo; maximo 3 por usuario cada 5 min).
+- `POST /auth/login { email, clave }` -> `{ token, usuario }` con `usuario.organizacion = { id, nombre, tipo }`. Sirve a ecommerce, mobile y admin-site (no filtra por rol). `401 CREDENCIALES_INVALIDAS` (mismo error si el correo no existe), `403 USUARIO_NO_ACTIVO` si el usuario esta suspendido o la organizacion no esta `activa`. Internos con 2FA activo: responde `{ mfaRequerido, desafio }` y se sigue en `POST /auth/admin/mfa`.
+- `POST /auth/registro/comprador { nombre, email, clave, rut, telefono?, empresa? }` -> `201 { token, usuario }`. Sin `empresa` es persona (la organizacion lleva su nombre y RUT).
+- `POST /auth/registro/proveedor { nombre, email, clave, rut?, telefono?, empresa }` -> `201 { organizacionId, estado: "en_revision", mensaje }`, sin sesion hasta la aprobacion.
+- `POST /auth/recuperar { email }` -> `202 { ok: true }` siempre. Envia `<ECOMMERCE_URL o ADMIN_SITE_URL>/restablecer-clave?token=...`.
+- `POST /auth/restablecer { token, clave }` -> `200 { ok: true }`; `400 ENLACE_INVALIDO` si expiro (30 min) o ya se uso.
 
-Errores genericos: `401 MFA_INVALIDO` (codigo malo, expirado o desafio manipulado), `429 MFA_DEMASIADOS_INTENTOS` (5 fallos por usuario en 5 min; ademas hay limite por IP).
+RUT con digito verificador (se guarda como `12345678-5`); clave de 8 a 72 caracteres con al menos una letra y un numero. El enlace de recuperacion no usa tabla: es un JWT con una huella HMAC del `hash_clave` vigente, asi que deja de servir apenas cambia la clave.
 
-Limitaciones (sin estado servidor): los contadores de intentos/reenvios y los desafios ya usados viven en memoria del proceso (se pierden al reiniciar y no se comparten entre replicas). Un codigo valido es de un solo uso mientras el proceso viva; tras un reinicio podria reutilizarse hasta que expire (maximo 5 min). Mitigacion: expiracion corta y limite de intentos. Para un control global moverlo a Redis o a una tabla.
+## Segundo factor (2FA) TOTP (KAN-144)
 
-Dev: `docker-compose.yml` define `MAIL_DRIVER=consola` y `MAIL_OUT_DIR=/data/outbox`; el codigo se lee en el archivo mas reciente: `docker exec cotizapp-backend sh -c "ls -t /data/outbox | head -1"` y luego `cat` de ese archivo. Recrear el servicio (`docker compose up -d backend`) para aplicar.
+Solo usuarios internos. Reemplaza el codigo por correo de KAN-112. El usuario usa una app autenticadora (Google Authenticator, Microsoft Authenticator, Authy); el algoritmo (RFC 6238: HMAC-SHA1, 6 digitos, pasos de 30 s) esta en `src/lib/totp.ts`, sin dependencias.
+
+Estados de `usuario.mfa_estado`: `pendiente` = 2FA exigido sin enrolar (asi queda un usuario creado con `mfa: "activo"`); `activo` = enrolado, con `mfa_secreto`; `opcional`/`inactivo` = el login no pide 2FA. Un `activo` sin secreto se trata como `pendiente`.
+
+Login (`POST /auth/admin/login` o `POST /auth/login`) de un interno con 2FA exigido responde `200 { mfaRequerido: true, enrolar, desafio }`, sin token:
+
+- `enrolar = false` -> `POST /auth/admin/mfa { desafio, codigo }` -> sesion.
+- `enrolar = true` -> `POST /auth/admin/mfa/enrolar { desafio }` -> `{ secreto, otpauthUrl, qrDataUrl, desafio }` (QR en PNG data URL) -> `POST /auth/admin/mfa/confirmar { desafio, codigo }` -> deja `mfa_estado = activo` y entrega la sesion. Al pedir el QR el secreto se guarda cifrado con `mfa_estado = pendiente`; si el usuario sale y vuelve a entrar antes de confirmar recibe el mismo QR (la cuenta que ya agrego a su app sigue sirviendo).
+
+Desafios: JWT firmados con `{ sub, tipo, jti }`, de 5 min (`mfa`) o 10 min (`mfa_enrolamiento`, `mfa_confirmacion`); un tipo no sirve en la ruta de otro. Se acepta el codigo del paso actual y el de +-30 s. Un codigo aceptado no se acepta de nuevo en su ventana. Errores genericos: `401 MFA_INVALIDO`, `429 MFA_DEMASIADOS_INTENTOS` (5 fallos por usuario en 10 min; ademas hay limite por IP).
+
+Secreto en BD: `usuario.mfa_secreto` cifrado con AES-256-GCM (`v1:` + base64 de iv, tag y texto cifrado; `src/lib/mfa.ts`). La clave es `MFA_CLAVE_CIFRADO` (32 bytes en base64) o, si no esta, una derivada de `JWT_SECRET`. Si cambia la clave, los secretos dejan de poder leerse y hay que re-enrolar.
+
+Telefono perdido: un administrador cambia el `mfaEstado` del usuario a `pendiente` (`PATCH /usuarios/:id`); cualquier cambio de `mfa_estado` que no sea `activo` borra el secreto, y en su proximo ingreso el usuario vuelve a ver el QR.
+
+Limitaciones (sin estado servidor): los contadores de intentos y los codigos/desafios ya usados viven en memoria del proceso (se pierden al reiniciar y no se comparten entre replicas). Tras un reinicio, un codigo ya usado podria reutilizarse dentro de su ventana de 30 s. Para un control global moverlo a Redis o a una tabla.
 
 ## Liquidaciones semanales (KAN-152)
 

@@ -30,7 +30,9 @@ const envSchema = z.object({
   SMTP_PASS: z.string().min(1).optional(),
   SMTP_FROM: z.string().min(1).optional(),
   // URL del panel administrativo que se incluye en las invitaciones.
-  ADMIN_SITE_URL: z.string().url().default("http://localhost:4300")
+  ADMIN_SITE_URL: z.string().url().default("http://localhost:4300"),
+  // URL del ecommerce: base de los enlaces de recuperacion de clave de compradores y proveedores.
+  ECOMMERCE_URL: z.string().url().default("http://localhost:4200")
 }).superRefine((v, ctx) => {
   if (v.MAIL_DRIVER === "smtp") {
     for (const k of ["SMTP_HOST", "SMTP_FROM"] as const) {
@@ -42,5 +44,9 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  return envSchema.parse(source);
+  // Una variable vacia (ej. "SMTP_HOST=" en .env.example) cuenta como no
+  // definida: si no, los .optional() con min(1) rechazan el string vacio y
+  // el server no arranca con el .env de ejemplo.
+  const definidas = Object.fromEntries(Object.entries(source).filter(([, v]) => v !== ""));
+  return envSchema.parse(definidas);
 }

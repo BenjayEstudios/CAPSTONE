@@ -8,6 +8,13 @@
       "when": 1792849833888,
       "tag": "0000_schema_inicial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1795053771992,
+      "tag": "0001_usuario_mfa_secreto",
+      "breakpoints": true
     }
   ]
 }

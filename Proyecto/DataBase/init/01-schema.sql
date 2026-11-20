@@ -87,6 +87,7 @@ CREATE TABLE `usuario` (
 	`telefono` varchar(24),
 	`hash_clave` char(60) NOT NULL,
 	`mfa_estado` enum('activo','pendiente','opcional','inactivo') NOT NULL DEFAULT 'inactivo',
+	`mfa_secreto` varchar(255),
 	`ultimo_acceso` datetime,
 	`estado` enum('activo','invitado','suspendido') NOT NULL DEFAULT 'invitado',
 	CONSTRAINT `usuario_id` PRIMARY KEY(`id`),

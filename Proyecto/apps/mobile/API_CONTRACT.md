@@ -51,7 +51,7 @@ que vienen con `estado: "oculta"`.
 ]
 ```
 
-### ⏳ `POST /auth/login` — KAN-126
+### ✅ `POST /auth/login` — KAN-126 (implementado en KAN-144)
 
 Público. Valida contra `usuario.email` + `usuario.hash_clave` (bcrypt) y
 emite el JWT que ya verifica `plugins/auth.ts`, con claims

@@ -135,6 +135,11 @@ elegida. Los datos de tarjeta nunca tocan el backend.
 ### 2FA solo con TOTP y solo para usuarios internos
 
 Lo fija KAN-144. Compradores y proveedores entran con correo y clave.
+Implementado el 2026-11-18: reemplaza el código por correo de KAN-112, que se
+había hecho antes de que existiera la columna para el secreto. TOTP no
+depende del correo (si roban el correo, el segundo factor sigue a salvo) y
+funciona sin conexión. El secreto se guarda cifrado en `usuario.mfa_secreto`
+([entrada](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md)).
 
 ## Infraestructura
 

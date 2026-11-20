@@ -8,5 +8,6 @@ declare module "fastify" {
     uploadsMaxBytes: number;
     servicioCorreo: ServicioCorreo;
     adminSiteUrl: string;
+    ecommerceUrl: string;
   }
 }
