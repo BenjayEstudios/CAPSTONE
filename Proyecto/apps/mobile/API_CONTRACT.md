@@ -21,9 +21,9 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 |---|---|---|
 | `GET /health-check` | ✅ | Conexión |
 | `GET /categorias` | ✅ | Catálogo (KAN-127) |
-| `POST /auth/login` | ⏳ | Login (KAN-126) |
-| `GET /catalogo/productos` | ⏳ | Inicio, listado y búsqueda (KAN-127, 128) |
-| `GET /catalogo/productos/:id` | ⏳ | Ficha con comparador (KAN-129) |
+| `POST /auth/login` | ✅ | Login (KAN-126) |
+| `GET /catalogo/productos` | ✅ | Inicio, listado y búsqueda (KAN-127, 128) |
+| `GET /catalogo/productos/:id` | ✅ | Ficha con comparador (KAN-129) |
 | `GET /carro` · `PUT /carro` | ✅ | Carro (KAN-130) |
 | `GET /carro/opciones-entrega` | ⏳ | Checkout (KAN-131) |
 | `GET /comunas` | ⏳ | Checkout (KAN-131) |
@@ -109,7 +109,7 @@ cuenta:
   (usuario no `activo` u organización no `activa`, ej. `contacto@laspalmas.test`),
   `400 VALIDACION`. Sin `POST /auth/logout`: el JWT no guarda estado.
 
-## ⏳ `GET /catalogo/productos` — KAN-127, KAN-128
+## ✅ `GET /catalogo/productos` — KAN-127, KAN-128 (implementado en KAN-145)
 
 Público. **No es** `GET /productos`, que ya existe como listado de
 administración (exige `crear_producto` y devuelve fichas sin precios). Este es
@@ -143,11 +143,12 @@ al menos una cumple, y los campos de precio se calculan solo con esas.
 `contenido` como number (`decimal` llega como string desde mysql2: convertir).
 El inicio pide `?orden=diferencia&porPagina=5`.
 
-## ⏳ `GET /catalogo/productos/:id` — KAN-129
+## ✅ `GET /catalogo/productos/:id` — KAN-129 (implementado en KAN-145)
 
 Público. Ficha con todas las ofertas visibles ordenadas por `precioUnitario`
-asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
-`vista_producto` (la app también lo manda por `/eventos/lote`).
+asc. `?origen=catalogo|busqueda|directo` se acepta, pero el `vista_producto`
+**no** se registra acá: lo manda la app por `/eventos/lote` (registrarlo en
+los dos lados lo contaría doble).
 
 ```json
 {
@@ -158,6 +159,7 @@ asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
   "ofertas": [{
     "id": 1, "precioUnitario": 12490, "unidadesPorCaja": 4, "cajasDisponibles": 40, "minimoCompra": 1,
     "plazoHoras": 24, "modalidadEntrega": "ambos", "notasCliente": null,
+    "precioNormalizado": { "valor": 2498, "por": "L" },
     "proveedor": {
       "id": 2, "nombre": "Los Andes Food Service", "entregasATiempoPct": 96.5,
       "despachoGratisDesde": 150000, "costoDespacho": 4990,
@@ -167,8 +169,11 @@ asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
 }
 ```
 
-- `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la región
-  del comprador (RM si no se conoce).
+- `precioNormalizado` (agregado en KAN-145): `precioUnitario / contenido`, por
+  kg, L o unidad; `null` si el producto no declara contenido.
+- `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la comuna
+  del comprador (con token de comprador; si no, la de su región, y sin sesión
+  la RM). `null` si el proveedor no despacha a esa región.
 - `proveedor.calificacion` = `CalificacionRepository.resumenPorProveedor`.
 - `404 PRODUCTO_NO_ENCONTRADO`.
 
@@ -446,8 +451,6 @@ Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
 
 ## Notas para backend
 
-- `POST /categorias` usa `requireRol("administrador")`, pero el código del
-  rol en el seed es `admin_general`.
 - `cantidad` del carro está en **cajas** y `planificarOrden` multiplica
   `precio_unitario × cantidad`, mientras el mockup del proveedor define
   "precio por unidad" y "unidades por caja". Ver decisión abierta en

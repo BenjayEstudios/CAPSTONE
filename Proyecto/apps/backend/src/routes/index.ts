@@ -3,6 +3,7 @@ import { healthCheckRoute } from "./health-check/index.js";
 import { categoriaRoutes } from "./categorias/index.js";
 import { authRoutes } from "./auth/index.js";
 import { productoRoutes } from "./productos/index.js";
+import { catalogoRoutes } from "./catalogo/index.js";
 import { proveedorRoutes } from "./proveedores/index.js";
 import { auditoriaRoutes } from "./auditoria/index.js";
 import { rolRoutes } from "./roles/index.js";
@@ -23,7 +24,7 @@ import { dashboardRoutes } from "./dashboard/index.js";
 // @cotizapp/application, ya conectados en el composition root (app.ts).
 // "categorias" es el ejemplo de referencia — el resto de módulos se agrega
 // siguiendo el mismo patrón.
-const routes: RouteOptions[] = [healthCheckRoute, ...categoriaRoutes, ...authRoutes, ...productoRoutes, ...proveedorRoutes, ...rolRoutes, ...usuarioRoutes, ...auditoriaRoutes, ...moderacionRoutes, ...eventoRoutes, ...carroRoutes, ...ordenRoutes, ...documentoTributarioRoutes, ...reembolsoRoutes, ...estadisticasRoutes, ...liquidacionRoutes, ...dashboardRoutes];
+const routes: RouteOptions[] = [healthCheckRoute, ...categoriaRoutes, ...authRoutes, ...productoRoutes, ...catalogoRoutes, ...proveedorRoutes, ...rolRoutes, ...usuarioRoutes, ...auditoriaRoutes, ...moderacionRoutes, ...eventoRoutes, ...carroRoutes, ...ordenRoutes, ...documentoTributarioRoutes, ...reembolsoRoutes, ...estadisticasRoutes, ...liquidacionRoutes, ...dashboardRoutes];
 
 export async function registerRoutes(app: FastifyInstance) {
   routes.forEach((route) => app.route(route));

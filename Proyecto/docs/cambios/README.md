@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Catálogo público, búsqueda y comparador](2026-11-20-catalogo-publico-y-comparador.md) | KAN-88 | KAN-145 |
 | 2026-11-20 | [Droplet de dev creado en Digital Ocean](2026-11-20-droplet-de-dev-creado.md) | KAN-88 | KAN-161 |
 | 2026-11-19 | [QA adicional en Oracle Cloud Always Free](2026-11-19-qa-en-oracle-cloud-always-free.md) | KAN-88 | KAN-161 |
 | 2026-11-19 | [Deploy con imágenes en GHCR y migraciones](2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) | KAN-88 | KAN-161 |

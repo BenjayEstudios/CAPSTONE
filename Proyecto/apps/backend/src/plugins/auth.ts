@@ -39,6 +39,19 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
   }
 }
 
+// Para rutas publicas que se personalizan si hay sesion (ej. la ficha del
+// catalogo usa la comuna del comprador para la tarifa de despacho). Un token
+// ausente, invalido o expirado no es error: la ruta sigue siendo publica.
+export function leerAuthOpcional(request: FastifyRequest): AuthClaims | undefined {
+  const header = request.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return undefined;
+  try {
+    return jwt.verify(header.slice(7), JWT_SECRET as string) as AuthClaims;
+  } catch {
+    return undefined;
+  }
+}
+
 // Guard de rol, para componer con requireAuth cuando la ruta ademas
 // necesita un rol especifico (ej. solo "administrador"). requireAuth
 // resuelve "¿estas logueado?"; requireRol resuelve "¿tenes permiso?".

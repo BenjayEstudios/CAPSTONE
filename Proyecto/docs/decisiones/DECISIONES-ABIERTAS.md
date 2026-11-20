@@ -2,22 +2,6 @@
 
 Lo que falta resolver. Ninguna bloquea el trabajo en curso salvo donde se diga.
 
-## 1. Código del rol administrador en `POST /categorias`
-
-**Aplica en:** KAN-144 / KAN-151 (API)
-
-`POST /categorias` exige `requireRol("administrador")`, pero en el seed el
-código del rol es `admin_general` (los internos son `admin_general`,
-`editor_catalogo` y `soporte`). Con el seed, nadie puede crear categorías.
-
-Hay que decidir si la ruta pide `admin_general` (o también
-`editor_catalogo`, que suena a dueño natural del catálogo) y alinear el
-ejemplo de referencia del README. KAN-144 pide además que `requireRol` pase
-a leer la matriz `rol.permisos` en vez de comparar códigos de rol a mano,
-lo que resolvería esto de raíz.
-
-**Bloquea:** que admin-site pueda gestionar categorías (KAN-118).
-
 ## 2. Fastify vs Express
 
 **Aplica en:** KAN-169 — conviene resolverlo **antes** de que entre más API
@@ -77,41 +61,6 @@ particiones (mes actual + 3), pero los deploys no tienen fecha fija: falta la
 corrida mensual garantizada. Opciones: cron en el droplet o job programado en
 GitHub Actions (KAN-163).
 
-## 9. Búsqueda sin stemming
-
-**Aplica en:** KAN-145
-
-El FULLTEXT de `producto.nombre` no hace stemming: "quesos" no encuentra
-"Queso". La propuesta es `MATCH ... AGAINST('ques*' IN BOOLEAN MODE)`
-(prefijo); falta confirmarla al implementar el endpoint. El fake de mobile
-busca por subcadena sin tildes, así que puede haber diferencias.
-
-## 10. Login de clientes y proveedores
-
-**Aplica en:** KAN-144 · **Bloquea:** la integración real de mobile (KAN-87) y del ecommerce (KAN-85)
-
-El único login es `POST /auth/admin/login`, que rechaza a quien no sea de la
-organización interna. Sin un login para organizaciones `cliente` y
-`proveedor`, nadie fuera del equipo obtiene token, y endpoints que ya existen
-(`/carro`, `/ordenes`, `/estadisticas/proveedor`) no se pueden usar desde las
-apps. La propuesta está en
-[`apps/mobile/API_CONTRACT.md`](../../apps/mobile/API_CONTRACT.md#-post-authlogin--kan-126):
-mismas reglas que `loginAdmin` sin exigir organización interna, y la misma
-respuesta más el objeto `organizacion`. Falta decidir si es una ruta aparte o
-`/auth/admin/login` generalizado.
-
-## 11. Ruta del catálogo público
-
-**Aplica en:** KAN-145 · **Afecta:** mobile (KAN-127 a 129) y ecommerce
-
-`GET /productos` ya existe, pero es el listado de **administración** (exige
-`crear_producto`, devuelve fichas sin ofertas ni precios). El comprador
-necesita otro: público, con el rango de precios de las ofertas visibles y el
-comparador con calificaciones. Mobile lo especificó como
-`GET /catalogo/productos` y `GET /catalogo/productos/:id`
-([contrato](../../apps/mobile/API_CONTRACT.md#-get-catalogoproductos--kan-127-kan-128));
-el ecommerce debería usar los mismos. Falta confirmarlo con backend.
-
 ## 12. Unidad de `cantidad` y de `precio_unitario`
 
 **Aplica en:** KAN-145, KAN-147 · **Afecta:** precios por kg/L, mínimos y stock en las tres apps
@@ -126,6 +75,13 @@ compara en unidades (`cantidad × unidades_por_caja`), el seed carga
 un bidón. Mobile sigue la matemática del backend (total = precio × cantidad)
 y muestra "c/u" sin decir "caja" hasta que se decida. Hay que fijar qué es
 cada campo y alinear seed, casos de uso y pantallas.
+
+El catálogo público (KAN-145) sigue la lectura del seed: el
+`precioNormalizado` de cada oferta es `precio_unitario / contenido` (el
+bidón de 5 L a $12.490 sale a $2.498 por litro). Si se decide que
+`precio_unitario` es por caja, hay que dividir además por
+`unidades_por_caja` en `precioNormalizado`
+(`packages/application/src/use-cases/catalogo.use-cases.ts`).
 
 ## 13. Umbrales de las alertas del proveedor
 

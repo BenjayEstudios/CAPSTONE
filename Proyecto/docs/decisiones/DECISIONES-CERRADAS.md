@@ -73,6 +73,43 @@ explícito, así que no depende del default del código.
 `CORS_ORIGINS` separada por coma, porque hay dos frontends locales (4200 y
 4300). Una sola variable; la singular se eliminó.
 
+### Permisos por matriz, no por código de rol
+
+Las rutas usan `requirePermiso`, que lee `rol.permisos` desde la base en
+cada request (por ejemplo, `POST /categorias` pide `crear_producto`).
+`requireRol` queda disponible, pero ninguna ruta lo usa. Esto cierra la
+duda de que `POST /categorias` pedía `requireRol("administrador")`
+cuando el código del seed es `admin_general` (KAN-144).
+
+### Login único en `POST /auth/login`
+
+Para compradores, proveedores e internos; cada app decide qué roles acepta.
+`POST /auth/admin/login` se mantiene para admin-site (KAN-144,
+[entrada](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md)).
+
+## Catálogo
+
+### Catálogo público en `/catalogo/productos`
+
+`GET /productos` sigue siendo el listado de administración. El comprador usa
+`GET /catalogo/productos` y `GET /catalogo/productos/:id`, públicos, tal como
+los especificó mobile; el ecommerce usa los mismos (KAN-145,
+[entrada](../cambios/2026-11-20-catalogo-publico-y-comparador.md)).
+
+### Búsqueda con prefijo y plural simple
+
+FULLTEXT en modo booleano con comodín de prefijo y una regla de plural del
+español ("quesos" → `queso*`, "aceites" → `aceit*`), más `LIKE` en nombre y
+marca para palabras de menos de 3 letras. Sin tildes ni mayúsculas gracias a
+la collation. Descartado: un motor de búsqueda aparte (Elasticsearch,
+Meilisearch) para un catálogo de este tamaño.
+
+### `vista_producto` lo registran las apps, no la ficha
+
+El contrato sugería registrar la visita en `GET /catalogo/productos/:id`, pero
+las apps ya la mandan por `POST /eventos/lote`: registrarla en los dos lados
+la contaría doble en la analítica del proveedor.
+
 ## Base de datos
 
 ### El DBML es la fuente de verdad del modelo

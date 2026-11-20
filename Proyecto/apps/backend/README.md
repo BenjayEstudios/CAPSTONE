@@ -15,7 +15,7 @@ src/
 │                    application, registra plugins y el error handler
 ├── routes/          # un grupo de rutas por módulo de negocio
 │   ├── auth/          # login, registro, recuperacion de clave y 2FA TOTP
-│   ├── catalogo/       # (pendiente)
+│   ├── catalogo/       # catalogo publico del comprador y comparador (KAN-145)
 │   ├── pedidos/        # (pendiente)
 │   └── pagos/           # (pendiente)
 ├── plugins/          # plugins de Fastify (auth, rate-limit, etc.)
@@ -119,6 +119,15 @@ Correo (`ServicioCorreo`, `packages/domain/src/services`; selector en `src/lib/m
 | `ADMIN_SITE_URL` | `http://localhost:4300` | Enlace al panel en la invitacion. |
 
 Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva orden al proveedor, confirmacion de compra con folio, recuperacion de contrasena); las tres ultimas aun sin disparador. Tests usan `CorreoEnMemoria`.
+
+## Catalogo publico y comparador (KAN-145)
+
+Rutas publicas (sin token), distintas del listado de administracion `/productos`:
+
+- `GET /catalogo/productos?q&categoriaId&plazoMaxHoras&maxUnidadesPorCaja&orden&pagina&porPagina` -> `{ items, total, pagina, porPagina }`. Cada item con `precioDesde`, `precioHasta`, `ofertas` y `plazoMinHoras` calculados sobre las ofertas visibles (y que cumplen los filtros de plazo y caja). `orden`: `relevancia` (default), `precio`, `diferencia` (solo 2+ ofertas; lo usa el inicio), `nombre`.
+- `GET /catalogo/productos/:id` -> ficha con `ofertas` por precio unitario ascendente, cada una con `precioNormalizado` (por kg/L/unidad), proveedor, calificacion y `costoDespacho`. `404 PRODUCTO_NO_ENCONTRADO`.
+
+Visible = producto `publicado` en categoria `activa` (y padre activo), oferta `publicada`, proveedor con organizacion `activa`. Busqueda: FULLTEXT `ix_producto_nombre_fulltext` con prefijo y plural simple (`terminoFulltext` en el repositorio) mas `LIKE` en nombre y marca. Tarifa de despacho: con token de comprador, la comuna de su organizacion (`leerAuthOpcional` en `plugins/auth.ts`; un token invalido no da error); sin sesion, la RM (region `13`). SQL a mano en `DrizzleCatalogoRepository`.
 
 ## Cuentas: login, registro y recuperacion de clave (KAN-144)
 
