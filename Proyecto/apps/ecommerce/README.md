@@ -26,10 +26,25 @@ usar `pnpm dlx ng` como alternativa.
 
 ```bash
 pnpm install
-pnpm dev     # ng serve, puerto 4200 por defecto, apunta a apps/backend en :3000
+pnpm dev     # ng serve en :4200, apunta a apps/backend en :8000 (environment.development.ts)
 pnpm build
 pnpm test
 ```
+
+## Cuenta y sesión (KAN-97)
+
+- Rutas: `/ingresar`, `/registro` (persona o empresa), `/recuperar-clave`, `/restablecer-clave?token=` (`features/cuenta/`).
+- `core/state/session.state.ts` guarda JWT y usuario en `localStorage` (`cotizapp.ecommerce.sesion`).
+- `core/auth/guards.ts`: `sesionGuard` para lo que exige cuenta (checkout, pedidos); el catálogo **no** lo usa. `invitadoGuard` para ingresar/registro.
+- `core/auth/auth.interceptor.ts`: Bearer en cada llamada; 401 fuera de las rutas públicas de `/auth` -> `/ingresar?motivo=expirada`.
+- Las cuentas internas no entran al ecommerce (usan admin-site).
+- En desarrollo el correo de recuperación no se envía: con `MAIL_OUT_DIR` en el backend se escribe en esa carpeta y de ahí se copia el enlace.
+
+Rutas provisorias hasta su historia: `/` (KAN-89), `/catalogo` (KAN-90), `/checkout` (KAN-95). La vista de status está en `/estado`.
+
+## Tests
+
+`pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.
 
 ## Dónde va cada cosa
 

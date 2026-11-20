@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Ecommerce: registro e ingreso del comprador](2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) | KAN-85 | KAN-97 |
 | 2026-11-20 | [Ofertas del proveedor](2026-11-20-ofertas-del-proveedor.md) | KAN-88 | KAN-146 |
 | 2026-11-20 | [Catálogo público, búsqueda y comparador](2026-11-20-catalogo-publico-y-comparador.md) | KAN-88 | KAN-145 |
 | 2026-11-20 | [Droplet de dev creado en Digital Ocean](2026-11-20-droplet-de-dev-creado.md) | KAN-88 | KAN-161 |

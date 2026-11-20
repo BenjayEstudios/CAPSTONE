@@ -1,1 +1,33 @@
-<router-outlet />
+<header class="cabecera">
+  <div class="contenedor fila">
+    <a routerLink="/" class="marca" aria-label="Cotizapp, inicio">
+      <span class="tintas" aria-hidden="true"><i></i><i></i><i></i></span>
+      Cotizapp
+    </a>
+
+    <nav class="nav" aria-label="Principal">
+      <a routerLink="/catalogo" routerLinkActive="activo">Catálogo</a>
+    </nav>
+
+    <div class="cuenta">
+      @if (session.autenticado()) {
+        <span class="saludo">
+          Hola, {{ session.nombreCorto() }}
+          <small>{{ session.usuario()?.organizacion?.nombre }}</small>
+        </span>
+        <button type="button" class="btn btn-secondary" (click)="salir()">Salir</button>
+      } @else {
+        <a routerLink="/ingresar" class="btn btn-secondary">Ingresar</a>
+        <a routerLink="/registro" class="btn btn-primary">Crear cuenta</a>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="principal">
+  <router-outlet />
+</main>
+
+<footer class="pie">
+  <div class="contenedor">Cotizapp · Compra a distribuidores de alimentos comparando precio, plazo y calificación.</div>
+</footer>

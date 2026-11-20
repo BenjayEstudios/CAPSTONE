@@ -1,6 +1,6 @@
 # KAN-85 — Ecommerce web (cliente y proveedor)
 
-**Estado:** ⏳ Pendiente · **Responsable:** Benjamín González ·
+**Estado:** 🔄 En curso · **Responsable:** Benjamín González ·
 **App:** `apps/ecommerce`
 
 Aplicación web Angular con dos perfiles en una sola app: el sitio de compra
@@ -10,11 +10,15 @@ documentos, liquidaciones).
 
 ## Lo que hay hoy
 
-- Scaffold Angular 18 con estructura feature-based, cliente API, estado de
-  sesión y la vista de status contra `GET /health-check`.
-- Lint (angular-eslint) y tests (karma, ChromeHeadless) con specs mínimos —
-  aún sin commitear, ver
-  [cambios](../cambios/2026-10-23-ci-tests-angular-en-chromeheadless.md).
+- Tema con los tokens de la identidad (los mismos de admin-site), cabecera con
+  la marca y el estado de la sesión.
+- Cuenta del comprador (KAN-97): ingresar, registro (persona o empresa),
+  recuperar y restablecer contraseña, sesión persistente con JWT, guard de
+  sesión e interceptor de 401
+  ([entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md)).
+- Inicio, catálogo y checkout son pantallas provisorias hasta KAN-89, KAN-90 y
+  KAN-95; ya aplican la regla de acceso (catálogo público, checkout con sesión).
+- La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
 ## Tickets
@@ -31,7 +35,7 @@ documentos, liquidaciones).
 | KAN-94 | Carro multiproveedor | ⏳ |
 | KAN-95 | Checkout único | ⏳ |
 | KAN-96 | Confirmación y detalle de compra consolidado | ⏳ |
-| KAN-97 | Registro e inicio de sesión de comprador | ⏳ |
+| KAN-97 | Registro e inicio de sesión de comprador | ✅ [entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) |
 | KAN-98 | Mis pedidos y seguimiento | ⏳ |
 | KAN-99 | Calificar proveedor tras la entrega | ⏳ (modelo de datos listo, KAN-142) |
 
