@@ -329,8 +329,8 @@ comisiones (`comisionPct`, `comisionMonto`, `montoALiquidar` y
 **⏳ Campos aditivos que pide la app en `GET /ordenes/:id`** (no rompen a
 nadie; mientras no estén, la app los trata como desconocidos):
 
-- `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
-  o `null` (hoy solo viene `puntoRetiroId`).
+- ✅ `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
+  o `null` (despacho). Solo en el detalle, desde KAN-96.
 - `envios[].calificacion` (solo para el cliente): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
   o `null`. Sin el campo, la app ofrece calificar y espera un `409 YA_CALIFICADO`.
 

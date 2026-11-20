@@ -1,0 +1,48 @@
+:host { display: block; }
+h2 { font-size: 21px; margin: 0 0 14px; }
+h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; color: var(--color-text-soft); margin-left: 6px; }
+h3 { font-size: 15px; margin: 0 0 8px; }
+.suave { color: var(--color-text-soft); font-size: 13px; margin: 0; }
+
+.resumen-orden { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; background: var(--color-surface); padding: 22px 24px; margin: 22px 0 32px; }
+.resumen-orden dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; margin: 0; }
+.resumen-orden dt { font-size: 12px; color: var(--color-text-soft); }
+.resumen-orden dd { margin: 2px 0 0; font-weight: 600; }
+.folio { font-family: var(--font-heading); font-size: 20px; letter-spacing: .02em; }
+.resumen-orden .total { font-family: var(--font-heading); font-size: 20px; }
+.documentos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.documentos li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.documentos small { color: var(--color-text-soft); }
+.documentos .mensaje { margin-top: 8px; }
+
+.envios { display: flex; flex-direction: column; gap: 18px; }
+.envio { border: 1px solid var(--color-divider); background: var(--color-card); padding: 18px 20px; min-width: 0; }
+.envio header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.envio h3 { font-family: var(--font-heading); font-size: 18px; margin: 0; }
+.estado { font-size: 12px; font-weight: 600; padding: 2px 8px; background: var(--color-accent-100); color: var(--color-accent-800); }
+.estado.cancelado { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.modalidad { margin: 10px 0 2px; display: flex; flex-direction: column; font-size: 14px; }
+.modalidad span { color: var(--color-text-soft); font-size: 13px; }
+.plazo { margin: 0 0 12px; font-size: 13px; color: var(--color-text-soft); }
+
+.lineas { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 10px; }
+.lineas th, .lineas td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--color-divider); vertical-align: top; }
+.lineas thead th { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--color-text-soft); font-weight: 600; }
+.lineas tbody th { font-weight: 400; }
+.lineas small { display: block; font-size: 12px; color: var(--color-text-soft); }
+.num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.montos, .totales dl { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+.montos div, .totales dl div { display: flex; justify-content: space-between; gap: 12px; }
+.montos dd, .totales dd { margin: 0; font-variant-numeric: tabular-nums; }
+.fuerte { font-weight: 700; }
+.guia { margin: 10px 0 0; font-size: 13.5px; }
+
+.totales { margin-top: 24px; border-top: 1px solid var(--color-text); padding-top: 14px; max-width: 360px; margin-left: auto; }
+.totales .fuerte { font-family: var(--font-heading); font-size: 18px; }
+
+@media (max-width: 640px) {
+  .resumen-orden { grid-template-columns: 1fr; padding: 18px; }
+  .envio { padding: 14px; }
+  .totales { max-width: none; }
+}

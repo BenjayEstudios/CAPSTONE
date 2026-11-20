@@ -183,19 +183,25 @@ describe("Resultado del pago (KAN-95)", () => {
     ctrl.match(`${API}/carro`).forEach((r) => r.flush({ id: null, estado: "abierto", items: [] }));
     ctrl.expectOne(`${API}/ordenes/12`).flush({ ...ORDEN, ...orden });
     await h.fixture.whenStable();
+    // Pagada: pide sus documentos (KAN-96).
+    ctrl.match((r) => r.url.startsWith(`${API}/documentos-tributarios`)).forEach((r) =>
+      r.flush({ items: [{ id: 28, tipoDte: 39, tipoNombre: "BOLETA", folio: 1, ordenId: 12, ordenEnvioId: null, total: 80150, emitidoEn: "", pdfUrl: "" }] })
+    );
+    await h.fixture.whenStable();
     h.detectChanges();
     return { c, el: h.routeNativeElement as HTMLElement };
   }
 
   beforeEach(() => localStorage.clear());
 
-  it("aprobado: folio, total pagado y como llega cada parte", async () => {
+  it("aprobado: folio, total pagado, la boleta y como llega cada parte", async () => {
     const { el } = await abrir("/checkout/resultado?orden=12&pago=aprobado");
     const t = el.textContent!.replace(/\s+/g, " ");
     expect(t).toContain("¡Listo! Tu pago fue aprobado");
     expect(t).toContain("CM-90012");
     expect(t).toContain("$80.150");
-    expect(t).toContain("Retiro en bodega");
+    expect(t).toContain("Boleta electrónica N.º 1 (PDF)");
+    expect(t).toContain("Retiro en la bodega del distribuidor");
   });
 
   it("rechazado: la orden sigue pendiente y 'Reintentar el pago' vuelve a Webpay", async () => {

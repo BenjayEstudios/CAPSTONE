@@ -30,6 +30,9 @@ documentos, liquidaciones).
 - Checkout único en tres pasos con entrega por distribuidor y pago con
   Webpay Plus; resultado del pago con reintento (KAN-95)
   ([entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md)).
+- Confirmación con el detalle consolidado: folio, medio, total, envíos con
+  líneas, modalidad y plazo, y boleta/factura y guías en PDF (KAN-96)
+  ([entrada](../cambios/2026-11-20-ecommerce-confirmacion-de-compra.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -46,7 +49,7 @@ documentos, liquidaciones).
 | KAN-93 | Comparación lado a lado | ✅ [entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md) |
 | KAN-94 | Carro multiproveedor | ✅ [entrada](../cambios/2026-11-20-ecommerce-carro-multiproveedor.md) |
 | KAN-95 | Checkout único | ✅ [entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md) (Webpay; transferencia y línea de crédito pendientes, decisión abierta 16) |
-| KAN-96 | Confirmación y detalle de compra consolidado | ⏳ |
+| KAN-96 | Confirmación y detalle de compra consolidado | ✅ [entrada](../cambios/2026-11-20-ecommerce-confirmacion-de-compra.md) |
 | KAN-97 | Registro e inicio de sesión de comprador | ✅ [entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) |
 | KAN-98 | Mis pedidos y seguimiento | ⏳ |
 | KAN-99 | Calificar proveedor tras la entrega | ⏳ (modelo de datos listo, KAN-142) |

@@ -21,6 +21,7 @@ import { orden } from "../db/schema/orden.schema.js";
 import { ordenEnvio } from "../db/schema/orden-envio.schema.js";
 import { ordenLinea } from "../db/schema/orden-linea.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
+import { puntoRetiro } from "../db/schema/punto-retiro.schema.js";
 import { usuario } from "../db/schema/usuario.schema.js";
 
 type Lector = Pick<DbClient, "select">;
@@ -46,6 +47,22 @@ export class DrizzleOrdenRepository implements OrdenRepository {
     const lineas = conLineas && envios.length
       ? await db.select().from(ordenLinea).where(inArray(ordenLinea.ordenEnvioId, envios.map((x) => x.e.id))).orderBy(ordenLinea.id)
       : [];
+    // Puntos de retiro de los envios con retiro (solo en el detalle, KAN-96).
+    const puntoIds = conLineas ? [...new Set(envios.map((x) => x.e.puntoRetiroId).filter((x): x is number => x !== null))] : [];
+    const puntos = puntoIds.length
+      ? await db
+          .select({ id: puntoRetiro.id, nombre: puntoRetiro.nombre, horario: puntoRetiro.horario, calle: direccion.calle, numero: direccion.numero, complemento: direccion.complemento, comuna: comuna.nombre })
+          .from(puntoRetiro)
+          .innerJoin(direccion, eq(direccion.id, puntoRetiro.direccionId))
+          .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+          .where(inArray(puntoRetiro.id, puntoIds))
+      : [];
+    const puntoDe = (id: number | null) => {
+      const p = puntos.find((x) => x.id === id);
+      if (!p) return null;
+      const direccionTexto = [[p.calle, p.numero].filter(Boolean).join(" "), p.complemento, p.comuna].filter(Boolean).join(", ");
+      return { id: p.id, nombre: p.nombre, horario: p.horario, direccion: direccionTexto };
+    };
     const clientes = await db
       .select({ ordenId: orden.id, clienteNombre: usuario.nombre, organizacionNombre: organizacion.razonSocial })
       .from(orden)
@@ -71,7 +88,8 @@ export class DrizzleOrdenRepository implements OrdenRepository {
           .map((x): EnvioConLineas => ({
             ...toEnvio(x.e),
             proveedorNombre: x.proveedorNombre,
-            lineas: lineas.filter((l) => l.ordenEnvioId === x.e.id).map(toLinea)
+            lineas: lineas.filter((l) => l.ordenEnvioId === x.e.id).map(toLinea),
+            ...(conLineas ? { puntoRetiro: puntoDe(x.e.puntoRetiroId) } : {})
           })),
         clienteNombre: cli?.clienteNombre ?? "",
         organizacionNombre: cli?.organizacionNombre ?? "",

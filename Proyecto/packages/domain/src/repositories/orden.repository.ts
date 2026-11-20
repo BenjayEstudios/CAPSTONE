@@ -8,9 +8,19 @@ export type AlcanceOrdenes =
   | { tipo: "cliente"; usuarioId: number }
   | { tipo: "proveedor"; proveedorId: number };
 
+/** Punto de retiro de un envio con modalidad retiro (detalle de la orden, KAN-96). */
+export interface PuntoRetiroInfo {
+  id: number;
+  nombre: string;
+  horario: string | null;
+  direccion: string;
+}
+
 export interface EnvioConLineas extends OrdenEnvio {
   proveedorNombre: string;
   lineas: OrdenLinea[];
+  /** Solo en el detalle (con lineas) y si el envio es retiro; si no, null o ausente. */
+  puntoRetiro?: PuntoRetiroInfo | null;
 }
 
 export interface DireccionEntregaInfo {

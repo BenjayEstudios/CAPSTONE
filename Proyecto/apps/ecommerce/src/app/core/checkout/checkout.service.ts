@@ -5,6 +5,7 @@ import { ApiClient } from "../api/api.client";
 import {
   Comuna,
   ConfirmarCarroRequest,
+  DocumentoTributario,
   MedioPago,
   OpcionesEntrega,
   OrdenCreada,
@@ -42,6 +43,17 @@ export class CheckoutService {
 
   orden(id: number): Promise<OrdenDetalle> {
     return firstValueFrom(this.api.get<OrdenDetalle>(`/ordenes/${id}`));
+  }
+
+  /** Boleta o factura y guias de la orden (existen cuando la orden esta pagada). */
+  async documentos(ordenId: number): Promise<DocumentoTributario[]> {
+    const r = await firstValueFrom(this.api.get<{ items: DocumentoTributario[] }>(`/documentos-tributarios?ordenId=${ordenId}&tamano=50`));
+    return r.items;
+  }
+
+  /** PDF del documento. El endpoint pide el token, por eso no sirve un enlace directo. */
+  pdf(documentoId: number): Promise<Blob> {
+    return firstValueFrom(this.api.getBlob(`/documentos-tributarios/${documentoId}/pdf`));
   }
 }
 

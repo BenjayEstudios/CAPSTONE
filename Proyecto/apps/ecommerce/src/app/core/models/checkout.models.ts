@@ -80,6 +80,30 @@ export interface EnvioOrden {
   subtotal: number;
   estado: string;
   lineas?: Array<{ ofertaId: number; nombreProducto: string; formato: string | null; precioUnitario: number; cantidad: number; totalLinea: number }>;
+  /** Solo en el detalle: el punto de retiro si la modalidad es retiro (KAN-96). */
+  puntoRetiro?: { id: number; nombre: string; horario: string | null; direccion: string } | null;
+}
+
+export interface DireccionEntrega {
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  referencia: string | null;
+  comunaNombre: string;
+  regionNombre: string;
+}
+
+/** GET /documentos-tributarios?ordenId= (DTE simulados, KAN-153). */
+export interface DocumentoTributario {
+  id: number;
+  tipoDte: 33 | 39 | 52 | 61;
+  tipoNombre: string;
+  folio: number;
+  ordenId: number;
+  ordenEnvioId: number | null;
+  total: number;
+  emitidoEn: string;
+  pdfUrl: string;
 }
 
 /** GET /ordenes/:id (vista del cliente) */
@@ -95,6 +119,8 @@ export interface OrdenDetalle {
   subtotal: number;
   costoDespachoTotal: number;
   total: number;
+  /** Solo en el detalle. */
+  direccionEntrega?: DireccionEntrega | null;
   envios: EnvioOrden[];
 }
 

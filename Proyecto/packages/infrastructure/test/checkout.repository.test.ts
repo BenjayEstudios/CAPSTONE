@@ -31,6 +31,20 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(comunas.find((c) => c.nombre === "Ñuñoa")).toEqual({ id: expect.any(Number), nombre: "Ñuñoa", regionCodigo: "13", regionNombre: "Metropolitana de Santiago" });
   });
 
+  it("detalle de la orden (KAN-96): el envio con retiro trae su punto; el despacho, null; el listado no lo trae", async () => {
+    const repo = new DrizzleOrdenRepository(db());
+    const [{ id }] = await consultar<{ id: number }>(
+      db(),
+      sql`SELECT MIN(orden_id) AS id FROM orden_envio WHERE modalidad = 'retiro' AND punto_retiro_id = 2`
+    );
+    const oc = await repo.buscarPorId(id, { tipo: "todas" });
+    const retiro = oc!.envios.find((e) => e.modalidad === "retiro")!;
+    expect(retiro.puntoRetiro).toEqual({ id: 2, nombre: "Planta Renca", horario: "Lun a Vie 07:30-16:00", direccion: "Av. Jorge Hirmas 2440, Renca" });
+    for (const e of oc!.envios.filter((x) => x.modalidad === "despacho")) expect(e.puntoRetiro).toBeNull();
+    const { items } = await repo.listar({ alcance: { tipo: "todas" }, pagina: 1, tamano: 100 });
+    expect(items.find((o) => o.orden.id === id)!.envios.every((e) => e.puntoRetiro === undefined)).toBe(true);
+  });
+
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
     const repo = new DrizzleOrdenRepository(db());
     const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);

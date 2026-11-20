@@ -61,7 +61,8 @@ function presentar(a: AlcanceOrdenes, oc: OrdenCompleta, conLineas: boolean) {
     montoALiquidar: a.tipo === "cliente" ? null : e.subtotal + (e.costoDespacho ?? 0) - e.comisionMonto,
     estado: e.estado,
     actualizadoEn: e.actualizadoEn,
-    ...(conLineas ? { lineas: e.lineas } : {})
+    // Aditivo (KAN-96): en el detalle, el punto de retiro de los envios con retiro (null en despacho).
+    ...(conLineas ? { lineas: e.lineas, puntoRetiro: e.puntoRetiro ?? null } : {})
   }));
   const propio = a.tipo === "proveedor" ? oc.envios[0] : undefined;
   return {

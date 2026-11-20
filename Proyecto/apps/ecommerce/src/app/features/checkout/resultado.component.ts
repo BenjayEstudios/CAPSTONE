@@ -2,9 +2,10 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { CheckoutService, NavegadorPasarela } from "../../core/checkout/checkout.service";
-import { OrdenDetalle, ResultadoPago } from "../../core/models/checkout.models";
+import { DocumentoTributario, OrdenDetalle, ResultadoPago } from "../../core/models/checkout.models";
 import { CarroState } from "../../core/state/carro.state";
-import { formatearClp, plazo } from "../../shared/formato";
+import { formatearClp } from "../../shared/formato";
+import { DetalleOrdenComponent } from "../pedidos/detalle-orden.component";
 
 const TITULOS: Record<Exclude<ResultadoPago, "aprobado">, string> = {
   rechazado: "El pago fue rechazado",
@@ -15,11 +16,11 @@ const TITULOS: Record<Exclude<ResultadoPago, "aprobado">, string> = {
 // /checkout/resultado?orden=&pago= (KAN-95): adonde vuelve el comprador desde
 // Webpay (el backend redirige aqui). Lee la orden para mostrar el estado real
 // (no confia solo en ?pago=) y, si sigue pendiente, permite reintentar.
-// El detalle consolidado de la compra es KAN-96.
+// Debajo va el detalle consolidado de la compra con sus documentos (KAN-96).
 @Component({
   selector: "app-resultado-pago",
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DetalleOrdenComponent],
   templateUrl: "./resultado.component.html",
   styleUrl: "./checkout.component.css"
 })
@@ -33,6 +34,7 @@ export class ResultadoPagoComponent {
   readonly ordenId = computed(() => Number(this.query().get("orden")) || null);
   readonly pago = computed(() => (this.query().get("pago") ?? "error") as ResultadoPago);
   readonly orden = signal<OrdenDetalle | null>(null);
+  readonly documentos = signal<DocumentoTributario[]>([]);
   readonly estado = signal<"cargando" | "ok" | "no-encontrada">("cargando");
   readonly reintentando = signal(false);
   readonly errorReintento = signal<string | null>(null);
@@ -45,7 +47,6 @@ export class ResultadoPagoComponent {
   });
 
   readonly clp = formatearClp;
-  readonly plazo = plazo;
 
   constructor() {
     void this.carro.recargar();
@@ -56,8 +57,11 @@ export class ResultadoPagoComponent {
     const id = this.ordenId();
     if (!id) return this.estado.set("no-encontrada");
     try {
-      this.orden.set(await this.checkout.orden(id));
+      const o = await this.checkout.orden(id);
+      this.orden.set(o);
       this.estado.set("ok");
+      // La boleta o factura y las guias se emiten al confirmar el pago.
+      if (o.estadoPago === "pagado") this.documentos.set(await this.checkout.documentos(id).catch(() => []));
     } catch {
       this.estado.set("no-encontrada");
     }

@@ -62,6 +62,10 @@ pnpm test
 
 Para probar el pago en local usar `http://localhost:4200`: el ambiente de integración de Transbank rechaza (403) un formulario con origen `http://[::1]:4200`. Tarjeta de prueba de Transbank: 4051 8856 0044 6623, CVV 123; en el banco simulado, RUT 11.111.111-1 y clave 123. La vista de status está en `/estado`.
 
+## Confirmación y detalle de la compra (KAN-96)
+
+`features/pedidos/detalle-orden.component.ts`: detalle consolidado de una orden (folio, medio de pago, total, documentos; por distribuidor estado, despacho con dirección o retiro con el punto, plazo y fecha estimada, líneas y montos). Lo usa `/checkout/resultado` y sirve para "Mis pedidos" (KAN-98). Los PDF de `GET /documentos-tributarios/:id/pdf` piden el token: se descargan como blob (`ApiClient.getBlob`) y se abren en otra pestaña.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

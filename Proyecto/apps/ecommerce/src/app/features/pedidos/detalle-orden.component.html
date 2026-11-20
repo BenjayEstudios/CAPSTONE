@@ -1,0 +1,92 @@
+@let o = orden();
+<section class="resumen-orden" aria-label="Resumen de la orden">
+  <dl>
+    <div><dt>Folio</dt><dd class="folio">{{ o.codigo }}</dd></div>
+    <div><dt>{{ o.pagadoEn ? "Pagada el" : "Creada el" }}</dt><dd>{{ fecha(o.pagadoEn ?? o.creadaEn) }}</dd></div>
+    <div><dt>Medio de pago</dt><dd>{{ medio(o.medioPago) }}</dd></div>
+    <div><dt>{{ o.estadoPago === "pagado" ? "Total pagado" : "Total" }}</dt><dd class="total">{{ clp(o.total) }}</dd></div>
+  </dl>
+
+  <div class="documentos">
+    <h3>Documento tributario</h3>
+    @if (comprobantes().length) {
+      <ul>
+        @for (d of comprobantes(); track d.id) {
+          <li>
+            <button type="button" class="btn-link" [disabled]="descargando() !== null" (click)="abrirPdf(d)">
+              {{ descargando() === d.id ? "Abriendo…" : nombreDocumento(d) + " (PDF)" }}
+            </button>
+            <small>{{ clp(d.total) }}</small>
+          </li>
+        }
+      </ul>
+    } @else if (o.estadoPago === "pagado") {
+      <p class="suave">Tu {{ o.requiereFactura ? "factura" : "boleta" }} aparecerá aquí apenas se emita.</p>
+    } @else {
+      <p class="suave">La {{ o.requiereFactura ? "factura" : "boleta" }} se emite cuando se confirma el pago.</p>
+    }
+    @if (errorPdf(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+  </div>
+</section>
+
+<section class="envios" aria-labelledby="titulo-envios">
+  <h2 id="titulo-envios">Así llega tu pedido <small>{{ o.envios.length }} {{ o.envios.length === 1 ? "distribuidor" : "distribuidores" }}</small></h2>
+  @for (e of o.envios; track e.id) {
+    <article class="envio" [attr.aria-label]="e.proveedorNombre">
+      <header>
+        <h3>{{ e.proveedorNombre }}</h3>
+        <span class="estado" [class.cancelado]="e.estado === 'cancelado'">{{ estadoEnvio(e) }}</span>
+      </header>
+      <p class="modalidad">
+        @if (e.modalidad === "retiro") {
+          <strong>Retiro en {{ e.puntoRetiro?.nombre ?? "la bodega del distribuidor" }}</strong>
+          @if (e.puntoRetiro; as p) { <span>{{ p.direccion }}@if (p.horario) { · {{ p.horario }} }</span> }
+        } @else {
+          <strong>Despacho a domicilio</strong>
+          @if (o.direccionEntrega; as d) { <span>{{ textoDireccion(d) }}@if (d.referencia) { · {{ d.referencia }} }</span> }
+        }
+      </p>
+      <p class="plazo">Plazo {{ plazo(e.plazoHoras) }} · {{ llegada(e) }}</p>
+
+      @if (e.lineas?.length) {
+        <table class="lineas">
+          <thead>
+            <tr><th scope="col">Producto</th><th scope="col" class="num">Cajas</th><th scope="col" class="num">Precio</th><th scope="col" class="num">Total</th></tr>
+          </thead>
+          <tbody>
+            @for (l of e.lineas; track l.ofertaId) {
+              <tr>
+                <th scope="row">{{ l.nombreProducto }}@if (l.formato) { <small>{{ l.formato }}</small> }</th>
+                <td class="num">{{ l.cantidad }}</td>
+                <td class="num">{{ clp(l.precioUnitario) }}</td>
+                <td class="num">{{ clp(l.totalLinea) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      <dl class="montos">
+        <div><dt>Productos</dt><dd>{{ clp(e.subtotal) }}</dd></div>
+        <div><dt>{{ e.modalidad === "retiro" ? "Retiro" : "Despacho" }}</dt><dd>{{ e.costoDespacho ? clp(e.costoDespacho) : "Sin costo" }}</dd></div>
+        <div class="fuerte"><dt>Total de este distribuidor</dt><dd>{{ clp(e.subtotal + e.costoDespacho) }}</dd></div>
+      </dl>
+
+      @for (g of guiasDe(e); track g.id) {
+        <p class="guia">
+          <button type="button" class="btn-link" [disabled]="descargando() !== null" (click)="abrirPdf(g)">
+            {{ descargando() === g.id ? "Abriendo…" : nombreDocumento(g) + " (PDF)" }}
+          </button>
+        </p>
+      }
+    </article>
+  }
+</section>
+
+<section class="totales" aria-label="Totales">
+  <dl>
+    <div><dt>Productos</dt><dd>{{ clp(o.subtotal) }}</dd></div>
+    <div><dt>Despachos</dt><dd>{{ o.costoDespachoTotal ? clp(o.costoDespachoTotal) : "Sin costo" }}</dd></div>
+    <div class="fuerte"><dt>{{ o.estadoPago === "pagado" ? "Total pagado" : "Total" }}</dt><dd>{{ clp(o.total) }}</dd></div>
+  </dl>
+</section>

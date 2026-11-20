@@ -14,6 +14,11 @@ export class ApiClient {
     return this.http.get<T>(`${this.baseUrl}${path}`);
   }
 
+  /** Archivo binario (PDF de un documento tributario). */
+  getBlob(path: string) {
+    return this.http.get(`${this.baseUrl}${path}`, { responseType: "blob" });
+  }
+
   post<T>(path: string, body: unknown) {
     return this.http.post<T>(`${this.baseUrl}${path}`, body);
   }
