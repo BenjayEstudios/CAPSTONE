@@ -1,0 +1,111 @@
+#cloud-config
+# Preparacion del droplet de Cotizapp (KAN-161), en el primer arranque.
+# SOLO ASCII: Digital Ocean recodifica mal tildes y simbolos en el user-data
+# y cloud-init descarta el YAML completo (paso el 2026-11-20).
+#
+# Uso: al crear el droplet en Digital Ocean (Ubuntu 24.04), en
+# "Advanced options -> Add Initialization scripts (free)" pegar este archivo
+# completo, DESPUES de reemplazar CLAVE_PUBLICA_DEPLOY por el contenido de
+# id_deploy.pub (una sola linea "ssh-ed25519 AAAA... deploy-cotizapp").
+#
+# Deja: Docker Engine + Compose (repo oficial), usuario "deploy" (grupo docker,
+# sin password, solo llave), firewall 22/80/443, 2 GB de swap, el repo
+# clonado en /opt/cotizapp y Proyecto/infra/.env con secretos generados aca
+# mismo (nunca salen del droplet) y dominios <ip>.nip.io hasta tener dominio
+# (KAN-159). NO levanta el stack: eso lo hace el primer deploy del workflow.
+#
+# Ver el resultado:  sudo cat /var/log/cotizapp-preparacion.log
+# Detalle: Proyecto/infra/README.md, "Crear el droplet".
+
+ssh_pwauth: false
+
+users:
+  - default
+  - name: deploy
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - CLAVE_PUBLICA_DEPLOY
+
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - ufw
+
+write_files:
+  - path: /root/preparar-cotizapp.sh
+    permissions: "0700"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      exec >>/var/log/cotizapp-preparacion.log 2>&1
+      echo "==> Inicio $(date -Is)"
+
+      if grep -q CLAVE_PUBLICA_DEPLOY /home/deploy/.ssh/authorized_keys 2>/dev/null; then
+        echo "ERROR: no se reemplazo CLAVE_PUBLICA_DEPLOY; el deploy no podra entrar."
+      fi
+
+      # Docker Engine + plugin Compose desde el repo oficial de Docker.
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+      # shellcheck source=/dev/null
+      . /etc/os-release
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+        > /etc/apt/sources.list.d/docker.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      systemctl enable --now docker
+      usermod -aG docker deploy
+
+      # Swap: colchon para MySQL en un droplet de 1-2 GB.
+      if [ ! -f /swapfile ]; then
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      fi
+
+      # Firewall: solo SSH y web. MySQL no publica puertos en el compose.
+      ufw allow OpenSSH
+      ufw allow 80/tcp
+      ufw allow 443/tcp
+      ufw --force enable
+
+      # Repo (publico, por HTTPS) en /opt/cotizapp, del usuario deploy.
+      install -d -o deploy -g deploy /opt/cotizapp
+      if [ ! -d /opt/cotizapp/.git ]; then
+        sudo -u deploy git clone https://github.com/BenjayEstudios/CAPSTONE.git /opt/cotizapp
+      fi
+
+      # infra/.env con secretos generados aca (hex = solo alfanumericos, lo
+      # que exige MYSQL_PASSWORD). Si ya existe, no se toca.
+      env_file=/opt/cotizapp/Proyecto/infra/.env
+      if [ ! -f "$env_file" ]; then
+        ip="$(curl -fsS http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)"
+        umask 077
+        {
+          echo "# Generado por cloud-init el $(date -Is). Dominios provisorios (nip.io) hasta KAN-159."
+          echo "APP_DOMAIN=${ip}.nip.io"
+          echo "ADMIN_DOMAIN=admin.${ip}.nip.io"
+          echo "HTTP_PORT=80"
+          echo "UPLOADS_MAX_MB=5"
+          echo "MYSQL_PASSWORD=$(openssl rand -hex 32)"
+          echo "MYSQL_ROOT_PASSWORD=$(openssl rand -hex 32)"
+          echo "JWT_SECRET=$(openssl rand -hex 32)"
+        } > "$env_file"
+        chown deploy:deploy "$env_file"
+        chmod 600 "$env_file"
+      fi
+
+      sudo -u deploy docker compose -f /opt/cotizapp/Proyecto/infra/docker-compose.prod.yml config --quiet \
+        && echo "compose config OK"
+      echo "==> Listo $(date -Is)"
+
+runcmd:
+  - [bash, /root/preparar-cotizapp.sh]
