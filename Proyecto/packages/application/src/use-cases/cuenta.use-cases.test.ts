@@ -186,6 +186,37 @@ describe("registrarProveedor", () => {
     expect(c.creadas[0]).toMatchObject({ rolCodigo: "proveedor", organizacion: { tipo: "proveedor", estado: "en_revision" } });
   });
 
+  it("abre el caso de moderacion alta_proveedor de la organizacion (KAN-100)", async () => {
+    const casos: Array<{ input: unknown; auditoria: unknown }> = [];
+    const moderacionRepository = {
+      buscarAbierto: async () => null,
+      crear: async (input: { tipo: string }, auditoria: (id: number) => unknown) => {
+        casos.push({ input, auditoria: auditoria(7) });
+        return { id: 7, ...input };
+      }
+    } as never;
+    await registrarProveedor({ cuentaRepository: cuentas([]).repo, moderacionRepository })({
+      nombre: "Pedro", email: "ventas@andes.cl", clave: "Clave1234",
+      empresa: { razonSocial: "Los Andes Ltda", rut: "76086428-5", giro: "Distribucion" }
+    });
+    expect(casos[0]!.input).toEqual({
+      tipo: "alta_proveedor", entidad: "organizacion", entidadId: 51,
+      detalle: "Los Andes Ltda (76086428-5) · Distribucion · contacto Pedro, ventas@andes.cl"
+    });
+    expect(casos[0]!.auditoria).toMatchObject({ usuarioId: null, entidad: "moderacion_caso", entidadId: 7, datosDespues: { operacion: "abrir_caso" } });
+  });
+
+  it("si abrir el caso falla, la solicitud igual queda registrada y se informa", async () => {
+    const errores: string[] = [];
+    const moderacionRepository = { buscarAbierto: async () => { throw new Error("db"); } } as never;
+    const r = await registrarProveedor({ cuentaRepository: cuentas([]).repo, moderacionRepository, log: (m) => void errores.push(m) })({
+      nombre: "Pedro", email: "ventas@andes.cl", clave: "Clave1234",
+      empresa: { razonSocial: "Los Andes Ltda", rut: "76086428-5" }
+    });
+    expect(r.estado).toBe("en_revision");
+    expect(errores).toEqual(["No se pudo abrir el caso de alta del proveedor 51"]);
+  });
+
   it("sin empresa -> 400", async () => {
     await expect(registrarProveedor({ cuentaRepository: cuentas([]).repo })({
       nombre: "Pedro", email: "v@a.cl", clave: "Clave1234"

@@ -74,6 +74,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/pedidos/calificar-envio.component.ts`: en cada envío entregado del detalle, cinco estrellas y comentario opcional (`POST /ordenes/envios/:id/calificacion`), una vez; si ya calificó muestra su calificación (`envios[].calificacion` del detalle). El promedio se ve en la ficha de producto.
 
+## Vender en Cotizapp (KAN-100)
+
+`features/cuenta/vender.component.ts`: `/vender` (solo sin sesión) para que una distribuidora pida su alta: datos legales de la empresa, representante y acceso (`POST /auth/registro/proveedor`). Queda en revisión con su caso de moderación; no inicia sesión. Enlazado en el pie y en "Ingresar".
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

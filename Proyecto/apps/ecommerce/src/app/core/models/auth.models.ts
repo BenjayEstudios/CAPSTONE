@@ -47,6 +47,22 @@ export interface RegistroCompradorRequest {
   empresa?: EmpresaRegistro;
 }
 
+// POST /auth/registro/proveedor (KAN-100): el proveedor siempre es empresa.
+export interface RegistroProveedorRequest {
+  nombre: string;
+  email: string;
+  clave: string;
+  rut?: string;
+  telefono?: string;
+  empresa: EmpresaRegistro & { telefono?: string };
+}
+
+export interface RegistroProveedorResponse {
+  organizacionId: number;
+  estado: "en_revision";
+  mensaje: string;
+}
+
 // GET /auth/me devuelve el usuario sin la organizacion.
 export type MeResponse = Omit<UsuarioSesion, "organizacion">;
 

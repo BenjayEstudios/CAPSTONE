@@ -39,6 +39,9 @@ documentos, liquidaciones).
 - Calificar al distribuidor de un envío entregado (1 a 5 y comentario), una
   vez; se suma al promedio del comparador (KAN-99)
   ([entrada](../cambios/2026-11-20-calificar-proveedor.md)).
+- Proveedor: "Vender en Cotizapp" (`/vender`), solicitud de alta que queda
+  en revisión con su caso de moderación (KAN-100)
+  ([entrada](../cambios/2026-11-20-registro-de-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -64,7 +67,7 @@ documentos, liquidaciones).
 
 | Ticket | Historia | Estado |
 |---|---|---|
-| KAN-100 | Registro y alta de proveedor | ⏳ |
+| KAN-100 | Registro y alta de proveedor | ✅ [entrada](../cambios/2026-11-20-registro-de-proveedor.md) (aprobar aún no cierra el caso de moderación) |
 | KAN-101 | Dashboard de ventas | ⏳ |
 | KAN-102 | Asignarme un producto (publicar oferta) | ⏳ |
 | KAN-103 | Mis productos publicados | ⏳ |

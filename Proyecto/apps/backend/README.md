@@ -150,7 +150,7 @@ Rutas publicas, todas con limite por IP:
 
 - `POST /auth/login { email, clave }` -> `{ token, usuario }` con `usuario.organizacion = { id, nombre, tipo }`. Sirve a ecommerce, mobile y admin-site (no filtra por rol). `401 CREDENCIALES_INVALIDAS` (mismo error si el correo no existe), `403 USUARIO_NO_ACTIVO` si el usuario esta suspendido o la organizacion no esta `activa`. Internos con 2FA activo: responde `{ mfaRequerido, desafio }` y se sigue en `POST /auth/admin/mfa`.
 - `POST /auth/registro/comprador { nombre, email, clave, rut, telefono?, empresa? }` -> `201 { token, usuario }`. Sin `empresa` es persona (la organizacion lleva su nombre y RUT).
-- `POST /auth/registro/proveedor { nombre, email, clave, rut?, telefono?, empresa }` -> `201 { organizacionId, estado: "en_revision", mensaje }`, sin sesion hasta la aprobacion.
+- `POST /auth/registro/proveedor { nombre, email, clave, rut?, telefono?, empresa }` -> `201 { organizacionId, estado: "en_revision", mensaje }`, sin sesion hasta la aprobacion. Abre el caso de moderacion `alta_proveedor` de la organizacion (KAN-100; si falla, se registra en el log y la solicitud queda igual).
 - `POST /auth/recuperar { email }` -> `202 { ok: true }` siempre. Envia `<ECOMMERCE_URL o ADMIN_SITE_URL>/restablecer-clave?token=...`.
 - `POST /auth/restablecer { token, clave }` -> `200 { ok: true }`; `400 ENLACE_INVALIDO` si expiro (30 min) o ya se uso.
 

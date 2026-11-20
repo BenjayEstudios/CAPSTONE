@@ -3,6 +3,7 @@ import {
   registroCompradorSchema,
   registroProveedorSchema,
   type CuentaRepository,
+  type ModeracionRepository,
   type LoginResultadoDto,
   type NuevaCuenta,
   type RegistroCompradorDto,
@@ -14,6 +15,7 @@ import {
 import { ErrorAplicacion } from "../errors.js";
 import { validar } from "../validacion.js";
 import { aSesionConOrganizacion } from "./login.use-case.js";
+import { abrirCasoModeracion } from "./moderacion.use-cases.js";
 
 const COSTO_BCRYPT = 10;
 
@@ -68,7 +70,19 @@ export function registrarComprador(deps: {
 // proveedor en_revision + usuario proveedor. No inicia sesion: el login
 // responde USUARIO_NO_ACTIVO hasta que un administrador apruebe la
 // organizacion (POST /proveedores/:id/aprobar).
-export function registrarProveedor(deps: { cuentaRepository: CuentaRepository }) {
+/**
+ * Alta de proveedor (KAN-100): crea la organizacion en_revision con su
+ * usuario y abre el caso de moderacion alta_proveedor para que un
+ * administrador la revise. Sin sesion hasta la aprobacion: el login responde
+ * USUARIO_NO_ACTIVO y publicar ofertas, PROVEEDOR_NO_ACTIVO.
+ */
+export function registrarProveedor(deps: {
+  cuentaRepository: CuentaRepository;
+  /** Para abrir el caso alta_proveedor; sin el, solo se crea la cuenta. */
+  moderacionRepository?: ModeracionRepository;
+  /** Si abrir el caso falla, la cuenta ya existe: se registra y se sigue. */
+  log?: (mensaje: string, error?: unknown) => void;
+}) {
   return async (input: RegistroProveedorDto): Promise<RegistroProveedorResultadoDto> => {
     const d = validar(registroProveedorSchema, input);
     const hashClave = await bcrypt.hash(d.clave, COSTO_BCRYPT);
@@ -86,6 +100,14 @@ export function registrarProveedor(deps: { cuentaRepository: CuentaRepository })
       usuario: { nombre: d.nombre, email: d.email, rut: d.rut ?? null, telefono: d.telefono ?? null, hashClave, estado: "activo" },
       rolCodigo: "proveedor"
     });
+    if (deps.moderacionRepository) {
+      const detalle = `${d.empresa.razonSocial} (${d.empresa.rut})${d.empresa.giro ? ` · ${d.empresa.giro}` : ""} · contacto ${d.nombre}, ${d.email}`;
+      try {
+        await abrirCasoModeracion({ moderacionRepository: deps.moderacionRepository })("alta_proveedor", "organizacion", organizacionId, detalle.slice(0, 300));
+      } catch (err) {
+        deps.log?.(`No se pudo abrir el caso de alta del proveedor ${organizacionId}`, err);
+      }
+    }
     return {
       organizacionId,
       estado: "en_revision",

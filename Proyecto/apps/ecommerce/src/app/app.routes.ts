@@ -71,6 +71,13 @@ export const routes: Routes = [
     title: "Crear cuenta · Cotizapp"
   },
   {
+    // Solicitud de alta de distribuidor (KAN-100). Publica: quien ya tiene sesion no la necesita.
+    path: "vender",
+    canActivate: [invitadoGuard],
+    loadComponent: () => import("./features/cuenta/vender.component").then((m) => m.VenderComponent),
+    title: "Vender en Cotizapp"
+  },
+  {
     path: "recuperar-clave",
     loadComponent: () => import("./features/cuenta/recuperar-clave.component").then((m) => m.RecuperarClaveComponent),
     title: "Recuperar contraseña · Cotizapp"

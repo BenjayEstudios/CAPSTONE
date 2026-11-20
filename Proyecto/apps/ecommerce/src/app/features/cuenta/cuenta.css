@@ -43,3 +43,10 @@
 @media (max-width: 480px) {
   .fila-campos { grid-template-columns: 1fr; }
 }
+
+/* "Vender en Cotizapp" (KAN-100) */
+.grupo.primero { border-top: 0; padding-top: 0; }
+.solicitud-enviada { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.solicitud-enviada .etiqueta { color: var(--color-ok); margin: 0; }
+.solicitud-enviada h2 { margin: 0; }
+.solicitud-enviada p { margin: 0; }

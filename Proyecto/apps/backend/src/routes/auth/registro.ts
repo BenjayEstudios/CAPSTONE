@@ -1,6 +1,7 @@
 import type { RouteOptions } from "fastify";
 import { registrarComprador, registrarProveedor } from "@cotizapp/application";
-import { DrizzleCuentaRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import { DrizzleCuentaRepository, DrizzleModeracionRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import { logger } from "../../lib/logger.js";
 import { firmarToken } from "../../lib/jwt.js";
 import { crearLimitadorTasa } from "../../lib/rate-limit.js";
 
@@ -29,7 +30,11 @@ export const registroProveedorRoute: RouteOptions = {
   url: "/auth/registro/proveedor",
   preHandler: [limitarRegistro],
   handler: async (request, reply) => {
-    const r = await registrarProveedor({ cuentaRepository: new DrizzleCuentaRepository(request.server.db) })(request.body as never);
+    const r = await registrarProveedor({
+      cuentaRepository: new DrizzleCuentaRepository(request.server.db),
+      moderacionRepository: new DrizzleModeracionRepository(request.server.db),
+      log: (mensaje, error) => logger.error(mensaje, { error: error instanceof Error ? error.message : String(error) })
+    })(request.body as never);
     return reply.status(201).send(r);
   }
 };

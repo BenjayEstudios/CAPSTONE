@@ -2,7 +2,15 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import { ApiClient } from "../api/api.client";
-import { ApiErrorBody, LoginResponse, MeResponse, MfaRequeridoResponse, RegistroCompradorRequest } from "../models/auth.models";
+import {
+  ApiErrorBody,
+  LoginResponse,
+  MeResponse,
+  MfaRequeridoResponse,
+  RegistroCompradorRequest,
+  RegistroProveedorRequest,
+  RegistroProveedorResponse
+} from "../models/auth.models";
 import { SessionState } from "../state/session.state";
 
 export class AuthError extends Error {
@@ -48,6 +56,11 @@ export class AuthService {
   async registrarComprador(datos: RegistroCompradorRequest): Promise<void> {
     const res = await this.llamar(() => this.api.post<LoginResponse>("/auth/registro/comprador", datos));
     this.session.iniciar(res.token, res.usuario);
+  }
+
+  // Solicitud de alta de distribuidor (KAN-100): queda en revision, sin sesion.
+  registrarProveedor(datos: RegistroProveedorRequest): Promise<RegistroProveedorResponse> {
+    return this.llamar(() => this.api.post<RegistroProveedorResponse>("/auth/registro/proveedor", datos));
   }
 
   // Responde igual exista o no el correo (el backend no lo revela).
