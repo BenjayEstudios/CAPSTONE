@@ -315,8 +315,13 @@ imágenes con el compose de ese commit y **no corre migraciones** (son solo
 hacia adelante: el código viejo tiene que tolerar el esquema nuevo). Solo se
 puede volver a commits que ya tengan `desplegar.sh` (desde KAN-161).
 
-Configuración en GitHub (Settings → Secrets and variables → Actions; los
-secrets pueden ir en el environment `dev`, que el workflow ya declara):
+Configuración en GitHub. `BenjayEstudios/CAPSTONE` es un repo de **cuenta
+personal** (no de organización): solo el dueño (BenjayEstudios) puede crear
+secrets, variables y environments; los colaboradores tienen permiso de
+escritura y no se les puede dar rol de admin. Secrets en Settings →
+Environments → `dev` (el workflow ya lo declara); `DEPLOY_ENABLED` como
+variable **del repositorio** (Settings → Secrets and variables → Actions →
+Variables), porque el `if` del job se evalúa antes de entrar al environment:
 
 | Nombre | Tipo | Valor |
 |---|---|---|
@@ -327,11 +332,12 @@ secrets pueden ir en el environment `dev`, que el workflow ya declara):
 | `DEPLOY_PATH` | variable (opcional) | Ruta del clon en el droplet. Default `/opt/cotizapp`. |
 | `DEPLOY_ENABLED` | variable | `true` para activar el deploy. |
 
-GHCR no necesita secrets: usa el `GITHUB_TOKEN` automático. Puede hacer falta
-(lo hace el admin de la organización):
+GHCR no necesita secrets: usa el `GITHUB_TOKEN` automático y publica los
+paquetes en la cuenta de BenjayEstudios. Puede hacer falta (lo hace él):
 
-- Settings de la organización → Packages: permitir que se creen paquetes, si
-  el primer `build` falla con `denied` al publicar.
+- Si el primer `build` falla con `denied` al publicar: revisar que no exista
+  ya un paquete con ese nombre sin acceso para el repo (*Package settings →
+  Manage Actions access* → agregar `CAPSTONE` con rol *Write*).
 - Una vez publicados, en cada paquete (`cotizapp-backend`, `cotizapp-nginx`)
   → *Package settings*: confirmar que el repo `CAPSTONE` tiene acceso (lo da
   la label source) y, opcional, hacerlos **públicos** (el repo ya lo es) para

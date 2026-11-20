@@ -254,3 +254,16 @@ lo de DO: imágenes `-arm64` construidas en un runner ARM nativo, no
 multi-arch con QEMU. Riesgos aceptados: Oracle puede recuperar VMs
 inactivas, quedarse sin capacidad o cambiar los límites; por eso DO queda
 listo como plan B y los respaldos (KAN-160) van fuera de la VM. KAN-161.
+
+### El `.env` de producción vive en el droplet, no en GitHub Secrets
+
+Las variables de la app en el droplet (`MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD`,
+`JWT_SECRET`, dominios) están en `/opt/cotizapp/Proyecto/infra/.env`,
+generado por el cloud-init dentro del droplet. GitHub Secrets solo guarda lo
+necesario para entrar (`DEPLOY_*`). Cada deploy reutiliza ese `.env` sin
+tocarlo, así que desplegar seguido no cambia nada. Una variable nueva se
+agrega una vez por SSH (y al `docker-compose.prod.yml` en un commit). Se
+descartó escribir el `.env` desde Secrets en cada deploy: dependería del
+único admin del repo para cada cambio y movería los secretos en cada deploy;
+solo valdría la pena si el droplet se recreara seguido. Los `.env` locales y
+el de mobile no van a Secrets (no son del servidor). 2026-11-20, KAN-161.
