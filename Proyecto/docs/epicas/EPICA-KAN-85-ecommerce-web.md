@@ -16,7 +16,10 @@ documentos, liquidaciones).
   recuperar y restablecer contraseña, sesión persistente con JWT, guard de
   sesión e interceptor de 401
   ([entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md)).
-- Inicio, catálogo y checkout son pantallas provisorias hasta KAN-89, KAN-90 y
+- Inicio (KAN-89): buscador, contadores, categorías con conteo, mayor diferencia
+  de precio y carro en la cabecera
+  ([entrada](../cambios/2026-11-20-ecommerce-inicio.md)).
+- Catálogo, ficha, carro y checkout son pantallas provisorias hasta KAN-90 a
   KAN-95; ya aplican la regla de acceso (catálogo público, checkout con sesión).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
@@ -27,7 +30,7 @@ documentos, liquidaciones).
 
 | Ticket | Historia | Estado |
 |---|---|---|
-| KAN-89 | Home del ecommerce | ⏳ |
+| KAN-89 | Home del ecommerce | ✅ [entrada](../cambios/2026-11-20-ecommerce-inicio.md) |
 | KAN-90 | Catálogo por categoría con filtros | ⏳ |
 | KAN-91 | Búsqueda de productos | ⏳ |
 | KAN-92 | Ficha de producto con comparador de proveedores | ⏳ |

@@ -14,11 +14,21 @@ export const routes: Routes = [
   {
     path: "",
     pathMatch: "full",
-    ...pendiente({ titulo: "Compara a tus distribuidores antes de comprar", ticket: "KAN-89", texto: "Aquí va el inicio con el buscador, las categorías y la mayor diferencia de precio del día." })
+    loadComponent: () => import("./features/inicio/inicio.component").then((m) => m.InicioComponent),
+    title: "Cotizapp · Compra a distribuidores comparando precios"
   },
   {
     path: "catalogo",
-    ...pendiente({ titulo: "Catálogo", ticket: "KAN-90", texto: "Aquí va el catálogo por categoría con filtros. Se puede ver sin cuenta." })
+    ...pendiente({ titulo: "Catálogo", ticket: "KAN-90 / KAN-91", texto: "Aquí va el catálogo por categoría con filtros y los resultados de búsqueda. Se puede ver sin cuenta." })
+  },
+  {
+    path: "producto/:id",
+    ...pendiente({ titulo: "Ficha del producto", ticket: "KAN-92", texto: "Aquí va la ficha con el comparador de distribuidores." })
+  },
+  {
+    path: "carro",
+    canActivate: [sesionGuard],
+    ...pendiente({ titulo: "Carro", ticket: "KAN-94", texto: "Aquí va el carro multiproveedor." })
   },
   {
     path: "checkout",

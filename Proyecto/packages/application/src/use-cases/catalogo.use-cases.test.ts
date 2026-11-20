@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CalificacionRepository, CatalogoRepository, CategoriaRepository, FichaCatalogoBase, FiltrosCatalogo, ZonaComprador } from "@cotizapp/domain";
-import { listarCatalogo, obtenerFichaCatalogo, precioNormalizado, ZONA_POR_DEFECTO } from "./catalogo.use-cases.js";
+import { listarCatalogo, obtenerFichaCatalogo, precioNormalizado, resumenCatalogo, ZONA_POR_DEFECTO } from "./catalogo.use-cases.js";
 
 const categorias = [
   { id: 1, padreId: null, nombre: "Abarrotes" },
@@ -102,6 +102,28 @@ describe("obtenerFichaCatalogo", () => {
   it("producto inexistente o no publicado -> 404; origen invalido -> 400", async () => {
     await expect(montar().ficha(99, {})).rejects.toMatchObject({ statusCode: 404, code: "PRODUCTO_NO_ENCONTRADO" });
     await expect(montar().ficha(1, { origen: "otro" })).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe("resumenCatalogo", () => {
+  it("arma el arbol de categorias activas; el padre suma sus productos y los de sus hijas", async () => {
+    const todas = [
+      { id: 1, padreId: null, nombre: "Abarrotes", slug: "abarrotes", orden: 1, estado: "activa" },
+      { id: 8, padreId: 1, nombre: "Aceites", slug: "aceites", orden: 1, estado: "activa" },
+      { id: 9, padreId: 1, nombre: "Arroz", slug: "arroz", orden: 2, estado: "activa" },
+      { id: 2, padreId: null, nombre: "Lacteos", slug: "lacteos", orden: 2, estado: "activa" },
+      { id: 3, padreId: null, nombre: "Oculta", slug: "oculta", orden: 3, estado: "oculta" }
+    ];
+    const catalogoRepository = {
+      resumen: async () => ({ proveedoresActivos: 3, productosPorCategoria: [{ categoriaId: 8, productos: 2 }, { categoriaId: 9, productos: 1 }, { categoriaId: 2, productos: 4 }] })
+    } as unknown as CatalogoRepository;
+    const r = await resumenCatalogo({ catalogoRepository, categoriaRepository: { listar: async () => todas } as unknown as CategoriaRepository })();
+    expect(r.proveedoresActivos).toBe(3);
+    expect(r.productosComparados).toBe(7);
+    expect(r.categorias.map((c) => [c.nombre, c.productos, c.hijos.map((h) => [h.nombre, h.productos])])).toEqual([
+      ["Abarrotes", 3, [["Aceites", 2], ["Arroz", 1]]],
+      ["Lacteos", 4, []]
+    ]);
   });
 });
 

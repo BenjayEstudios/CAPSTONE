@@ -40,7 +40,11 @@ pnpm test
 - Las cuentas internas no entran al ecommerce (usan admin-site).
 - En desarrollo el correo de recuperación no se envía: con `MAIL_OUT_DIR` en el backend se escribe en esa carpeta y de ahí se copia el enlace.
 
-Rutas provisorias hasta su historia: `/` (KAN-89), `/catalogo` (KAN-90), `/checkout` (KAN-95). La vista de status está en `/estado`.
+## Inicio (KAN-89)
+
+`features/inicio/`: buscador (en la cabecera), contadores, categorías con conteo y "Mayor diferencia de precio hoy". Datos de `GET /catalogo/resumen` y `GET /catalogo/productos?orden=diferencia` (`core/catalogo/catalogo.service.ts`). El carro de la cabecera sale de `core/state/carro.state.ts` (`GET /carro`, solo compradores).
+
+Rutas provisorias hasta su historia: `/catalogo` (KAN-90/91), `/producto/:id` (KAN-92), `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
 
 ## Tests
 

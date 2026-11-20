@@ -200,6 +200,33 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
     };
   }
 
+  async resumen() {
+    // Productos visibles (mismo criterio que listar) agrupados por categoria.
+    const porCategoria = await consultar<{ categoria_id: number; productos: number }>(
+      this.db,
+      sql`SELECT t.categoria_id, COUNT(*) AS productos FROM (
+            SELECT p.id, p.categoria_id
+            FROM producto p
+            JOIN categoria c ON c.id = p.categoria_id
+            LEFT JOIN categoria cp ON cp.id = c.padre_id
+            JOIN oferta o ON o.producto_id = p.id
+            JOIN organizacion org ON org.id = o.proveedor_id
+            WHERE p.estado = 'publicado' AND c.estado = 'activa' AND (cp.id IS NULL OR cp.estado = 'activa')
+              AND o.estado = 'publicada' AND org.estado = 'activa'
+            GROUP BY p.id, p.categoria_id
+          ) t
+          GROUP BY t.categoria_id`
+    );
+    const [prov] = await consultar<{ n: number }>(
+      this.db,
+      sql`SELECT COUNT(*) AS n FROM organizacion WHERE tipo = 'proveedor' AND estado = 'activa'`
+    );
+    return {
+      proveedoresActivos: Number(prov?.n ?? 0),
+      productosPorCategoria: porCategoria.map((r) => ({ categoriaId: Number(r.categoria_id), productos: Number(r.productos) }))
+    };
+  }
+
   async zonaDeOrganizacion(organizacionId: number): Promise<ZonaComprador | null> {
     const [z] = await consultar<{ region_codigo: string; comuna_id: number }>(
       this.db,

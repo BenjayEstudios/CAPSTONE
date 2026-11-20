@@ -32,4 +32,6 @@ export interface CatalogoRepository {
   obtenerFicha(productoId: number, zona: ZonaComprador): Promise<FichaCatalogoBase | null>;
   /** Region y comuna de la direccion de la organizacion; null si no tiene. */
   zonaDeOrganizacion(organizacionId: number): Promise<ZonaComprador | null>;
+  /** Proveedores activos y productos visibles por categoria (mismo criterio de visibilidad que listar). */
+  resumen(): Promise<{ proveedoresActivos: number; productosPorCategoria: Array<{ categoriaId: number; productos: number }> }>;
 }

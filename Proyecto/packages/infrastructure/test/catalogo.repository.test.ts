@@ -95,6 +95,13 @@ describeDb("DrizzleCatalogoRepository", (db) => {
     expect(await costo("05", null)).toEqual([12990, null]);
   });
 
+  it("resumen: proveedores activos y productos visibles por categoria, igual que el listado", async () => {
+    const r = await repo().resumen();
+    expect(r.proveedoresActivos).toBe(3); // Las Palmas esta en revision
+    expect(r.productosPorCategoria.reduce((s, c) => s + c.productos, 0)).toBe((await repo().listar(filtros())).total);
+    expect(r.productosPorCategoria.find((c) => c.categoriaId === 8)?.productos).toBe(2); // Aceites
+  });
+
   it("zona de la organizacion desde su direccion", async () => {
     expect(await repo().zonaDeOrganizacion(ORG.elFogon)).toEqual({ regionCodigo: "13", comunaId: 20 });
     expect(await repo().zonaDeOrganizacion(99999)).toBeNull();

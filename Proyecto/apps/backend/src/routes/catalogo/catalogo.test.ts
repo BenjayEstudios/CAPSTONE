@@ -18,6 +18,7 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     async listar() { return { items: [{ id: 1 }], total: 1 }; }
     async obtenerFicha(id: number) { return id === 1 ? fichaBase : null; }
     async zonaDeOrganizacion(id: number) { zonasPedidas.push(id); return null; }
+    async resumen() { return { proveedoresActivos: 3, productosPorCategoria: [] }; }
   },
   DrizzleCategoriaRepository: class { async listar() { return []; } },
   DrizzleCalificacionRepository: class { async resumenPorProveedor() { return []; } }
@@ -43,6 +44,12 @@ describe("catalogo publico", () => {
     expect(l.statusCode).toBe(200);
     expect(l.json()).toMatchObject({ total: 1, pagina: 1, porPagina: 20 });
     expect((await get("/catalogo/productos/1")).statusCode).toBe(200);
+  });
+
+  it("resumen publico para el inicio (la ruta estatica no choca con /:id)", async () => {
+    const r = await get("/catalogo/resumen");
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toEqual({ proveedoresActivos: 3, productosComparados: 0, categorias: [] });
   });
 
   it("con sesion usa la organizacion del token; un token invalido no bloquea", async () => {

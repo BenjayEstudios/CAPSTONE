@@ -3,10 +3,12 @@ import {
   listarCatalogoQuerySchema,
   type CalificacionRepository,
   type CatalogoRepository,
+  type CategoriaConConteoDto,
   type CategoriaRepository,
   type FichaCatalogoDto,
   type PaginaCatalogoDto,
   type PrecioNormalizadoDto,
+  type ResumenCatalogoDto,
   type ProductoUnidad,
   type ZonaComprador
 } from "@cotizapp/domain";
@@ -36,6 +38,33 @@ export function listarCatalogo(deps: { catalogoRepository: CatalogoRepository; c
       porPagina: f.porPagina
     });
     return { items, total, pagina: f.pagina, porPagina: f.porPagina };
+  };
+}
+
+// GET /catalogo/resumen (KAN-89): contadores del inicio y arbol de
+// categorias activas con sus productos visibles. Una categoria de nivel 1
+// cuenta sus productos propios mas los de sus hijas. Las categorias sin
+// productos visibles se incluyen (con 0): el ecommerce decide si mostrarlas.
+export function resumenCatalogo(deps: { catalogoRepository: CatalogoRepository; categoriaRepository: CategoriaRepository }) {
+  return async (): Promise<ResumenCatalogoDto> => {
+    const [{ proveedoresActivos, productosPorCategoria }, todas] = await Promise.all([
+      deps.catalogoRepository.resumen(),
+      deps.categoriaRepository.listar()
+    ]);
+    const conteo = new Map(productosPorCategoria.map((c) => [c.categoriaId, c.productos]));
+    const activas = todas.filter((c) => c.estado === "activa").sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999) || a.nombre.localeCompare(b.nombre));
+    const nodo = (c: (typeof activas)[number], hijos: CategoriaConConteoDto[]): CategoriaConConteoDto => ({
+      id: c.id,
+      nombre: c.nombre,
+      slug: c.slug,
+      productos: (conteo.get(c.id) ?? 0) + hijos.reduce((s, h) => s + h.productos, 0),
+      hijos
+    });
+    const categorias = activas
+      .filter((c) => c.padreId === null)
+      .map((raiz) => nodo(raiz, activas.filter((h) => h.padreId === raiz.id).map((h) => nodo(h, []))));
+    const productosComparados = productosPorCategoria.reduce((s, c) => s + c.productos, 0);
+    return { proveedoresActivos, productosComparados, categorias };
   };
 }
 

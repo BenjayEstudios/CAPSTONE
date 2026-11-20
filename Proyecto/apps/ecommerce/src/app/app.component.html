@@ -1,27 +1,58 @@
 <header class="cabecera">
-  <div class="contenedor fila">
+  <div class="franja">
+    <div class="contenedor franja-fila">
+      <span class="fecha">{{ fecha }}</span>
+      @if (resumen(); as r) {
+        <span>{{ entero(r.proveedoresActivos) }} proveedores activos</span>
+      }
+      <span class="franja-fin">Precio, plazo y calificación de cada distribuidor</span>
+    </div>
+  </div>
+
+  <div class="contenedor marca-fila">
     <a routerLink="/" class="marca" aria-label="Cotizapp, inicio">
-      <span class="tintas" aria-hidden="true"><i></i><i></i><i></i></span>
-      Cotizapp
+      <span class="nombre"><span class="tintas" aria-hidden="true"><i></i><i></i><i></i></span>Cotizapp</span>
+      <span class="lema">Un producto. Todos los distribuidores. Un solo carro.</span>
     </a>
 
-    <nav class="nav" aria-label="Principal">
-      <a routerLink="/catalogo" routerLinkActive="activo">Catálogo</a>
-    </nav>
+    <form class="buscador" role="search" (ngSubmit)="buscar()">
+      <label for="buscar" class="visualmente-oculto">Buscar productos</label>
+      <input id="buscar" name="q" class="input" type="search" [(ngModel)]="busqueda" placeholder="Busca un producto: aceite, harina, queso…" autocomplete="off" />
+      <button type="submit" class="btn btn-buscar">Buscar</button>
+    </form>
 
-    <div class="cuenta">
+    <div class="acciones">
+      <a routerLink="/carro" class="btn btn-secondary carro" aria-label="Ver carro">
+        <span>Ver carro · <strong>{{ carro.productos() }}</strong> · {{ clp(carro.total()) }}</span>
+        <small>
+          @if (carro.proveedores() === 0) { Sin proveedores aún }
+          @else if (carro.proveedores() === 1) { 1 proveedor }
+          @else { {{ carro.proveedores() }} proveedores }
+        </small>
+      </a>
       @if (session.autenticado()) {
-        <span class="saludo">
-          Hola, {{ session.nombreCorto() }}
-          <small>{{ session.usuario()?.organizacion?.nombre }}</small>
-        </span>
-        <button type="button" class="btn btn-secondary" (click)="salir()">Salir</button>
+        <div class="cuenta">
+          <span class="saludo">Hola, {{ session.nombreCorto() }}<small>{{ session.usuario()?.organizacion?.nombre }}</small></span>
+          <button type="button" class="btn-link salir" (click)="salir()">Salir</button>
+        </div>
       } @else {
-        <a routerLink="/ingresar" class="btn btn-secondary">Ingresar</a>
-        <a routerLink="/registro" class="btn btn-primary">Crear cuenta</a>
+        <div class="cuenta">
+          <a routerLink="/ingresar" class="btn-link">Ingresar</a>
+          <a routerLink="/registro" class="btn btn-primary">Crear cuenta</a>
+        </div>
       }
     </div>
   </div>
+
+  <nav class="contenedor categorias" aria-label="Categorías">
+    <a routerLink="/catalogo" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }" class="raiz">Todos</a>
+    @for (c of categorias(); track c.id) {
+      <a routerLink="/catalogo" [queryParams]="{ categoria: c.id }" class="raiz">{{ c.nombre }}</a>
+      @for (h of c.hijos; track h.id) {
+        <a routerLink="/catalogo" [queryParams]="{ categoria: h.id }">{{ h.nombre }}</a>
+      }
+    }
+  </nav>
 </header>
 
 <main class="principal">
@@ -29,5 +60,9 @@
 </main>
 
 <footer class="pie">
-  <div class="contenedor">Cotizapp · Compra a distribuidores de alimentos comparando precio, plazo y calificación.</div>
+  <div class="contenedor pie-fila">
+    <span>Cotizapp</span>
+    <a routerLink="/catalogo">Catálogo</a>
+    <span class="pie-fin">Compra a distribuidores de alimentos comparando precio, plazo y calificación.</span>
+  </div>
 </footer>

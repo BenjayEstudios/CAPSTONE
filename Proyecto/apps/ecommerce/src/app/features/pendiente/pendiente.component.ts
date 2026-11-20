@@ -21,6 +21,9 @@ export interface DatosPendiente {
       <p class="etiqueta">{{ datos.ticket }} · en desarrollo</p>
       <h1>{{ datos.titulo }}</h1>
       <p>{{ datos.texto }}</p>
+      @if (busqueda) {
+        <p class="mensaje aviso">Buscaste «{{ busqueda }}». Los resultados llegan con KAN-91.</p>
+      }
       @if (session.autenticado()) {
         <p class="mensaje ok">Estás con sesión iniciada como {{ session.usuario()?.nombre }} ({{ session.usuario()?.organizacion?.nombre }}).</p>
       }
@@ -39,5 +42,7 @@ export interface DatosPendiente {
 })
 export class PendienteComponent {
   readonly session = inject(SessionState);
-  readonly datos = inject(ActivatedRoute).snapshot.data as DatosPendiente;
+  private readonly ruta = inject(ActivatedRoute).snapshot;
+  readonly datos = this.ruta.data as DatosPendiente;
+  readonly busqueda = this.ruta.queryParamMap.get("q");
 }

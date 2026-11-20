@@ -82,6 +82,23 @@ export interface OfertaCatalogoDto {
   };
 }
 
+/** Categoria del arbol publico con cuantos productos visibles tiene (la de nivel 1 suma las de sus hijas). */
+export interface CategoriaConConteoDto {
+  id: number;
+  nombre: string;
+  slug: string;
+  productos: number;
+  hijos: CategoriaConConteoDto[];
+}
+
+/** GET /catalogo/resumen: lo que muestra el inicio del ecommerce (KAN-89). */
+export interface ResumenCatalogoDto {
+  proveedoresActivos: number;
+  /** Productos visibles en el catalogo (con al menos una oferta visible). */
+  productosComparados: number;
+  categorias: CategoriaConConteoDto[];
+}
+
 export interface FichaCatalogoDto {
   id: number;
   sku: string;

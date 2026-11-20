@@ -136,6 +136,7 @@ Precio sobre referencia + tope % -> caso `precio_fuera_rango` (uno por oferta ab
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:
 
 - `GET /catalogo/productos?q&categoriaId&plazoMaxHoras&maxUnidadesPorCaja&orden&pagina&porPagina` -> `{ items, total, pagina, porPagina }`. Cada item con `precioDesde`, `precioHasta`, `ofertas` y `plazoMinHoras` calculados sobre las ofertas visibles (y que cumplen los filtros de plazo y caja). `orden`: `relevancia` (default), `precio`, `diferencia` (solo 2+ ofertas; lo usa el inicio), `nombre`.
+- `GET /catalogo/resumen` -> `{ proveedoresActivos, productosComparados, categorias }` para el inicio del ecommerce (KAN-89): arbol de categorias activas con sus productos visibles (el padre suma los de sus hijas).
 - `GET /catalogo/productos/:id` -> ficha con `ofertas` por precio unitario ascendente, cada una con `precioNormalizado` (por kg/L/unidad), proveedor, calificacion y `costoDespacho`. `404 PRODUCTO_NO_ENCONTRADO`.
 
 Visible = producto `publicado` en categoria `activa` (y padre activo), oferta `publicada`, proveedor con organizacion `activa`. Busqueda: FULLTEXT `ix_producto_nombre_fulltext` con prefijo y plural simple (`terminoFulltext` en el repositorio) mas `LIKE` en nombre y marca. Tarifa de despacho: con token de comprador, la comuna de su organizacion (`leerAuthOpcional` en `plugins/auth.ts`; un token invalido no da error); sin sesion, la RM (region `13`). SQL a mano en `DrizzleCatalogoRepository`.
