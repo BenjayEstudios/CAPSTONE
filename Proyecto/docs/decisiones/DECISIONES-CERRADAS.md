@@ -110,6 +110,18 @@ El contrato sugería registrar la visita en `GET /catalogo/productos/:id`, pero
 las apps ya la mandan por `POST /eventos/lote`: registrarla en los dos lados
 la contaría doble en la analítica del proveedor.
 
+### Precio sobre el tope: caso de moderación, sin bloquear
+
+Una oferta con precio sobre `precio_referencia × (1 + tope_sobre_referencia_pct)`
+se guarda y publica igual, y abre un caso `precio_fuera_rango` para que un
+administrador lo revise. Bloquear exigiría un "aprobar precio" que moderación
+no tiene (KAN-146, [entrada](../cambios/2026-11-20-ofertas-del-proveedor.md)).
+
+### Una oferta publicada no se borra, se pausa
+
+Puede estar en órdenes y `oferta_precio_historial` es de solo inserción. Solo
+un borrador (nunca mostrado y sin ventas) se elimina, con su historial.
+
 ## Base de datos
 
 ### El DBML es la fuente de verdad del modelo

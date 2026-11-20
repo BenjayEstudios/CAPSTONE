@@ -25,7 +25,7 @@ Hoy existen `GET /health-check` y `GET/POST /categorias`, más los
 |---|---|---|---|
 | KAN-144 | Autenticación, roles y 2FA | Benjamín | ✅ [login y registro](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md), [2FA TOTP](../cambios/2026-11-18-2fa-totp-para-internos.md); falta migrar Aiven |
 | KAN-145 | Catálogo, búsqueda y comparador | Benjamín | ✅ [entrada](../cambios/2026-11-20-catalogo-publico-y-comparador.md) |
-| KAN-146 | Ofertas del proveedor | Sebastián | ⏳ |
+| KAN-146 | Ofertas del proveedor | Benjamín | ✅ [entrada](../cambios/2026-11-20-ofertas-del-proveedor.md) |
 | KAN-147 | Carro y creación de orden con split por proveedor | Sebastián | ⏳ |
 | KAN-148 | Pagos: pasarela Webpay/MercadoPago sandbox | Sebastián | ⏳ |
 | KAN-149 | Órdenes y estados de envío | Sebastián | ⏳ |

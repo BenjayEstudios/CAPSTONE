@@ -16,6 +16,7 @@ src/
 ├── routes/          # un grupo de rutas por módulo de negocio
 │   ├── auth/          # login, registro, recuperacion de clave y 2FA TOTP
 │   ├── catalogo/       # catalogo publico del comprador y comparador (KAN-145)
+│   ├── ofertas/        # ofertas del proveedor (KAN-146)
 │   ├── pedidos/        # (pendiente)
 │   └── pagos/           # (pendiente)
 ├── plugins/          # plugins de Fastify (auth, rate-limit, etc.)
@@ -119,6 +120,16 @@ Correo (`ServicioCorreo`, `packages/domain/src/services`; selector en `src/lib/m
 | `ADMIN_SITE_URL` | `http://localhost:4300` | Enlace al panel en la invitacion. |
 
 Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva orden al proveedor, confirmacion de compra con folio, recuperacion de contrasena); las tres ultimas aun sin disparador. Tests usan `CorreoEnMemoria`.
+
+## Ofertas del proveedor (KAN-146)
+
+`/ofertas` (requireAuth + `publicar_precio_stock`), siempre sobre las ofertas de la organizacion de la sesion (proveedor; otro tipo -> `403 SOLO_PROVEEDORES`; oferta ajena -> 404):
+
+- `GET /ofertas?estado&q&pagina&tamano`, `GET /ofertas/:id`, `GET /ofertas/productos-disponibles?q&categoriaId` (productos publicados aun sin oferta mia).
+- `POST /ofertas { productoId, precioUnitario, unidadesPorCaja?, cajasDisponibles?, minimoCompra?, plazoHoras?, modalidadEntrega, notasCliente?, estado? }` -> `201 { oferta, revisionPrecio }`. Una por producto x proveedor (`409 OFERTA_DUPLICADA`).
+- `PATCH /ofertas/:id` (mismos campos + `estado: publicada|pausada` + `motivo?`). `DELETE /ofertas/:id` solo borradores sin ventas.
+
+Precio sobre referencia + tope % -> caso `precio_fuera_rango` (uno por oferta abierto) y `revisionPrecio != null`; no bloquea. Cada alta y cada cambio de precio o cajas inserta en `oferta_precio_historial` en la misma transaccion.
 
 ## Catalogo publico y comparador (KAN-145)
 

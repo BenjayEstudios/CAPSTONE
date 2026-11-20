@@ -36,3 +36,4 @@ export * from "./dashboard.use-cases.js";
 export * from "./documentos-tributarios.use-cases.js";
 export * from "./reembolsos.use-cases.js";
 export * from "./catalogo.use-cases.js";
+export * from "./ofertas.use-cases.js";
