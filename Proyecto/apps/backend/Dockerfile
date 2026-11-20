@@ -49,6 +49,10 @@ COPY --from=prod-deps /repo/packages/application/node_modules ./packages/applica
 COPY --from=prod-deps /repo/packages/infrastructure/package.json ./packages/infrastructure/
 COPY --from=prod-deps /repo/packages/infrastructure/dist ./packages/infrastructure/dist
 COPY --from=prod-deps /repo/packages/infrastructure/node_modules ./packages/infrastructure/node_modules
+# Migraciones SQL + journal: las aplica el paso de migraciones del deploy con
+#   node packages/infrastructure/dist/db/migrar/run.js
+# (drizzle-orm, dependencia de producción; drizzle-kit no está en la imagen).
+COPY --from=prod-deps /repo/packages/infrastructure/migrations ./packages/infrastructure/migrations
 COPY --from=prod-deps /repo/apps/backend/package.json ./apps/backend/
 COPY --from=prod-deps /repo/apps/backend/dist ./apps/backend/dist
 COPY --from=prod-deps /repo/apps/backend/node_modules ./apps/backend/node_modules

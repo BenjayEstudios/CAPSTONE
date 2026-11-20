@@ -66,23 +66,16 @@ Ya está decidido que son `mysqldump` programados con copia fuera del
 droplet. Falta el destino (Spaces, otro proveedor, máquina del equipo), la
 retención y probar una restauración end-to-end.
 
-## 7. Imágenes construidas en el runner o en el droplet
-
-**Aplica en:** KAN-161
-
-Hoy el deploy hace `up -d --build` en el droplet. Lo previsto es construir en
-GitHub Actions y publicar en GHCR para que el droplet no compile (un
-`ng build` puede quedarse sin RAM en un droplet chico). Falta implementarlo y
-decidir cómo correr las migraciones de Drizzle en el deploy.
-
 ## 8. Automatizar `db:particiones`
 
 **Aplica en:** KAN-143 / KAN-163
 
 `pnpm db:particiones` hay que correrlo una vez al mes en cada base. Si nadie
 lo hace no se pierden datos (caen en `pmax`), pero se pierde el pruning.
-Opciones: cron en el droplet, paso del deploy, o job programado en GitHub
-Actions.
+Desde KAN-161 el paso de migraciones de cada deploy también asegura las
+particiones (mes actual + 3), pero los deploys no tienen fecha fija: falta la
+corrida mensual garantizada. Opciones: cron en el droplet o job programado en
+GitHub Actions (KAN-163).
 
 ## 9. Búsqueda sin stemming
 
@@ -144,3 +137,41 @@ cajas o menos, y **documento por vencer** = vence en 45 días o menos
 del seed). Son números de partida: falta validarlos con el equipo, y decidir
 si el umbral de stock debería ser relativo (por ejemplo, 25% de las cajas
 iniciales).
+
+## 14. Tecnología emergente que pide la rúbrica
+
+**Aplica en:** informe final de Fase 2 · **Tickets:** por crear en Jira (KAN-88)
+
+La rúbrica pide incorporar al menos una tecnología emergente (análisis
+descriptivo/BI, data science, minería de datos, IA generativa, 3D, AR, IoT,
+MLOps, GenAI en procesos de negocio, digital twins, blockchain, huella de
+carbono; se pueden combinar). Propuesta (2026-11-19):
+
+1. **BI con Metabase (punto a)** — infraestructura, Samuel. Un contenedor
+   más del stack, con usuario MySQL de solo lectura y dashboards sobre lo que
+   ya existe: las consultas de analítica de KAN-143 (ventas por semana, embudo
+   vistas → clics → conversión, KPIs, búsquedas sin resultado) y
+   `oferta_precio_historial`. El análisis descriptivo ya está en el código;
+   Metabase lo hace reconocible como BI.
+2. **Asistente de catálogo con IA generativa (puntos d + i)** — backend. A
+   partir del texto libre con que un distribuidor describe un producto, un
+   LLM propone nombre normalizado, categoría, marca, formato, unidad y
+   descripción, y señala si ya existe un `producto` equivalente. Ataca el
+   problema central de un comparador (el mismo producto con nombres
+   distintos según el distribuidor). Solo sugiere: la persona confirma y se
+   guarda por el `POST /productos` existente.
+3. **Opcional, si sobra tiempo:** web scraping de precios públicos para
+   alimentar `precio_referencia` (punto c; ojo con términos de uso y
+   `robots.txt`), o estimación de huella de carbono del droplet (punto m).
+
+**Descartado:** 3D, AR, Arduino/IoT, TinyML, digital twins y blockchain no
+tienen relación con una plataforma B2B de cotización. ML predictivo (b, h) no
+se puede validar en serio: los datos de órdenes y eventos son sintéticos.
+
+**Falta decidir:**
+
+- Confirmarlo con el equipo y crear los tickets en Jira.
+- Proveedor y costo del LLM, y dónde vive la API key (secreto del droplet,
+  nunca en el repo).
+- Si Metabase cabe en la RAM del droplet (su JVM pide ~1 GB) o corre solo en
+  local para la demo.
