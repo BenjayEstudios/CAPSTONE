@@ -31,7 +31,7 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 | `POST /ordenes/:id/pago` | ✅ Webpay | Checkout y pago (KAN-131, KAN-95, KAN-148) |
 | `GET /ordenes` · `GET /ordenes/:id` | ✅ + campos ⏳ | Mis pedidos (KAN-132), órdenes vigentes (KAN-136) |
 | `PATCH /ordenes/envios/:id/estado` | ✅ | Órdenes vigentes (KAN-136) |
-| `POST /ordenes/envios/:id/calificacion` | ⏳ | Mis pedidos (KAN-132) |
+| `POST /ordenes/envios/:id/calificacion` | ✅ | Mis pedidos (KAN-132, KAN-99) |
 | `GET /estadisticas/proveedor/ventas` | ⏳ | Estadísticas de venta (KAN-133) |
 | `GET /estadisticas/proveedor` | ✅ + campo ⏳ | Visitas y conversión (KAN-134) |
 | `POST /eventos/lote` | ✅ | Vistas, búsquedas y clicks del comprador (KAN-134) |
@@ -107,7 +107,7 @@ cuenta:
 - `organizacion.nombre` = `nombre_fantasia` (o `razon_social` si es NULL).
 - Errores: `401 CREDENCIALES_INVALIDAS` (email o clave), `403 USUARIO_NO_ACTIVO`
   (usuario no `activo` u organización no `activa`, ej. `contacto@laspalmas.test`),
-  `400 VALIDACION`. Sin `POST /auth/logout`: el JWT no guarda estado.
+  `400 VALIDACION`; `403` si el usuario no es de una organización cliente. Sin `POST /auth/logout`: el JWT no guarda estado.
 
 ## ✅ `GET /catalogo/productos` — KAN-127, KAN-128 (implementado en KAN-145)
 
@@ -331,7 +331,7 @@ nadie; mientras no estén, la app los trata como desconocidos):
 
 - ✅ `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
   o `null` (despacho). Solo en el detalle, desde KAN-96.
-- `envios[].calificacion` (solo para el cliente): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
+- ✅ `envios[].calificacion` (solo para el cliente, desde KAN-99): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
   o `null`. Sin el campo, la app ofrece calificar y espera un `409 YA_CALIFICADO`.
 
 ## ✅ `PATCH /ordenes/envios/:id/estado` — KAN-136
@@ -344,11 +344,11 @@ Errores: `404 ENVIO_NO_ENCONTRADO` (también si es de otro proveedor),
 `409 ORDEN_NO_PAGADA`, `409 ORDEN_REEMBOLSADA`, `409 TRANSICION_INVALIDA`
 (`detalle.permitidas`).
 
-## ⏳ `POST /ordenes/envios/:id/calificacion` — KAN-132
+## ✅ `POST /ordenes/envios/:id/calificacion` — KAN-132, KAN-99
 
-Token cliente. `CalificacionRepository.registrar` ya existe (KAN-142); falta
-la ruta. Body (`registrarCalificacionSchema` sin `usuarioId`, que sale del
-token): `{ "puntaje": 4, "comentario": "Buena cadena de frío" }`.
+Token cliente. Body (`calificarEnvioSchema`; el usuario sale del token):
+`{ "puntaje": 4, "comentario": "Buena cadena de frío" }` (comentario opcional,
+vacío = null).
 
 Response `201`:
 `{ "id": 17, "ordenEnvioId": 19, "usuarioId": 9, "puntaje": 4, "comentario": "Buena cadena de frío", "creadaEn": "..." }`.

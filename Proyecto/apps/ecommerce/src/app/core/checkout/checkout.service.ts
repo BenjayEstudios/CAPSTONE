@@ -3,6 +3,7 @@ import { inject, Injectable } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 import { ApiClient } from "../api/api.client";
 import {
+  CalificacionEnvio,
   Comuna,
   ConfirmarCarroRequest,
   DocumentoTributario,
@@ -49,6 +50,11 @@ export class CheckoutService {
   async documentos(ordenId: number): Promise<DocumentoTributario[]> {
     const r = await firstValueFrom(this.api.get<{ items: DocumentoTributario[] }>(`/documentos-tributarios?ordenId=${ordenId}&tamano=50`));
     return r.items;
+  }
+
+  /** Califica al proveedor de un envio entregado (KAN-99). */
+  calificar(ordenEnvioId: number, puntaje: number, comentario: string | null): Promise<CalificacionEnvio> {
+    return firstValueFrom(this.api.post<CalificacionEnvio>(`/ordenes/envios/${ordenEnvioId}/calificacion`, { puntaje, comentario }));
   }
 
   /** PDF del documento. El endpoint pide el token, por eso no sirve un enlace directo. */

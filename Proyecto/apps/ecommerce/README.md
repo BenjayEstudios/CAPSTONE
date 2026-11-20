@@ -70,6 +70,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/pedidos/`: `/pedidos` (historial de `GET /ordenes` con filtros por estado y páginas en la URL) y `/pedidos/:id` (el detalle de KAN-96 con el seguimiento de cada envío y "Pagar ahora" si sigue pendiente). Los textos de estados y los pasos del seguimiento están en `estados.ts`, alineados con `transicionesPermitidas` del backend. "Mis pedidos" va en la cabecera solo para compradores.
 
+## Calificar al distribuidor (KAN-99)
+
+`features/pedidos/calificar-envio.component.ts`: en cada envío entregado del detalle, cinco estrellas y comentario opcional (`POST /ordenes/envios/:id/calificacion`), una vez; si ya calificó muestra su calificación (`envios[].calificacion` del detalle). El promedio se ve en la ficha de producto.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

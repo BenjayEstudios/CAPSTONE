@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Calificar al proveedor tras la entrega](2026-11-20-calificar-proveedor.md) | KAN-85 | KAN-99 |
 | 2026-11-20 | [Ecommerce: mis pedidos y seguimiento](2026-11-20-ecommerce-mis-pedidos.md) | KAN-85 | KAN-98 |
 | 2026-11-20 | [Ecommerce: confirmación y detalle consolidado de la compra](2026-11-20-ecommerce-confirmacion-de-compra.md) | KAN-85 | KAN-96 |
 | 2026-11-20 | [Ecommerce: checkout único con Webpay](2026-11-20-ecommerce-checkout-con-webpay.md) | KAN-85 | KAN-95 (avanza KAN-148) |

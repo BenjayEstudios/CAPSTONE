@@ -15,6 +15,7 @@ import type {
 } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
+import { calificacion } from "../db/schema/calificacion.schema.js";
 import { comuna } from "../db/schema/comuna.schema.js";
 import { direccion } from "../db/schema/direccion.schema.js";
 import { orden } from "../db/schema/orden.schema.js";
@@ -63,6 +64,17 @@ export class DrizzleOrdenRepository implements OrdenRepository {
       const direccionTexto = [[p.calle, p.numero].filter(Boolean).join(" "), p.complemento, p.comuna].filter(Boolean).join(", ");
       return { id: p.id, nombre: p.nombre, horario: p.horario, direccion: direccionTexto };
     };
+    // Calificaciones de los envios (solo en el detalle, KAN-99).
+    const calificaciones = conLineas && envios.length
+      ? await db
+          .select({ ordenEnvioId: calificacion.ordenEnvioId, puntaje: calificacion.puntaje, comentario: calificacion.comentario, creadaEn: calificacion.creadaEn })
+          .from(calificacion)
+          .where(inArray(calificacion.ordenEnvioId, envios.map((x) => x.e.id)))
+      : [];
+    const calificacionDe = (envioId: number) => {
+      const c = calificaciones.find((x) => x.ordenEnvioId === envioId);
+      return c ? { puntaje: c.puntaje, comentario: c.comentario, creadaEn: c.creadaEn } : null;
+    };
     const clientes = await db
       .select({ ordenId: orden.id, clienteNombre: usuario.nombre, organizacionNombre: organizacion.razonSocial })
       .from(orden)
@@ -89,7 +101,7 @@ export class DrizzleOrdenRepository implements OrdenRepository {
             ...toEnvio(x.e),
             proveedorNombre: x.proveedorNombre,
             lineas: lineas.filter((l) => l.ordenEnvioId === x.e.id).map(toLinea),
-            ...(conLineas ? { puntoRetiro: puntoDe(x.e.puntoRetiroId) } : {})
+            ...(conLineas ? { puntoRetiro: puntoDe(x.e.puntoRetiroId), calificacion: calificacionDe(x.e.id) } : {})
           })),
         clienteNombre: cli?.clienteNombre ?? "",
         organizacionNombre: cli?.organizacionNombre ?? "",

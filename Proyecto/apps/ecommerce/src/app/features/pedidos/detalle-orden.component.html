@@ -80,6 +80,10 @@
         <div class="fuerte"><dt>Total de este distribuidor</dt><dd>{{ clp(e.subtotal + e.costoDespacho) }}</dd></div>
       </dl>
 
+      @if (e.estado === "entregado" && e.calificacion !== undefined) {
+        <app-calificar-envio [envio]="e" />
+      }
+
       @for (g of guiasDe(e); track g.id) {
         <p class="guia">
           <button type="button" class="btn-link" [disabled]="descargando() !== null" (click)="abrirPdf(g)">

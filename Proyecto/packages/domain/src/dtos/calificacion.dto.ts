@@ -10,3 +10,18 @@ export const registrarCalificacionSchema = z.object({
 });
 
 export type RegistrarCalificacionDto = z.infer<typeof registrarCalificacionSchema>;
+
+// Body de POST /ordenes/envios/:id/calificacion (KAN-99): el envio sale de la
+// ruta y el usuario del token. Un comentario vacio se guarda como null.
+export const calificarEnvioSchema = z.object({
+  puntaje: z.number().int().min(1).max(5),
+  comentario: z
+    .string()
+    .trim()
+    .max(500)
+    .nullable()
+    .optional()
+    .transform((c) => (c ? c : null))
+});
+
+export type CalificarEnvioDto = z.infer<typeof calificarEnvioSchema>;

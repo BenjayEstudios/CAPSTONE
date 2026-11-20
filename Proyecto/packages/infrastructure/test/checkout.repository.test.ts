@@ -45,6 +45,23 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(items.find((o) => o.orden.id === id)!.envios.every((e) => e.puntoRetiro === undefined)).toBe(true);
   });
 
+  it("detalle de la orden (KAN-99): cada envio trae la calificacion del comprador, o null", async () => {
+    const repo = new DrizzleOrdenRepository(db());
+    const [{ envio }] = await consultar<{ envio: number }>(db(), sql`SELECT MIN(orden_envio_id) AS envio FROM calificacion`);
+    const [{ ordenId, puntaje }] = await consultar<{ ordenId: number; puntaje: number }>(
+      db(),
+      sql`SELECT e.orden_id AS ordenId, c.puntaje FROM orden_envio e JOIN calificacion c ON c.orden_envio_id = e.id WHERE e.id = ${envio}`
+    );
+    const oc = await repo.buscarPorId(ordenId, { tipo: "todas" });
+    expect(oc!.envios.find((e) => e.id === envio)!.calificacion).toMatchObject({ puntaje, creadaEn: expect.any(Date) });
+    const [{ sinCalificar }] = await consultar<{ sinCalificar: number }>(
+      db(),
+      sql`SELECT MIN(e.orden_id) AS sinCalificar FROM orden_envio e LEFT JOIN calificacion c ON c.orden_envio_id = e.id WHERE c.id IS NULL`
+    );
+    const otra = await repo.buscarPorId(sinCalificar, { tipo: "todas" });
+    expect(otra!.envios.some((e) => e.calificacion === null)).toBe(true);
+  });
+
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
     const repo = new DrizzleOrdenRepository(db());
     const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);

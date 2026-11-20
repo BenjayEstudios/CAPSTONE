@@ -222,6 +222,11 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
 
 La pasarela es el puerto `PasarelaPago`; `src/lib/pasarela.ts` arma `WebpayPlus` según `WEBPAY_ENTORNO`. En tests se usa `PasarelaEnMemoria`. El ambiente de integración de Transbank bloquea (Imperva, 403) un POST cuyo `Origin` es `http://[::1]:…`: para probar en local usar `http://localhost:4200`.
 
+## Calificaciones (KAN-99)
+
+- `POST /ordenes/envios/:id/calificacion` (cliente): `calificarEnvio` registra puntaje 1-5 y comentario opcional. La regla (envío entregado, de la organización del usuario, una vez) la impone `DrizzleCalificacionRepository.registrar` con un `INSERT … SELECT` y el `UNIQUE` por envío; el caso de uso traduce `CalificacionError` a `409 YA_CALIFICADO` / `409 ENVIO_NO_CALIFICABLE`.
+- El detalle `GET /ordenes/:id` trae `envios[].calificacion` para el cliente. El promedio por proveedor se calcula al vuelo (`resumenPorProveedor`) y sale en la ficha del catálogo.
+
 ## Imagen de producción (`Dockerfile`)
 
 Multi-stage, construida desde `Proyecto/` (el CI la publica en

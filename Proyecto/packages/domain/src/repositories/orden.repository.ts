@@ -21,6 +21,8 @@ export interface EnvioConLineas extends OrdenEnvio {
   lineas: OrdenLinea[];
   /** Solo en el detalle (con lineas) y si el envio es retiro; si no, null o ausente. */
   puntoRetiro?: PuntoRetiroInfo | null;
+  /** Solo en el detalle: la calificacion que el comprador dejo al envio (KAN-99). */
+  calificacion?: { puntaje: number; comentario: string | null; creadaEn: Date } | null;
 }
 
 export interface DireccionEntregaInfo {

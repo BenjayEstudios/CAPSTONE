@@ -36,6 +36,9 @@ documentos, liquidaciones).
 - Mis pedidos: historial con filtros por estado y detalle con el
   seguimiento de cada envío; pagar un pedido pendiente (KAN-98)
   ([entrada](../cambios/2026-11-20-ecommerce-mis-pedidos.md)).
+- Calificar al distribuidor de un envío entregado (1 a 5 y comentario), una
+  vez; se suma al promedio del comparador (KAN-99)
+  ([entrada](../cambios/2026-11-20-calificar-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -55,7 +58,7 @@ documentos, liquidaciones).
 | KAN-96 | Confirmación y detalle de compra consolidado | ✅ [entrada](../cambios/2026-11-20-ecommerce-confirmacion-de-compra.md) |
 | KAN-97 | Registro e inicio de sesión de comprador | ✅ [entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) |
 | KAN-98 | Mis pedidos y seguimiento | ✅ [entrada](../cambios/2026-11-20-ecommerce-mis-pedidos.md) |
-| KAN-99 | Calificar proveedor tras la entrega | ⏳ (modelo de datos listo, KAN-142) |
+| KAN-99 | Calificar proveedor tras la entrega | ✅ [entrada](../cambios/2026-11-20-calificar-proveedor.md) |
 
 ### Proveedor
 

@@ -62,7 +62,9 @@ function presentar(a: AlcanceOrdenes, oc: OrdenCompleta, conLineas: boolean) {
     estado: e.estado,
     actualizadoEn: e.actualizadoEn,
     // Aditivo (KAN-96): en el detalle, el punto de retiro de los envios con retiro (null en despacho).
-    ...(conLineas ? { lineas: e.lineas, puntoRetiro: e.puntoRetiro ?? null } : {})
+    ...(conLineas ? { lineas: e.lineas, puntoRetiro: e.puntoRetiro ?? null } : {}),
+    // Aditivo (KAN-99): la calificacion del comprador, solo para el cliente y en el detalle.
+    ...(conLineas && a.tipo === "cliente" ? { calificacion: e.calificacion ?? null } : {})
   }));
   const propio = a.tipo === "proveedor" ? oc.envios[0] : undefined;
   return {

@@ -3,6 +3,7 @@ import { Component, computed, inject, input, signal } from "@angular/core";
 import { CheckoutService } from "../../core/checkout/checkout.service";
 import { DireccionEntrega, DocumentoTributario, EnvioOrden, MedioPago, OrdenDetalle } from "../../core/models/checkout.models";
 import { formatearClp, plazo } from "../../shared/formato";
+import { CalificarEnvioComponent } from "./calificar-envio.component";
 import { estadoEnvio, PasoSeguimiento, pasosEnvio } from "./estados";
 
 const MEDIOS: Record<MedioPago, string> = {
@@ -46,6 +47,7 @@ export function entregaEstimada(o: Pick<OrdenDetalle, "pagadoEn">, e: Pick<Envio
 @Component({
   selector: "app-detalle-orden",
   standalone: true,
+  imports: [CalificarEnvioComponent],
   templateUrl: "./detalle-orden.component.html",
   styleUrl: "./detalle-orden.component.css"
 })

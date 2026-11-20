@@ -82,6 +82,14 @@ export interface EnvioOrden {
   lineas?: Array<{ ofertaId: number; nombreProducto: string; formato: string | null; precioUnitario: number; cantidad: number; totalLinea: number }>;
   /** Solo en el detalle: el punto de retiro si la modalidad es retiro (KAN-96). */
   puntoRetiro?: { id: number; nombre: string; horario: string | null; direccion: string } | null;
+  /** Solo en el detalle del cliente: su calificacion del envio, si ya califico (KAN-99). */
+  calificacion?: CalificacionEnvio | null;
+}
+
+export interface CalificacionEnvio {
+  puntaje: number;
+  comentario: string | null;
+  creadaEn: string;
 }
 
 export interface DireccionEntrega {
