@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Panel del proveedor: dashboard de ventas](2026-11-20-panel-proveedor-dashboard.md) | KAN-85 | KAN-101 (y API de KAN-133, 137) |
 | 2026-11-20 | [Registro y alta de proveedor](2026-11-20-registro-de-proveedor.md) | KAN-85 | KAN-100 |
 | 2026-11-20 | [Calificar al proveedor tras la entrega](2026-11-20-calificar-proveedor.md) | KAN-85 | KAN-99 |
 | 2026-11-20 | [Ecommerce: mis pedidos y seguimiento](2026-11-20-ecommerce-mis-pedidos.md) | KAN-85 | KAN-98 |

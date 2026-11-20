@@ -1,5 +1,5 @@
 import { Routes } from "@angular/router";
-import { invitadoGuard, sesionGuard } from "./core/auth/guards";
+import { invitadoGuard, proveedorGuard, sesionGuard } from "./core/auth/guards";
 
 // Rutas del ecommerce. Regla de KAN-97: todo lo del catalogo se navega sin
 // cuenta; lo que compra o muestra datos propios (checkout, pedidos) lleva
@@ -57,6 +57,20 @@ export const routes: Routes = [
     canActivate: [sesionGuard],
     loadComponent: () => import("./features/pedidos/pedido.component").then((m) => m.PedidoComponent),
     title: "Pedido · Cotizapp"
+  },
+  {
+    // Panel del proveedor (KAN-101 en adelante): cada historia agrega su hija y su pestaña.
+    path: "proveedor",
+    canActivate: [proveedorGuard],
+    loadComponent: () => import("./features/proveedor/panel-proveedor.component").then((m) => m.PanelProveedorComponent),
+    children: [
+      {
+        path: "",
+        pathMatch: "full",
+        loadComponent: () => import("./features/proveedor/dashboard.component").then((m) => m.DashboardProveedorComponent),
+        title: "Panel · Cotizapp para distribuidores"
+      }
+    ]
   },
   {
     path: "ingresar",

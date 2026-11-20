@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { eq, sql } from "drizzle-orm";
+import { DrizzleAnaliticaRepository } from "../src/repositories/analitica.repository.js";
 import { DrizzleCarroRepository } from "../src/repositories/carro.repository.js";
 import { DrizzleComunaRepository } from "../src/repositories/comuna.repository.js";
 import { DrizzleOrdenRepository } from "../src/repositories/orden.repository.js";
@@ -60,6 +61,30 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     );
     const otra = await repo.buscarPorId(sinCalificar, { tipo: "todas" });
     expect(otra!.envios.some((e) => e.calificacion === null)).toBe(true);
+  });
+
+  it("pendientesProveedor (KAN-101): coincide con contar directo en SQL", async () => {
+    const p = await new DrizzleAnaliticaRepository(db()).pendientesProveedor(ORG.losAndes, 20);
+    const [esperado] = await consultar<{ publicadas: number; borradores: number; bajo: number; sinLiquidar: string; porDespachar: number; pendientes: string }>(
+      db(),
+      sql`SELECT
+            (SELECT COUNT(*) FROM oferta WHERE proveedor_id = ${ORG.losAndes} AND estado = 'publicada') AS publicadas,
+            (SELECT COUNT(*) FROM oferta WHERE proveedor_id = ${ORG.losAndes} AND estado = 'borrador') AS borradores,
+            (SELECT COUNT(*) FROM oferta WHERE proveedor_id = ${ORG.losAndes} AND estado = 'publicada' AND cajas_disponibles <= 20) AS bajo,
+            (SELECT COALESCE(SUM(subtotal + COALESCE(costo_despacho, 0) - comision_monto), 0) FROM orden_envio
+              WHERE proveedor_id = ${ORG.losAndes} AND estado = 'entregado' AND liquidacion_id IS NULL) AS sinLiquidar,
+            (SELECT COUNT(*) FROM orden_envio oe JOIN orden o ON o.id = oe.orden_id
+              WHERE oe.proveedor_id = ${ORG.losAndes} AND oe.estado = 'por_despachar' AND o.estado_pago = 'pagado') AS porDespachar,
+            (SELECT COALESCE(SUM(monto_neto), 0) FROM liquidacion WHERE proveedor_id = ${ORG.losAndes} AND estado = 'pendiente') AS pendientes`
+    );
+    expect(p.ofertasPublicadas).toBe(Number(esperado!.publicadas));
+    expect(p.ofertasBorrador).toBe(Number(esperado!.borradores));
+    expect(p.stockBajo).toHaveLength(Number(esperado!.bajo));
+    expect(p.stockBajo.every((s) => s.cajasDisponibles <= 20)).toBe(true);
+    expect(p.entregadoSinLiquidar).toBe(Number(esperado!.sinLiquidar));
+    expect(p.enviosPorDespachar).toBe(Number(esperado!.porDespachar));
+    expect(p.liquidacionesPendientes).toBe(Number(esperado!.pendientes));
+    expect(p.liquidacionesPendientes).toBeGreaterThan(0);
   });
 
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {

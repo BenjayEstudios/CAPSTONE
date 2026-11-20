@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { AuthError, AuthService } from "../../core/auth/auth.service";
 import { destinoSeguro } from "../../core/auth/guards";
+import { SessionState } from "../../core/state/session.state";
 import { PanelCuentaComponent } from "./panel-cuenta.component";
 
 // /ingresar (KAN-97): correo y contraseña. Tras entrar vuelve a returnUrl
@@ -17,6 +18,7 @@ import { PanelCuentaComponent } from "./panel-cuenta.component";
 export class IngresarComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionState);
   private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
 
   readonly form = inject(FormBuilder).nonNullable.group({
@@ -43,7 +45,9 @@ export class IngresarComponent {
     try {
       const { email, clave } = this.form.getRawValue();
       await this.auth.ingresar(email.trim(), clave);
-      await this.router.navigateByUrl(this.returnUrl);
+      // Un distribuidor que entra sin destino va a su panel (KAN-101).
+      const destino = this.returnUrl === "/" && this.session.esProveedor() ? "/proveedor" : this.returnUrl;
+      await this.router.navigateByUrl(destino);
     } catch (err) {
       this.error.set(err instanceof AuthError ? err.message : "Ocurrió un error inesperado.");
     } finally {

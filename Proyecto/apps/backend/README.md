@@ -222,6 +222,12 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
 
 La pasarela es el puerto `PasarelaPago`; `src/lib/pasarela.ts` arma `WebpayPlus` según `WEBPAY_ENTORNO`. En tests se usa `PasarelaEnMemoria`. El ambiente de integración de Transbank bloquea (Imperva, 403) un POST cuyo `Origin` es `http://[::1]:…`: para probar en local usar `http://localhost:4200`.
 
+## Panel del proveedor (KAN-101)
+
+- `GET /estadisticas/proveedor/ventas?desde&hasta` (`ventasProveedor`): totales, semanas (lunes, con ceros) y top de productos, sobre `AnaliticaRepository.ventasPorSemana/ventasPorProducto`. Venta = envío no cancelado de una orden pagada.
+- `GET /alertas/proveedor` (`alertasProveedor`): vigencia de documentos calculada hoy (y los que faltan), stock bajo, por cobrar con la próxima liquidación (martes), envíos por despachar y conteo de ofertas (`AnaliticaRepository.pendientesProveedor`). Umbrales en `UMBRAL_STOCK_BAJO` (20) y `DIAS_POR_VENCER` (45).
+- Ambas usan la organización del token (`ver_ordenes_propias`); las consume el ecommerce y la app móvil.
+
 ## Calificaciones (KAN-99)
 
 - `POST /ordenes/envios/:id/calificacion` (cliente): `calificarEnvio` registra puntaje 1-5 y comentario opcional. La regla (envío entregado, de la organización del usuario, una vez) la impone `DrizzleCalificacionRepository.registrar` con un `INSERT … SELECT` y el `UNIQUE` por envío; el caso de uso traduce `CalificacionError` a `409 YA_CALIFICADO` / `409 ENVIO_NO_CALIFICABLE`.

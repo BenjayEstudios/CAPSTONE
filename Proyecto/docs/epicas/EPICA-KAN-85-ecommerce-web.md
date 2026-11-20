@@ -42,6 +42,9 @@ documentos, liquidaciones).
 - Proveedor: "Vender en Cotizapp" (`/vender`), solicitud de alta que queda
   en revisión con su caso de moderación (KAN-100)
   ([entrada](../cambios/2026-11-20-registro-de-proveedor.md)).
+- Proveedor: panel en `/proveedor` con el dashboard de ventas (KPIs del mes,
+  venta semanal, más vendidos, requiere atención) (KAN-101)
+  ([entrada](../cambios/2026-11-20-panel-proveedor-dashboard.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -68,7 +71,7 @@ documentos, liquidaciones).
 | Ticket | Historia | Estado |
 |---|---|---|
 | KAN-100 | Registro y alta de proveedor | ✅ [entrada](../cambios/2026-11-20-registro-de-proveedor.md) (aprobar aún no cierra el caso de moderación) |
-| KAN-101 | Dashboard de ventas | ⏳ |
+| KAN-101 | Dashboard de ventas | ✅ [entrada](../cambios/2026-11-20-panel-proveedor-dashboard.md) |
 | KAN-102 | Asignarme un producto (publicar oferta) | ⏳ |
 | KAN-103 | Mis productos publicados | ⏳ |
 | KAN-104 | Cómo se compara tu precio | ⏳ |

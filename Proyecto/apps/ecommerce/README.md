@@ -78,6 +78,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/cuenta/vender.component.ts`: `/vender` (solo sin sesión) para que una distribuidora pida su alta: datos legales de la empresa, representante y acceso (`POST /auth/registro/proveedor`). Queda en revisión con su caso de moderación; no inicia sesión. Enlazado en el pie y en "Ingresar".
 
+## Panel del proveedor (KAN-101)
+
+`features/proveedor/`: `/proveedor` (guard `proveedorGuard`) con el marco del panel (`panel-proveedor.component.ts`: franja de la empresa y pestañas en `PESTANAS_PROVEEDOR`; cada historia del proveedor agrega su ruta hija y su pestaña) y el dashboard (`dashboard.component.ts`): KPIs del mes vs. el mismo tramo del anterior, venta semanal de 12 semanas (barras con tooltip y tabla accesible), más vendidos y "Requiere atención". Datos de `core/proveedor/panel-proveedor.service.ts`; fechas y cifras en `dashboard.calculo.ts`. Un proveedor que ingresa sin destino llega al panel y ve "Mi panel" en la cabecera.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

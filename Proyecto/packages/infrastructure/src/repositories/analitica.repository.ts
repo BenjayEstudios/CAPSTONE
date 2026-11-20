@@ -6,7 +6,8 @@ import type {
   RangoFechasAnalitica,
   TerminoSinResultados,
   VentaProducto,
-  VentaSemanal
+  VentaSemanal,
+  PendientesProveedor
 } from "@cotizapp/domain";
 import { consultar, type DbClient } from "../db/client.js";
 
@@ -96,6 +97,51 @@ export class DrizzleAnaliticaRepository implements AnaliticaRepository {
   // vistas con ix_evento_analitico_producto_id (producto_id, tipo_evento,
   // creado_en), clicks/conversiones con ix_evento_analitico_oferta_id
   // (oferta_id, creado_en, convirtio). El rango de fechas poda particiones.
+  // Panel del proveedor (KAN-101). Cuatro consultas chicas por indice de
+  // proveedor: ofertas (stock y conteo por estado), envios entregados sin
+  // liquidar y por despachar, y liquidaciones pendientes.
+  async pendientesProveedor(proveedorId: number, umbralStock: number): Promise<PendientesProveedor> {
+    const [stockBajo, [ofertas], [envios], [liquidaciones]] = await Promise.all([
+      consultar<{ ofertaId: number; productoId: number; producto: string; cajasDisponibles: number; cajasIniciales: number | null }>(
+        this.db,
+        sql`
+          SELECT o.id AS ofertaId, o.producto_id AS productoId, p.nombre AS producto,
+                 o.cajas_disponibles AS cajasDisponibles, o.cajas_iniciales AS cajasIniciales
+          FROM oferta o JOIN producto p ON p.id = o.producto_id
+          WHERE o.proveedor_id = ${proveedorId} AND o.estado = 'publicada'
+            AND o.cajas_disponibles IS NOT NULL AND o.cajas_disponibles <= ${umbralStock}
+          ORDER BY o.cajas_disponibles, o.id`
+      ),
+      consultar<{ publicadas: string; borradores: string }>(
+        this.db,
+        sql`
+          SELECT COALESCE(SUM(estado = 'publicada'), 0) AS publicadas, COALESCE(SUM(estado = 'borrador'), 0) AS borradores
+          FROM oferta WHERE proveedor_id = ${proveedorId}`
+      ),
+      consultar<{ sinLiquidar: string; porDespachar: string }>(
+        this.db,
+        sql`
+          SELECT COALESCE(SUM(CASE WHEN oe.estado = 'entregado' AND oe.liquidacion_id IS NULL
+                                   THEN oe.subtotal + COALESCE(oe.costo_despacho, 0) - oe.comision_monto END), 0) AS sinLiquidar,
+                 COALESCE(SUM(oe.estado = 'por_despachar' AND o.estado_pago = 'pagado'), 0) AS porDespachar
+          FROM orden_envio oe JOIN orden o ON o.id = oe.orden_id
+          WHERE oe.proveedor_id = ${proveedorId}`
+      ),
+      consultar<{ pendientes: string }>(
+        this.db,
+        sql`SELECT COALESCE(SUM(monto_neto), 0) AS pendientes FROM liquidacion WHERE proveedor_id = ${proveedorId} AND estado = 'pendiente'`
+      )
+    ]);
+    return {
+      stockBajo: stockBajo.map((f) => ({ ...f, cajasDisponibles: n(f.cajasDisponibles), cajasIniciales: f.cajasIniciales === null ? null : n(f.cajasIniciales) })),
+      entregadoSinLiquidar: n(envios?.sinLiquidar),
+      liquidacionesPendientes: n(liquidaciones?.pendientes),
+      enviosPorDespachar: n(envios?.porDespachar),
+      ofertasPublicadas: n(ofertas?.publicadas),
+      ofertasBorrador: n(ofertas?.borradores)
+    };
+  }
+
   async embudoPorProducto(proveedorId: number, rango: RangoFechasAnalitica): Promise<EmbudoProducto[]> {
     const filas = await consultar<{ productoId: number; nombre: string; vistas: number; clicks: number; conversiones: number }>(
       this.db,

@@ -32,11 +32,11 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 | `GET /ordenes` · `GET /ordenes/:id` | ✅ + campos ⏳ | Mis pedidos (KAN-132), órdenes vigentes (KAN-136) |
 | `PATCH /ordenes/envios/:id/estado` | ✅ | Órdenes vigentes (KAN-136) |
 | `POST /ordenes/envios/:id/calificacion` | ✅ | Mis pedidos (KAN-132, KAN-99) |
-| `GET /estadisticas/proveedor/ventas` | ⏳ | Estadísticas de venta (KAN-133) |
+| `GET /estadisticas/proveedor/ventas` | ✅ | Estadísticas de venta (KAN-133, KAN-101) |
 | `GET /estadisticas/proveedor` | ✅ + campo ⏳ | Visitas y conversión (KAN-134) |
 | `POST /eventos/lote` | ✅ | Vistas, búsquedas y clicks del comprador (KAN-134) |
 | `GET /calificaciones/recibidas` | ⏳ | Calificaciones recibidas (KAN-135) |
-| `GET /alertas/proveedor` | ⏳ | Alertas (KAN-137) |
+| `GET /alertas/proveedor` | ✅ | Alertas (KAN-137, KAN-101) |
 
 ## Convenciones
 
@@ -355,7 +355,7 @@ Response `201`:
 Errores (`CalificacionError`): `409 ENVIO_NO_CALIFICABLE`, `409 YA_CALIFICADO`,
 `400 VALIDACION`.
 
-## ⏳ `GET /estadisticas/proveedor/ventas` — KAN-133
+## ✅ `GET /estadisticas/proveedor/ventas` — KAN-133 (hecho en KAN-101)
 
 Token proveedor (`ver_ordenes_propias`). `?desde=AAAA-MM-DD&hasta=AAAA-MM-DD`
 (inclusivos; mismo `resolverRango` que `/estadisticas/proveedor`). Solo hay
@@ -433,7 +433,7 @@ más el `entregas_a_tiempo_pct` de la organización.
 organización compradora (no el usuario); `promedio` y `entregasATiempoPct`
 en `null` si no hay datos.
 
-## ⏳ `GET /alertas/proveedor` — KAN-137
+## ✅ `GET /alertas/proveedor` — KAN-137 (hecho en KAN-101)
 
 Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
 
@@ -461,6 +461,9 @@ Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
   `monto_neto` de liquidaciones `pendiente` (`/liquidaciones/mias` ya las
   lista); `proximaLiquidacion`: el próximo martes.
 - `enviosPorDespachar`: envíos `por_despachar` de órdenes pagadas.
+- Aditivos (KAN-101): `documentos[].revision` (`pendiente | aprobado |
+  rechazado | null`), `estado: "falta"` para un documento obligatorio no
+  subido, y `ofertas: { publicadas, borradores }`.
 - Los umbrales (20 cajas, 45 días) son una decisión abierta: ver
   `docs/decisiones/DECISIONES-ABIERTAS.md`.
 

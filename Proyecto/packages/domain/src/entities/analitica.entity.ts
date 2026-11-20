@@ -64,3 +64,26 @@ export interface TerminoSinResultados {
   termino: string;
   veces: number;
 }
+
+// Oferta publicada con pocas cajas (bloque "Requiere atencion", KAN-101/137).
+export interface StockBajo {
+  ofertaId: number;
+  productoId: number;
+  producto: string;
+  cajasDisponibles: number;
+  cajasIniciales: number | null;
+}
+
+// Lo pendiente de un proveedor para su panel (KAN-101) y las alertas de la
+// app (KAN-137). Montos en CLP.
+export interface PendientesProveedor {
+  stockBajo: StockBajo[];
+  // Neto (subtotal + despacho - comision) de envios entregados sin liquidar.
+  entregadoSinLiquidar: number;
+  // Suma de monto_neto de liquidaciones pendientes de pago.
+  liquidacionesPendientes: number;
+  // Envios por despachar de ordenes pagadas.
+  enviosPorDespachar: number;
+  ofertasPublicadas: number;
+  ofertasBorrador: number;
+}

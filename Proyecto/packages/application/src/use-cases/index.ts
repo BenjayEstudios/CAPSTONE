@@ -40,3 +40,4 @@ export * from "./ofertas.use-cases.js";
 export * from "./pagos.use-cases.js";
 export * from "./comunas.use-cases.js";
 export * from "./calificaciones.use-cases.js";
+export * from "./panel-proveedor.use-cases.js";

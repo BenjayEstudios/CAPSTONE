@@ -3,6 +3,7 @@ import type {
   KpisPlataforma,
   RangoFechasAnalitica,
   TerminoSinResultados,
+  PendientesProveedor,
   VentaProducto,
   VentaSemanal
 } from "../entities/analitica.entity.js";
@@ -16,6 +17,8 @@ export interface AnaliticaRepository {
   ventasPorSemana(proveedorId: number, rango: RangoFechasAnalitica): Promise<VentaSemanal[]>;
   ventasPorProducto(proveedorId: number, rango: RangoFechasAnalitica, limite?: number): Promise<VentaProducto[]>;
   embudoPorProducto(proveedorId: number, rango: RangoFechasAnalitica): Promise<EmbudoProducto[]>;
+  /** Stock bajo (cajas <= umbral), por cobrar, envios por despachar y ofertas, de un proveedor (KAN-101). */
+  pendientesProveedor(proveedorId: number, umbralStock: number): Promise<PendientesProveedor>;
   // Panel admin
   kpisPlataforma(rango: RangoFechasAnalitica): Promise<KpisPlataforma>;
   terminosSinResultados(rango: RangoFechasAnalitica, limite?: number): Promise<TerminoSinResultados[]>;

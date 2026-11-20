@@ -22,7 +22,10 @@
     </form>
 
     <div class="acciones">
-      <a routerLink="/carro" class="btn btn-secondary carro" aria-label="Ver carro">
+      @if (session.esProveedor()) {
+        <a routerLink="/proveedor" class="btn btn-secondary carro">Mi panel</a>
+      } @else {
+        <a routerLink="/carro" class="btn btn-secondary carro" aria-label="Ver carro">
         <span>Ver carro · <strong>{{ carro.productos() }}</strong> · {{ clp(carro.total()) }}</span>
         <small>
           @if (carro.proveedores() === 0) { Sin proveedores aún }
@@ -30,6 +33,7 @@
           @else { {{ carro.proveedores() }} proveedores }
         </small>
       </a>
+      }
       @if (session.autenticado()) {
         <div class="cuenta">
           <span class="saludo">Hola, {{ session.nombreCorto() }}<small>{{ session.usuario()?.organizacion?.nombre }}</small></span>
