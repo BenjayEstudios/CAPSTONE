@@ -40,7 +40,7 @@ export class AppComponent implements OnInit {
 
   buscar(): void {
     const q = this.busqueda.trim();
-    void this.router.navigate(["/catalogo"], { queryParams: q ? { q } : {} });
+    void this.router.navigate(q ? ["/buscar"] : ["/catalogo"], { queryParams: q ? { q } : {} });
   }
 
   salir(): void {

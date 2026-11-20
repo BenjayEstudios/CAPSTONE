@@ -19,7 +19,9 @@ documentos, liquidaciones).
 - Inicio (KAN-89): buscador, contadores, categorías con conteo, mayor diferencia
   de precio y carro en la cabecera
   ([entrada](../cambios/2026-11-20-ecommerce-inicio.md)).
-- Catálogo, ficha, carro y checkout son pantallas provisorias hasta KAN-90 a
+- Catálogo con filtros y búsqueda (KAN-90, KAN-91)
+  ([entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md)).
+- Ficha, carro y checkout son pantallas provisorias hasta KAN-92 a
   KAN-95; ya aplican la regla de acceso (catálogo público, checkout con sesión).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
@@ -31,8 +33,8 @@ documentos, liquidaciones).
 | Ticket | Historia | Estado |
 |---|---|---|
 | KAN-89 | Home del ecommerce | ✅ [entrada](../cambios/2026-11-20-ecommerce-inicio.md) |
-| KAN-90 | Catálogo por categoría con filtros | ⏳ |
-| KAN-91 | Búsqueda de productos | ⏳ |
+| KAN-90 | Catálogo por categoría con filtros | ✅ [entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md) |
+| KAN-91 | Búsqueda de productos | ✅ [entrada](../cambios/2026-11-20-ecommerce-catalogo-y-busqueda.md) (marca propia como filtro por marca) |
 | KAN-92 | Ficha de producto con comparador de proveedores | ⏳ |
 | KAN-93 | Comparación lado a lado | ⏳ |
 | KAN-94 | Carro multiproveedor | ⏳ |

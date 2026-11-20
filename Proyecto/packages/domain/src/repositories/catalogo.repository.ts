@@ -1,4 +1,4 @@
-import type { FichaCatalogoDto, OfertaCatalogoDto, OrdenCatalogo, ProductoCatalogoDto } from "../dtos/catalogo.dto.js";
+import type { FichaCatalogoDto, MarcaConConteoDto, OfertaCatalogoDto, OrdenCatalogo, ProductoCatalogoDto } from "../dtos/catalogo.dto.js";
 
 export interface FiltrosCatalogo {
   q?: string;
@@ -6,6 +6,9 @@ export interface FiltrosCatalogo {
   categoriaIds?: number[];
   plazoMaxHoras?: number;
   maxUnidadesPorCaja?: number;
+  maxMinimoCompra?: number;
+  conRetiro?: boolean;
+  marca?: string;
   orden: OrdenCatalogo;
   pagina: number;
   porPagina: number;
@@ -28,7 +31,7 @@ export type FichaCatalogoBase = Omit<FichaCatalogoDto, "ofertas"> & { ofertas: O
 // publicados, en categorias visibles, con ofertas visibles: oferta publicada
 // de un proveedor con organizacion activa.
 export interface CatalogoRepository {
-  listar(filtros: FiltrosCatalogo): Promise<{ items: ProductoCatalogoDto[]; total: number }>;
+  listar(filtros: FiltrosCatalogo): Promise<{ items: ProductoCatalogoDto[]; total: number; marcas: MarcaConConteoDto[] }>;
   obtenerFicha(productoId: number, zona: ZonaComprador): Promise<FichaCatalogoBase | null>;
   /** Region y comuna de la direccion de la organizacion; null si no tiene. */
   zonaDeOrganizacion(organizacionId: number): Promise<ZonaComprador | null>;

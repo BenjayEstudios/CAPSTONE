@@ -59,7 +59,7 @@ describe("AppComponent (cabecera)", () => {
     const nav = spyOn(TestBed.inject(Router), "navigate").and.resolveTo(true);
     f.componentInstance.busqueda = "  aceite ";
     f.componentInstance.buscar();
-    expect(nav).toHaveBeenCalledWith(["/catalogo"], { queryParams: { q: "aceite" } });
+    expect(nav).toHaveBeenCalledWith(["/buscar"], { queryParams: { q: "aceite" } });
   });
 
   it("con sesion de comprador: saludo, y el carro con cantidad y total", async () => {

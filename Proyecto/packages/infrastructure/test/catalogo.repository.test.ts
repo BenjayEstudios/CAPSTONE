@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 import type { FiltrosCatalogo } from "@cotizapp/domain";
 import { DrizzleCatalogoRepository, terminoFulltext } from "../src/repositories/catalogo.repository.js";
+import { consultar } from "../src/db/client.js";
 import { describeDb } from "./db.js";
 
 // Catalogo publico (KAN-145) contra el seed. Cada test corre en una
@@ -35,7 +36,8 @@ describeDb("DrizzleCatalogoRepository", (db) => {
     const aceite = items.find((i) => i.sku === "ACE-0001")!;
     expect(aceite).toEqual({
       id: 1, sku: "ACE-0001", nombre: "Aceite vegetal maravilla", marca: "Belmont", formato: "Bidón 5 L", contenido: 5,
-      unidad: "L", categoriaId: 8, imagenUrl: null, precioDesde: 12490, precioHasta: 12890, ofertas: 2, plazoMinHoras: 24
+      unidad: "L", categoriaId: 8, imagenUrl: null, precioDesde: 12490, precioHasta: 12890, ofertas: 2, plazoMinHoras: 24,
+      proveedorMasBarato: { id: ORG.losAndes, nombre: "Los Andes Food Service" }
     });
   });
 
@@ -52,6 +54,32 @@ describeDb("DrizzleCatalogoRepository", (db) => {
     expect(items[0]).toMatchObject({ ofertas: 1, precioDesde: 12490, precioHasta: 12490 }); // Valle Central (48 h) no cuenta
     const chica = await repo().listar(filtros({ maxUnidadesPorCaja: 6 }));
     expect(chica.total).toBeLessThan(17);
+  });
+
+  it("KAN-91: proveedor mas barato, retiro, sin minimo y marcas para refinar", async () => {
+    const { items, marcas } = await repo().listar(filtros({ q: "aceite" }));
+    expect(items.map((i) => i.proveedorMasBarato.nombre)).toEqual(["Los Andes Food Service", "Los Andes Food Service"]);
+    expect(marcas).toEqual([{ marca: "Belmont", productos: 1 }, { marca: "Olave", productos: 1 }]);
+
+    // Con marca, la lista de marcas sigue completa (para poder cambiarla).
+    const belmont = await repo().listar(filtros({ q: "aceite", marca: "Belmont" }));
+    expect(belmont.items.map((i) => i.marca)).toEqual(["Belmont"]);
+    expect(belmont.marcas).toHaveLength(2);
+
+    // Retiro: solo ofertas con modalidad retiro o ambos.
+    const conRetiro = await repo().listar(filtros({ conRetiro: true }));
+    const [n] = await consultar<{ n: number }>(
+      db(),
+      sql`SELECT COUNT(DISTINCT o.producto_id) AS n FROM oferta o JOIN organizacion org ON org.id = o.proveedor_id
+          WHERE o.estado = 'publicada' AND org.estado = 'activa' AND o.modalidad_entrega IN ('retiro','ambos')`
+    );
+    expect(conRetiro.total).toBe(Number(n!.n));
+
+    // Minimo de compra: una oferta con minimo 5 deja de contar con "sin minimo".
+    await db().execute(sql`UPDATE oferta SET minimo_compra = 5 WHERE producto_id = 1`);
+    const sinMinimo = await repo().listar(filtros({ maxMinimoCompra: 1 }));
+    expect(sinMinimo.items.map((i) => i.id)).not.toContain(1);
+    expect((await repo().listar(filtros({ maxMinimoCompra: 6 }))).items.map((i) => i.id)).toContain(1);
   });
 
   it("orden=diferencia solo trae productos con 2+ ofertas, de mayor a menor diferencia", async () => {

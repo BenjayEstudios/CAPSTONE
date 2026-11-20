@@ -30,6 +30,12 @@ export interface ProductoCatalogo {
   precioHasta: number;
   ofertas: number;
   plazoMinHoras: number | null;
+  proveedorMasBarato: { id: number; nombre: string };
+}
+
+export interface MarcaConConteo {
+  marca: string;
+  productos: number;
 }
 
 export interface PaginaCatalogo {
@@ -37,4 +43,20 @@ export interface PaginaCatalogo {
   total: number;
   pagina: number;
   porPagina: number;
+  marcas: MarcaConConteo[];
+}
+
+export type OrdenCatalogo = "relevancia" | "precio" | "diferencia" | "nombre";
+
+/** Parametros de GET /catalogo/productos (todos opcionales). */
+export interface FiltrosCatalogo {
+  q?: string;
+  categoriaId?: number;
+  plazoMaxHoras?: number;
+  maxMinimoCompra?: number;
+  conRetiro?: boolean;
+  marca?: string;
+  orden?: OrdenCatalogo;
+  pagina?: number;
+  porPagina?: number;
 }

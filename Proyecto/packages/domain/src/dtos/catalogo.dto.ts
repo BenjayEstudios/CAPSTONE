@@ -9,12 +9,23 @@ export const ORDENES_CATALOGO = ["relevancia", "precio", "diferencia", "nombre"]
 export type OrdenCatalogo = (typeof ORDENES_CATALOGO)[number];
 
 const entero = (min: number, max: number) => z.coerce.number().int().min(min).max(max);
+// "true"/"1" en el query string; cualquier otro valor (o ausente) es false.
+const booleano = z
+  .union([z.boolean(), z.string()])
+  .optional()
+  .transform((v) => v === true || v === "true" || v === "1");
 
 export const listarCatalogoQuerySchema = z.object({
   q: z.string().trim().min(1).max(100).optional(),
   categoriaId: entero(1, 65_535).optional(),
   plazoMaxHoras: entero(1, 10_000).optional(),
   maxUnidadesPorCaja: entero(1, 10_000).optional(),
+  // KAN-90/91: minimo de compra maximo (1 = "sin minimo"; una oferta sin minimo cuenta como 1).
+  maxMinimoCompra: entero(1, 10_000).optional(),
+  // KAN-91: solo ofertas que se pueden retirar (modalidad retiro o ambos).
+  conRetiro: booleano,
+  // KAN-91: marca exacta (las disponibles vienen en "marcas" de la respuesta).
+  marca: z.string().trim().min(1).max(80).optional(),
   orden: z.enum(ORDENES_CATALOGO).default("relevancia"),
   pagina: entero(1, 10_000).default(1),
   porPagina: entero(1, 100).default(20)
@@ -42,6 +53,14 @@ export interface ProductoCatalogoDto {
   precioHasta: number;
   ofertas: number;
   plazoMinHoras: number | null;
+  /** El distribuidor de la oferta mas barata entre las que cumplen los filtros (KAN-91). */
+  proveedorMasBarato: { id: number; nombre: string };
+}
+
+/** Marca con cuantos productos tiene entre los resultados (sin aplicar el filtro de marca). */
+export interface MarcaConConteoDto {
+  marca: string;
+  productos: number;
 }
 
 export interface PaginaCatalogoDto {
@@ -49,6 +68,8 @@ export interface PaginaCatalogoDto {
   total: number;
   pagina: number;
   porPagina: number;
+  /** Para refinar por marca (KAN-91). */
+  marcas: MarcaConConteoDto[];
 }
 
 /**

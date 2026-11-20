@@ -64,6 +64,14 @@ describe("listarCatalogo", () => {
     expect(m.llamadas.filtros?.categoriaIds).toEqual([9]);
   });
 
+  it("KAN-90/91: minimo de compra, retiro y marca llegan al repositorio; conRetiro solo con 'true' o '1'", async () => {
+    const m = montar();
+    await m.listar({ maxMinimoCompra: "1", conRetiro: "true", marca: " Soprole " });
+    expect(m.llamadas.filtros).toMatchObject({ maxMinimoCompra: 1, conRetiro: true, marca: "Soprole" });
+    await m.listar({ conRetiro: "no" });
+    expect(m.llamadas.filtros?.conRetiro).toBeUndefined();
+  });
+
   it("convierte los query params y rechaza valores invalidos", async () => {
     const m = montar();
     await m.listar({ q: "  aceite ", plazoMaxHoras: "24", maxUnidadesPorCaja: "6", orden: "diferencia", porPagina: "5" });

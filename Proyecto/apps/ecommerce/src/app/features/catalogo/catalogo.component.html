@@ -1,0 +1,148 @@
+<div class="contenedor pagina">
+  <aside class="filtros" aria-label="Filtros">
+    <p class="etiqueta">Filtros</p>
+
+    <fieldset>
+      <legend>Categoría</legend>
+      <label class="opcion">
+        <input type="radio" name="categoria" [checked]="!filtros().categoriaId" (change)="filtrar({ categoria: null })" />
+        Todas
+      </label>
+      @for (c of categorias(); track c.id) {
+        <label class="opcion raiz">
+          <input type="radio" name="categoria" [checked]="filtros().categoriaId === c.id" (change)="filtrar({ categoria: c.id })" />
+          {{ c.nombre }} <span class="n">{{ c.productos }}</span>
+        </label>
+        @for (h of c.hijos; track h.id) {
+          @if (h.productos > 0) {
+            <label class="opcion hija">
+              <input type="radio" name="categoria" [checked]="filtros().categoriaId === h.id" (change)="filtrar({ categoria: h.id })" />
+              {{ h.nombre }} <span class="n">{{ h.productos }}</span>
+            </label>
+          }
+        }
+      }
+    </fieldset>
+
+    <fieldset>
+      <legend>Plazo de entrega</legend>
+      <div class="segmento" role="group" aria-label="Plazo de entrega">
+        <button type="button" [class.activo]="!filtros().plazoMaxHoras" [attr.aria-pressed]="!filtros().plazoMaxHoras" (click)="filtrar({ plazo: null })">Cualquiera</button>
+        <button type="button" [class.activo]="filtros().plazoMaxHoras === 24" [attr.aria-pressed]="filtros().plazoMaxHoras === 24" (click)="filtrar({ plazo: 24 })">24 h</button>
+        <button type="button" [class.activo]="filtros().plazoMaxHoras === 48" [attr.aria-pressed]="filtros().plazoMaxHoras === 48" (click)="filtrar({ plazo: 48 })">Hasta 48 h</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Mínimo de compra</legend>
+      <label class="opcion"><input type="radio" name="minimo" [checked]="!filtros().maxMinimoCompra" (change)="filtrar({ minimo: null })" /> Cualquiera</label>
+      <label class="opcion"><input type="radio" name="minimo" [checked]="filtros().maxMinimoCompra === 1" (change)="filtrar({ minimo: 1 })" /> Sin mínimo</label>
+      <label class="opcion"><input type="radio" name="minimo" [checked]="filtros().maxMinimoCompra === 6" (change)="filtrar({ minimo: 6 })" /> Hasta 6 unidades</label>
+    </fieldset>
+
+    @if (hayFiltros()) {
+      <button type="button" class="btn-link" (click)="limpiar()">Quitar filtros</button>
+    }
+  </aside>
+
+  <section class="resultados" aria-labelledby="titulo-catalogo">
+    <header class="encabezado">
+      <div>
+        @if (categoriaActual()?.padre; as padre) {
+          <p class="etiqueta"><a routerLink="/catalogo" [queryParams]="{ categoria: padre.id }">{{ padre.nombre }}</a></p>
+        }
+        <h1 id="titulo-catalogo">{{ titulo() }} <span class="conteo">{{ pagina()?.total ?? "…" }} productos</span></h1>
+        <p class="bajada">Cada precio es el más bajo publicado hoy. Al abrir un producto ves todos los distribuidores que lo venden, con su plazo y mínimo de compra.</p>
+      </div>
+      <div class="controles">
+        <label class="orden">
+          <span>Ordenar por</span>
+          <select class="input" [value]="filtros().orden" (change)="filtrar({ orden: $any($event.target).value })">
+            <option value="precio">Precio más bajo</option>
+            <option value="diferencia">Mayor diferencia entre distribuidores</option>
+            <option value="nombre">Nombre</option>
+          </select>
+        </label>
+        <div class="segmento vista" role="group" aria-label="Vista">
+          <button type="button" [class.activo]="vista() === 'tarjetas'" [attr.aria-pressed]="vista() === 'tarjetas'" (click)="cambiarVista('tarjetas')">Tarjetas</button>
+          <button type="button" [class.activo]="vista() === 'lista'" [attr.aria-pressed]="vista() === 'lista'" (click)="cambiarVista('lista')">Tabla</button>
+        </div>
+      </div>
+    </header>
+
+    @if (error()) {
+      <p class="mensaje error" role="alert">No pudimos cargar el catálogo. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p>
+    }
+    @if (pagina(); as p) {
+      <div [class.atenuado]="cargando()" [attr.aria-busy]="cargando()">
+        @if (p.items.length === 0) {
+          <div class="vacio">
+            <h2>No hay productos con estos filtros</h2>
+            <p>Prueba con otro plazo o categoría.</p>
+            <button type="button" class="btn btn-secondary" (click)="limpiar()">Quitar filtros</button>
+          </div>
+        } @else if (vista() === "tarjetas") {
+          <ul class="tarjetas">
+            @for (prod of p.items; track prod.id) {
+              <li class="tarjeta">
+                <a [routerLink]="['/producto', prod.id]" class="imagen" [attr.aria-label]="prod.nombre">
+                  @if (prod.imagenUrl) { <img [src]="prod.imagenUrl" [alt]="prod.nombre" loading="lazy" /> }
+                  @else { <span aria-hidden="true">{{ prod.formato }}</span> }
+                </a>
+                <p class="etiqueta">{{ nombreCategoria(prod.categoriaId) }}</p>
+                <h2><a [routerLink]="['/producto', prod.id]">{{ prod.nombre }}</a></h2>
+                <p class="formato">{{ prod.formato }}@if (prod.marca) { · {{ prod.marca }} }</p>
+                <p class="precio"><span class="desde">Desde</span> {{ clp(prod.precioDesde) }}</p>
+                <p class="detalle">{{ porUnidad(prod.precioDesde, prod.contenido, prod.unidad) }} · entrega desde {{ plazo(prod.plazoMinHoras) }}</p>
+                <a [routerLink]="['/producto', prod.id]" class="btn btn-primary btn-block">
+                  Comparar {{ prod.ofertas }} {{ prod.ofertas === 1 ? "distribuidor" : "distribuidores" }}
+                </a>
+              </li>
+            }
+          </ul>
+        } @else {
+          <div class="tabla-contenedor">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Producto</th>
+                  <th scope="col">Formato</th>
+                  <th scope="col">Categoría</th>
+                  <th scope="col" class="num">Distrib.</th>
+                  <th scope="col" class="num">Desde</th>
+                  <th scope="col" class="num">Por kg/L</th>
+                  <th scope="col">Entrega desde</th>
+                  <th scope="col"><span class="visualmente-oculto">Acción</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (prod of p.items; track prod.id) {
+                  <tr>
+                    <th scope="row"><a [routerLink]="['/producto', prod.id]">{{ prod.nombre }}</a></th>
+                    <td>{{ prod.formato }}</td>
+                    <td>{{ nombreCategoria(prod.categoriaId) }}</td>
+                    <td class="num">{{ prod.ofertas }}</td>
+                    <td class="num fuerte">{{ clp(prod.precioDesde) }}</td>
+                    <td class="num suave">{{ porUnidad(prod.precioDesde, prod.contenido, prod.unidad) }}</td>
+                    <td class="suave">{{ plazo(prod.plazoMinHoras) }}</td>
+                    <td><a [routerLink]="['/producto', prod.id]" class="btn btn-secondary">Comparar</a></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (totalPaginas() > 1) {
+          <nav class="paginacion" aria-label="Páginas">
+            <button type="button" class="btn btn-secondary" [disabled]="filtros().pagina <= 1" (click)="filtrar({ pagina: filtros().pagina - 1 })">Anterior</button>
+            <span>Página {{ filtros().pagina }} de {{ totalPaginas() }}</span>
+            <button type="button" class="btn btn-secondary" [disabled]="filtros().pagina >= totalPaginas()" (click)="filtrar({ pagina: filtros().pagina + 1 })">Siguiente</button>
+          </nav>
+        }
+      </div>
+    } @else if (!error()) {
+      <p class="cargando">Cargando el catálogo…</p>
+    }
+  </section>
+</div>

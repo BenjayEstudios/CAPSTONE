@@ -44,7 +44,15 @@ pnpm test
 
 `features/inicio/`: buscador (en la cabecera), contadores, categorías con conteo y "Mayor diferencia de precio hoy". Datos de `GET /catalogo/resumen` y `GET /catalogo/productos?orden=diferencia` (`core/catalogo/catalogo.service.ts`). El carro de la cabecera sale de `core/state/carro.state.ts` (`GET /carro`, solo compradores).
 
-Rutas provisorias hasta su historia: `/catalogo` (KAN-90/91), `/producto/:id` (KAN-92), `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
+## Catálogo y búsqueda (KAN-90, KAN-91)
+
+`features/catalogo/`: `/catalogo` (filtros por categoría, plazo y mínimo; tarjetas o tabla; orden por precio) y `/buscar?q=` (refinar por 24 h, sin mínimo, retiro y marca; más barato y diferencia con el más caro). Los filtros viven en la URL. Cada término nuevo se registra con `core/analitica/analitica.service.ts` (`POST /eventos/lote`, evento `busqueda` con `resultados`).
+
+## Catálogo y búsqueda (KAN-90, KAN-91)
+
+`features/catalogo/`: `/catalogo` (filtros por categoría, plazo y mínimo; tarjetas o tabla; orden por precio) y `/buscar?q=` (refinar por 24 h, sin mínimo, retiro y marca; más barato y diferencia con el más caro). Los filtros viven en la URL. Cada término nuevo se registra con `core/analitica/analitica.service.ts` (`POST /eventos/lote`, evento `busqueda` con `resultados`).
+
+Rutas provisorias hasta su historia: `/producto/:id` (KAN-92), `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
 
 ## Tests
 

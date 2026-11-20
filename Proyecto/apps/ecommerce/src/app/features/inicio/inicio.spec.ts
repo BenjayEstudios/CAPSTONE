@@ -75,7 +75,7 @@ describe("Inicio (KAN-89)", () => {
     const f = await cargar();
     const nav = spyOn(TestBed.inject(Router), "navigate").and.resolveTo(true);
     f.componentInstance.buscarEjemplo();
-    expect(nav).toHaveBeenCalledWith(["/catalogo"], { queryParams: { q: "arroz" } });
+    expect(nav).toHaveBeenCalledWith(["/buscar"], { queryParams: { q: "arroz" } });
   });
 
   it("si falla la mayor diferencia ofrece reintentar", async () => {

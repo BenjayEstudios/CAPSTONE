@@ -28,16 +28,19 @@ export function listarCatalogo(deps: { catalogoRepository: CatalogoRepository; c
       const todas = await deps.categoriaRepository.listar();
       categoriaIds = [f.categoriaId, ...todas.filter((c) => c.padreId === f.categoriaId).map((c) => c.id)];
     }
-    const { items, total } = await deps.catalogoRepository.listar({
+    const { items, total, marcas } = await deps.catalogoRepository.listar({
       q: f.q,
       categoriaIds,
       plazoMaxHoras: f.plazoMaxHoras,
       maxUnidadesPorCaja: f.maxUnidadesPorCaja,
+      maxMinimoCompra: f.maxMinimoCompra,
+      conRetiro: f.conRetiro || undefined,
+      marca: f.marca,
       orden: f.orden,
       pagina: f.pagina,
       porPagina: f.porPagina
     });
-    return { items, total, pagina: f.pagina, porPagina: f.porPagina };
+    return { items, total, pagina: f.pagina, porPagina: f.porPagina, marcas };
   };
 }
 

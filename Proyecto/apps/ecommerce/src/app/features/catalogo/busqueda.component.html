@@ -1,0 +1,97 @@
+<div class="contenedor busqueda">
+  @if (!termino()) {
+    <h1>Busca un producto</h1>
+    <p class="suave">Escribe en el buscador de arriba: por ejemplo, <a routerLink="/buscar" [queryParams]="{ q: 'aceite' }">aceite</a> o <a routerLink="/buscar" [queryParams]="{ q: 'queso' }">queso</a>.</p>
+  } @else {
+    <header class="encabezado">
+      <h1>Resultados para «{{ termino() }}» <span class="conteo">{{ resultado()?.total ?? "…" }} {{ resultado()?.total === 1 ? "producto" : "productos" }}</span></h1>
+
+      <div class="refinar" role="group" aria-label="Refinar resultados">
+        <span class="etiqueta">Refinar</span>
+        <button type="button" class="chip" [class.activo]="refinar().solo24" [attr.aria-pressed]="refinar().solo24" (click)="alternar('plazo24', refinar().solo24)">Solo entrega en 24 h</button>
+        <button type="button" class="chip" [class.activo]="refinar().sinMinimo" [attr.aria-pressed]="refinar().sinMinimo" (click)="alternar('sinMinimo', refinar().sinMinimo)">Sin mínimo de compra</button>
+        <button type="button" class="chip" [class.activo]="refinar().retiro" [attr.aria-pressed]="refinar().retiro" (click)="alternar('retiro', refinar().retiro)">Distribuidor con retiro</button>
+        @if ((resultado()?.marcas?.length ?? 0) > 0 || refinar().marca) {
+          <label class="chip marca" [class.activo]="!!refinar().marca">
+            <span class="visualmente-oculto">Marca</span>
+            <select [value]="refinar().marca ?? ''" (change)="elegirMarca($any($event.target).value)">
+              <option value="">Marca: todas</option>
+              @for (m of resultado()?.marcas ?? []; track m.marca) {
+                <option [value]="m.marca">{{ m.marca }} ({{ m.productos }})</option>
+              }
+            </select>
+          </label>
+        }
+        @if (hayRefinamiento()) {
+          <button type="button" class="btn-link" (click)="quitarRefinamientos()">Quitar</button>
+        }
+      </div>
+    </header>
+
+    @if (error()) {
+      <p class="mensaje error" role="alert">No pudimos buscar. <button type="button" class="btn-link" (click)="reintentar()">Reintentar</button></p>
+    }
+    @if (resultado(); as r) {
+      <div [class.atenuado]="cargando()" [attr.aria-busy]="cargando()">
+        @if (r.items.length === 0) {
+          <div class="vacio">
+            @if (hayRefinamiento()) {
+              <h2>Ningún resultado con esos filtros</h2>
+              <p class="suave">Hay productos para «{{ termino() }}», pero ninguno cumple lo que elegiste.</p>
+              <button type="button" class="btn btn-secondary" (click)="quitarRefinamientos()">Quitar los filtros</button>
+            } @else {
+              <h2>No encontramos «{{ termino() }}»</h2>
+              <p class="suave">Revisa cómo está escrito o usa menos palabras. Quedó registrado para que el equipo sepa qué productos buscan los compradores.</p>
+              @if (sugerencias().length) {
+                <p>Mira las categorías:
+                  @for (c of sugerencias(); track c.id; let ultimo = $last) {
+                    <a routerLink="/catalogo" [queryParams]="{ categoria: c.id }">{{ c.nombre }}</a>@if (!ultimo) {, }
+                  }
+                </p>
+              }
+            }
+          </div>
+        } @else {
+          <ol class="lista">
+            @for (prod of r.items; track prod.id) {
+              <li class="fila">
+                <a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'busqueda' }" class="imagen" [attr.aria-label]="prod.nombre">
+                  @if (prod.imagenUrl) { <img [src]="prod.imagenUrl" [alt]="prod.nombre" loading="lazy" /> }
+                  @else { <span aria-hidden="true">{{ prod.formato }}</span> }
+                </a>
+                <div class="info">
+                  <h2><a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'busqueda' }">{{ prod.nombre }}</a></h2>
+                  <p class="suave">{{ prod.formato }}@if (prod.marca) { · {{ prod.marca }} } · {{ nombreCategoria(prod.categoriaId) }}</p>
+                  <p class="comparacion">
+                    @if (prod.ofertas > 1) {
+                      <span class="n-prov">{{ prod.ofertas }} distribuidores</span>, desde <strong>{{ prod.proveedorMasBarato.nombre }}</strong>
+                      — el más caro publica {{ clp(prod.precioHasta) }}
+                      <span class="ahorro">(diferencia {{ clp(prod.precioHasta - prod.precioDesde) }})</span>.
+                    } @else {
+                      <span class="n-prov">1 distribuidor</span>: <strong>{{ prod.proveedorMasBarato.nombre }}</strong>.
+                    }
+                  </p>
+                </div>
+                <div class="precio-col">
+                  <p class="precio">{{ clp(prod.precioDesde) }}</p>
+                  <p class="suave">{{ porUnidad(prod.precioDesde, prod.contenido, prod.unidad) }} · entrega desde {{ plazo(prod.plazoMinHoras) }}</p>
+                  <a [routerLink]="['/producto', prod.id]" [queryParams]="{ origen: 'busqueda' }" class="btn btn-primary">Comparar</a>
+                </div>
+              </li>
+            }
+          </ol>
+
+          @if (totalPaginas() > 1) {
+            <nav class="paginacion" aria-label="Páginas">
+              <button type="button" class="btn btn-secondary" [disabled]="refinar().pagina <= 1" (click)="irAPagina(refinar().pagina - 1)">Anterior</button>
+              <span>Página {{ refinar().pagina }} de {{ totalPaginas() }}</span>
+              <button type="button" class="btn btn-secondary" [disabled]="refinar().pagina >= totalPaginas()" (click)="irAPagina(refinar().pagina + 1)">Siguiente</button>
+            </nav>
+          }
+        }
+      </div>
+    } @else if (!error()) {
+      <p class="suave">Buscando…</p>
+    }
+  }
+</div>

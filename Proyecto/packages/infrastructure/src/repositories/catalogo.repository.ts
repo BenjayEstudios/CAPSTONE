@@ -3,6 +3,7 @@ import type {
   CatalogoRepository,
   FichaCatalogoBase,
   FiltrosCatalogo,
+  MarcaConConteoDto,
   OfertaCatalogoBase,
   ProductoCatalogoDto,
   ProductoUnidad,
@@ -60,12 +61,15 @@ const patronLike = (q: string) => `%${q.replace(/[\\%_]/g, "\\$&")}%`;
 export class DrizzleCatalogoRepository implements CatalogoRepository {
   constructor(private readonly db: DbClient) {}
 
-  async listar(f: FiltrosCatalogo): Promise<{ items: ProductoCatalogoDto[]; total: number }> {
+  async listar(f: FiltrosCatalogo): Promise<{ items: ProductoCatalogoDto[]; total: number; marcas: MarcaConConteoDto[] }> {
     const condProducto: SQL[] = [sql`p.estado = 'publicado'`, sql`c.estado = 'activa'`, sql`(cp.id IS NULL OR cp.estado = 'activa')`];
     const condOferta: SQL[] = [sql`o.estado = 'publicada'`, sql`org.estado = 'activa'`];
     if (f.categoriaIds?.length) condProducto.push(sql`p.categoria_id IN (${sql.join(f.categoriaIds.map((id) => sql`${id}`), sql`, `)})`);
     if (f.plazoMaxHoras !== undefined) condOferta.push(sql`o.plazo_horas <= ${f.plazoMaxHoras}`);
     if (f.maxUnidadesPorCaja !== undefined) condOferta.push(sql`o.unidades_por_caja <= ${f.maxUnidadesPorCaja}`);
+    // Una oferta sin minimo de compra cuenta como minimo 1.
+    if (f.maxMinimoCompra !== undefined) condOferta.push(sql`COALESCE(o.minimo_compra, 1) <= ${f.maxMinimoCompra}`);
+    if (f.conRetiro) condOferta.push(sql`o.modalidad_entrega IN ('retiro', 'ambos')`);
 
     const ft = f.q ? terminoFulltext(f.q) : "";
     const relevancia = ft ? sql`MATCH(p.nombre) AGAINST(${ft} IN BOOLEAN MODE)` : sql`0`;
@@ -79,15 +83,18 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
     }
     const having = f.orden === "diferencia" ? sql`HAVING COUNT(*) >= 2` : sql``;
 
-    const base = sql`
+    // La lista de marcas para refinar se calcula SIN el filtro de marca (para poder cambiarla).
+    const desde = (condiciones: SQL[]) => sql`
       FROM producto p
       JOIN categoria c ON c.id = p.categoria_id
       LEFT JOIN categoria cp ON cp.id = c.padre_id
       JOIN oferta o ON o.producto_id = p.id
       JOIN organizacion org ON org.id = o.proveedor_id
-      WHERE ${sql.join([...condProducto, ...condOferta], sql` AND `)}
+      WHERE ${sql.join(condiciones, sql` AND `)}
       GROUP BY p.id
       ${having}`;
+    const base = desde([...condProducto, ...condOferta, ...(f.marca ? [sql`p.marca = ${f.marca}`] : [])]);
+    const sinMarca = desde([...condProducto, ...condOferta]);
 
     const orden = {
       relevancia: f.q ? sql`relevancia DESC, p.nombre ASC` : sql`p.nombre ASC`,
@@ -98,17 +105,28 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
 
     const filas = await consultar<Record<string, unknown>>(
       this.db,
+      // El proveedor de la oferta mas barata sale del mismo GROUP BY: el primero
+      // de la lista ordenada por precio (sin repetir los filtros en una subconsulta).
       sql`SELECT p.id, p.sku, p.nombre, p.marca, p.formato, p.contenido, p.unidad, p.categoria_id, p.imagenes,
                  MIN(o.precio_unitario) AS precio_desde, MAX(o.precio_unitario) AS precio_hasta,
-                 COUNT(*) AS ofertas, MIN(o.plazo_horas) AS plazo_min, ${relevancia} AS relevancia
+                 COUNT(*) AS ofertas, MIN(o.plazo_horas) AS plazo_min, ${relevancia} AS relevancia,
+                 SUBSTRING_INDEX(GROUP_CONCAT(org.id ORDER BY o.precio_unitario, o.id), ',', 1) AS barato_id,
+                 SUBSTRING_INDEX(GROUP_CONCAT(COALESCE(org.nombre_fantasia, org.razon_social) ORDER BY o.precio_unitario, o.id SEPARATOR '|'), '|', 1) AS barato_nombre
           ${base}
           ORDER BY ${orden}
           LIMIT ${f.porPagina} OFFSET ${(f.pagina - 1) * f.porPagina}`
     );
     const [conteo] = await consultar<{ total: number }>(this.db, sql`SELECT COUNT(*) AS total FROM (SELECT p.id ${base}) t`);
+    const marcas = await consultar<{ marca: string; productos: number }>(
+      this.db,
+      sql`SELECT t.marca, COUNT(*) AS productos FROM (SELECT p.id, p.marca ${sinMarca}) t
+          WHERE t.marca IS NOT NULL AND t.marca <> ''
+          GROUP BY t.marca ORDER BY productos DESC, t.marca ASC`
+    );
 
     return {
       total: Number(conteo?.total ?? 0),
+      marcas: marcas.map((m) => ({ marca: String(m.marca), productos: Number(m.productos) })),
       items: filas.map((r) => ({
         id: Number(r.id),
         sku: String(r.sku),
@@ -122,7 +140,8 @@ export class DrizzleCatalogoRepository implements CatalogoRepository {
         precioDesde: Number(r.precio_desde),
         precioHasta: Number(r.precio_hasta),
         ofertas: Number(r.ofertas),
-        plazoMinHoras: num(r.plazo_min)
+        plazoMinHoras: num(r.plazo_min),
+        proveedorMasBarato: { id: Number(r.barato_id), nombre: String(r.barato_nombre) }
       }))
     };
   }

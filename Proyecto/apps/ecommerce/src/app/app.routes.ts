@@ -19,7 +19,13 @@ export const routes: Routes = [
   },
   {
     path: "catalogo",
-    ...pendiente({ titulo: "Catálogo", ticket: "KAN-90 / KAN-91", texto: "Aquí va el catálogo por categoría con filtros y los resultados de búsqueda. Se puede ver sin cuenta." })
+    loadComponent: () => import("./features/catalogo/catalogo.component").then((m) => m.CatalogoComponent),
+    title: "Catálogo · Cotizapp"
+  },
+  {
+    path: "buscar",
+    loadComponent: () => import("./features/catalogo/busqueda.component").then((m) => m.BusquedaComponent),
+    title: "Buscar · Cotizapp"
   },
   {
     path: "producto/:id",

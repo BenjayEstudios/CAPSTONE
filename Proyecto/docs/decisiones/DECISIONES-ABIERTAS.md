@@ -131,3 +131,15 @@ se puede validar en serio: los datos de órdenes y eventos son sintéticos.
   nunca en el repo).
 - Si Metabase cabe en la RAM del droplet (su JVM pide ~1 GB) o corre solo en
   local para la demo.
+
+## 15. "Marca propia" en la búsqueda
+
+**Aplica en:** KAN-91 (y la ficha de producto del proveedor)
+
+KAN-91 pide refinar por "marca propia", pero el modelo no distingue si un
+producto es la marca propia de un distribuidor: `producto.marca` es solo un
+texto y el producto es único para todos los distribuidores. Hoy la búsqueda
+ofrece **filtrar por marca** (con las marcas de los resultados). Para
+"marca propia" de verdad haría falta, por ejemplo, `producto.marca_propia_de`
+(id del proveedor dueño de la marca) o una marca por oferta. Falta decidir si
+vale la pena para la demo.

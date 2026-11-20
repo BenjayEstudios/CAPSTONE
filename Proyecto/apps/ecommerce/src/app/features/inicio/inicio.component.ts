@@ -49,6 +49,6 @@ export class InicioComponent implements OnInit {
   }
 
   buscarEjemplo(): void {
-    void this.router.navigate(["/catalogo"], { queryParams: { q: this.ejemplo } });
+    void this.router.navigate(["/buscar"], { queryParams: { q: this.ejemplo } });
   }
 }

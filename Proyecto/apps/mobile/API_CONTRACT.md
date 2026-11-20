@@ -126,6 +126,8 @@ ofertas visibles. **Oferta visible** = `oferta.estado = 'publicada'` y
 | `orden` | `relevancia` (default), `precio` (precioDesde asc), `diferencia` (precioHasta − precioDesde desc, solo productos con 2+ ofertas), `nombre` |
 | `pagina` / `porPagina` | Default `1` / `20` |
 
+Agregados en KAN-90/91 (opcionales, la app puede ignorarlos): `maxMinimoCompra`, `conRetiro=true`, `marca`; cada item trae `proveedorMasBarato: { id, nombre }` y la respuesta `marcas: [{ marca, productos }]`.
+
 Los filtros de plazo y caja se aplican **por oferta**: el producto aparece si
 al menos una cumple, y los campos de precio se calculan solo con esas.
 
