@@ -3,20 +3,12 @@ import { Component, computed, inject, input, signal } from "@angular/core";
 import { CheckoutService } from "../../core/checkout/checkout.service";
 import { DireccionEntrega, DocumentoTributario, EnvioOrden, MedioPago, OrdenDetalle } from "../../core/models/checkout.models";
 import { formatearClp, plazo } from "../../shared/formato";
+import { estadoEnvio, PasoSeguimiento, pasosEnvio } from "./estados";
 
 const MEDIOS: Record<MedioPago, string> = {
   tarjeta: "Tarjeta (Webpay)",
   transferencia: "Transferencia bancaria",
   linea_credito: "Línea de crédito Cotizapp"
-};
-
-const ESTADOS_ENVIO: Record<string, string> = {
-  por_despachar: "Por despachar",
-  en_preparacion: "En preparación",
-  listo_retiro: "Listo para retiro",
-  despachado: "Despachado",
-  entregado: "Entregado",
-  cancelado: "Cancelado"
 };
 
 const NOMBRES_DTE: Record<number, string> = {
@@ -80,7 +72,12 @@ export class DetalleOrdenComponent {
   }
 
   estadoEnvio(e: EnvioOrden): string {
-    return ESTADOS_ENVIO[e.estado] ?? e.estado;
+    return estadoEnvio(e.estado);
+  }
+
+  /** Seguimiento del envio (KAN-98); solo cuando la orden ya esta pagada. */
+  pasos(e: EnvioOrden): PasoSeguimiento[] {
+    return this.orden().estadoPago === "pagado" ? pasosEnvio(e) : [];
   }
 
   guiasDe(e: EnvioOrden): DocumentoTributario[] {

@@ -33,6 +33,7 @@
       @if (session.autenticado()) {
         <div class="cuenta">
           <span class="saludo">Hola, {{ session.nombreCorto() }}<small>{{ session.usuario()?.organizacion?.nombre }}</small></span>
+          @if (session.esComprador()) { <a routerLink="/pedidos" class="btn-link pedidos">Mis pedidos</a> }
           <button type="button" class="btn-link salir" (click)="salir()">Salir</button>
         </div>
       } @else {

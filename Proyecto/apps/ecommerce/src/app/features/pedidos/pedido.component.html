@@ -1,0 +1,34 @@
+<div class="contenedor pedidos">
+  <nav class="migas" aria-label="Ruta"><a routerLink="/pedidos">← Mis pedidos</a></nav>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando el pedido…</p> }
+    @case ("no-encontrada") {
+      <div class="vacio">
+        <h1>No encontramos ese pedido</h1>
+        <a routerLink="/pedidos" class="btn btn-secondary">Ver mis pedidos</a>
+      </div>
+    }
+    @case ("error") {
+      <p class="mensaje error" role="alert">No pudimos cargar el pedido. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p>
+    }
+    @default {
+      @if (orden(); as o) {
+        <div class="titulo-pedido">
+          <h1>Pedido {{ o.codigo }}</h1>
+          <span class="estado" [attr.data-tono]="tonoOrden(o)">{{ estadoOrden(o) }}</span>
+        </div>
+        @if (o.estado === "pendiente_pago") {
+          <div class="pendiente">
+            <p>Este pedido no está pagado. Los distribuidores lo preparan cuando se confirma el pago de {{ clp(o.total) }}.</p>
+            @if (errorPago(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+            <button type="button" class="btn btn-primary" [disabled]="pagando()" (click)="pagar()">
+              {{ pagando() ? "Te llevamos a Webpay…" : "Pagar ahora" }}
+            </button>
+          </div>
+        }
+        <app-detalle-orden [orden]="o" [documentos]="documentos()" />
+      }
+    }
+  }
+</div>

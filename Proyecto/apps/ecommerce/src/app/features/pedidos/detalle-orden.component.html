@@ -48,6 +48,14 @@
       </p>
       <p class="plazo">Plazo {{ plazo(e.plazoHoras) }} · {{ llegada(e) }}</p>
 
+      @if (pasos(e).length) {
+        <ol class="seguimiento" [attr.aria-label]="'Seguimiento: ' + estadoEnvio(e)">
+          @for (p of pasos(e); track p.estado) {
+            <li [class.hecho]="p.hecho" [class.actual]="p.actual" [attr.aria-current]="p.actual ? 'step' : null">{{ p.etiqueta }}</li>
+          }
+        </ol>
+      }
+
       @if (e.lineas?.length) {
         <table class="lineas">
           <thead>

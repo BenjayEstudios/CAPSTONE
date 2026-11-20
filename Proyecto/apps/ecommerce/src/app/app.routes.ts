@@ -47,6 +47,18 @@ export const routes: Routes = [
     title: "Resultado del pago · Cotizapp"
   },
   {
+    path: "pedidos",
+    canActivate: [sesionGuard],
+    loadComponent: () => import("./features/pedidos/pedidos.component").then((m) => m.PedidosComponent),
+    title: "Mis pedidos · Cotizapp"
+  },
+  {
+    path: "pedidos/:id",
+    canActivate: [sesionGuard],
+    loadComponent: () => import("./features/pedidos/pedido.component").then((m) => m.PedidoComponent),
+    title: "Pedido · Cotizapp"
+  },
+  {
     path: "ingresar",
     canActivate: [invitadoGuard],
     loadComponent: () => import("./features/cuenta/ingresar.component").then((m) => m.IngresarComponent),

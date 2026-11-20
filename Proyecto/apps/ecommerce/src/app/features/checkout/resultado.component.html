@@ -28,7 +28,7 @@
         <app-detalle-orden [orden]="o" [documentos]="documentos()" />
 
         @if (pagada()) {
-          <p class="acciones"><a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a></p>
+          <p class="acciones"><a [routerLink]="['/pedidos', o.id]" class="btn btn-primary">Seguir mi pedido</a> <a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a></p>
         }
       }
     }

@@ -66,6 +66,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/pedidos/detalle-orden.component.ts`: detalle consolidado de una orden (folio, medio de pago, total, documentos; por distribuidor estado, despacho con dirección o retiro con el punto, plazo y fecha estimada, líneas y montos). Lo usa `/checkout/resultado` y sirve para "Mis pedidos" (KAN-98). Los PDF de `GET /documentos-tributarios/:id/pdf` piden el token: se descargan como blob (`ApiClient.getBlob`) y se abren en otra pestaña.
 
+## Mis pedidos (KAN-98)
+
+`features/pedidos/`: `/pedidos` (historial de `GET /ordenes` con filtros por estado y páginas en la URL) y `/pedidos/:id` (el detalle de KAN-96 con el seguimiento de cada envío y "Pagar ahora" si sigue pendiente). Los textos de estados y los pasos del seguimiento están en `estados.ts`, alineados con `transicionesPermitidas` del backend. "Mis pedidos" va en la cabecera solo para compradores.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

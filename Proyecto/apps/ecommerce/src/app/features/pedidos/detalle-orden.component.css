@@ -46,3 +46,9 @@ h3 { font-size: 15px; margin: 0 0 8px; }
   .envio { padding: 14px; }
   .totales { max-width: none; }
 }
+
+/* Seguimiento del envio (KAN-98): pasos en linea con una barra que se llena. */
+.seguimiento { list-style: none; margin: 4px 0 16px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font-size: 12px; color: var(--color-text-soft); }
+.seguimiento li { border-top: 4px solid var(--color-divider); padding-top: 6px; line-height: 1.25; }
+.seguimiento li.hecho { border-top-color: var(--color-accent); color: var(--color-text); }
+.seguimiento li.actual { font-weight: 700; color: var(--color-accent-800); }
