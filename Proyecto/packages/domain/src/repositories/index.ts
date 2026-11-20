@@ -20,3 +20,4 @@ export * from "./orden.repository.js";
 export * from "./liquidacion.repository.js";
 export * from "./dashboard.repository.js";
 export * from "./documento-tributario.repository.js";
+export * from "./comuna.repository.js";

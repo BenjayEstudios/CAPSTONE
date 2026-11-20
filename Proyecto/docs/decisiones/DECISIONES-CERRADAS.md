@@ -181,6 +181,20 @@ registra en `liquidacion`, con cortes semanales. No se depende del split
 nativo de ninguna pasarela, así el reparto funciona igual sea cual sea la
 elegida. Los datos de tarjeta nunca tocan el backend.
 
+### Webpay Plus de Transbank como pasarela
+
+Era la decisión abierta 3 (Webpay o MercadoPago). Se eligió Webpay Plus
+(API REST v1.2) el 2026-11-20 en KAN-95: es el medio de pago que usa la
+mayoría de los compradores en Chile, cobra crédito, débito y prepago con un
+solo flujo, y su ambiente de integración trae credenciales públicas de prueba,
+así que se puede probar sin cuenta comercial. Queda detrás del puerto
+`PasarelaPago` (`packages/domain/src/services/pasarela-pago.ts`): cambiar a
+MercadoPago sería otro adaptador, sin tocar casos de uso ni apps. El pago se
+inicia con la orden ya creada (`POST /carro/confirmar` y luego
+`POST /ordenes/:id/pago`), el retorno lo recibe el backend y confirma (commit)
+antes de redirigir al ecommerce, y solo se da por pagada si el monto
+autorizado es el total de la orden.
+
 ### 2FA solo con TOTP y solo para usuarios internos
 
 Lo fija KAN-144. Compradores y proveedores entran con correo y clave.

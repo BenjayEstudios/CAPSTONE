@@ -1,11 +1,5 @@
 import { Routes } from "@angular/router";
 import { invitadoGuard, sesionGuard } from "./core/auth/guards";
-import { DatosPendiente } from "./features/pendiente/pendiente.component";
-
-const pendiente = (datos: DatosPendiente) => ({
-  loadComponent: () => import("./features/pendiente/pendiente.component").then((m) => m.PendienteComponent),
-  data: datos
-});
 
 // Rutas del ecommerce. Regla de KAN-97: todo lo del catalogo se navega sin
 // cuenta; lo que compra o muestra datos propios (checkout, pedidos) lleva
@@ -40,8 +34,17 @@ export const routes: Routes = [
   },
   {
     path: "checkout",
+    pathMatch: "full",
     canActivate: [sesionGuard],
-    ...pendiente({ titulo: "Checkout", ticket: "KAN-95", texto: "Aquí va el pago único del carro multiproveedor. Esta pantalla exige sesión." })
+    loadComponent: () => import("./features/checkout/checkout.component").then((m) => m.CheckoutComponent),
+    title: "Pago · Cotizapp"
+  },
+  {
+    // Adonde vuelve el comprador desde Webpay (el backend redirige aqui).
+    path: "checkout/resultado",
+    canActivate: [sesionGuard],
+    loadComponent: () => import("./features/checkout/resultado.component").then((m) => m.ResultadoPagoComponent),
+    title: "Resultado del pago · Cotizapp"
   },
   {
     path: "ingresar",

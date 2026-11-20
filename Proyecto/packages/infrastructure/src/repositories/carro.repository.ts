@@ -7,6 +7,7 @@ import type {
   ContextoCheckout,
   EntradaCheckout,
   OfertaCarro,
+  OpcionesEntrega,
   OrdenCreada,
   PlanOrden,
   RegistroAuditoria
@@ -70,6 +71,61 @@ async function leerOfertas(db: Lector, ids: number[], bloquear: boolean): Promis
 
 export class DrizzleCarroRepository implements CarroRepository {
   constructor(private readonly db: DbClient) {}
+
+  async opcionesEntrega(organizacionId: number, proveedorIds: number[]): Promise<OpcionesEntrega> {
+    // Direcciones de la organizacion: la de su ficha y las usadas en sus ordenes (incluye las creadas en un checkout).
+    const propias = await this.db.select({ id: organizacion.direccionId }).from(organizacion).where(eq(organizacion.id, organizacionId));
+    const usadas = await this.db
+      .selectDistinct({ id: orden.direccionEntregaId })
+      .from(orden)
+      .where(eq(orden.organizacionId, organizacionId));
+    const ids = [...new Set([...propias, ...usadas].map((d) => d.id).filter((id): id is number => id !== null))];
+    const direcciones = ids.length
+      ? await this.db
+          .select({
+            id: direccion.id,
+            calle: direccion.calle,
+            numero: direccion.numero,
+            complemento: direccion.complemento,
+            referencia: direccion.referencia,
+            comunaId: direccion.comunaId,
+            comuna: comuna.nombre,
+            region: comuna.regionNombre
+          })
+          .from(direccion)
+          .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+          .where(inArray(direccion.id, ids))
+          .orderBy(asc(direccion.id))
+      : [];
+    const puntos = proveedorIds.length
+      ? await this.db
+          .select({
+            id: puntoRetiro.id,
+            proveedorId: puntoRetiro.proveedorId,
+            nombre: puntoRetiro.nombre,
+            horario: puntoRetiro.horario,
+            calle: direccion.calle,
+            numero: direccion.numero,
+            complemento: direccion.complemento,
+            comuna: comuna.nombre
+          })
+          .from(puntoRetiro)
+          .innerJoin(direccion, eq(direccion.id, puntoRetiro.direccionId))
+          .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+          .where(and(eq(puntoRetiro.activo, 1), inArray(puntoRetiro.proveedorId, proveedorIds)))
+          .orderBy(asc(puntoRetiro.proveedorId), asc(puntoRetiro.id))
+      : [];
+    return {
+      direcciones,
+      puntosRetiro: puntos.map((p) => ({
+        id: p.id,
+        proveedorId: p.proveedorId,
+        nombre: p.nombre,
+        horario: p.horario,
+        direccion: [[p.calle, p.numero].filter(Boolean).join(" "), p.complemento, p.comuna].filter(Boolean).join(", ")
+      }))
+    };
+  }
 
   async obtenerAbierto(usuarioId: number) {
     const [f] = await this.db

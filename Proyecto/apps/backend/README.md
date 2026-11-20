@@ -81,7 +81,9 @@ Variables de entorno:
 | `STORAGE_DRIVER` | `local` | Adaptador de `AlmacenArchivos`. Hoy solo `local`. |
 | `UPLOADS_DIR` | `./uploads` | Directorio de archivos (docker-compose: `/data/uploads`, volumen `backend-uploads`). |
 | `UPLOADS_MAX_MB` | `5` | Tamano maximo por archivo. |
-| `PUBLIC_BASE_URL` | `http://localhost:8000` | Base absoluta de las URL devueltas. |
+| `PUBLIC_BASE_URL` | `http://localhost:8000` | Base absoluta de las URL devueltas. También arma la URL de retorno de Webpay (`/pagos/webpay/retorno`), así que debe ser la URL pública del backend. |
+| `WEBPAY_ENTORNO` | `integracion` | Ambiente de Webpay Plus (`integracion` o `produccion`). En integración, sin credenciales, usa las públicas de prueba de Transbank. |
+| `WEBPAY_CODIGO_COMERCIO` / `WEBPAY_API_KEY` | (vacíos) | Credenciales de Webpay; obligatorias con `WEBPAY_ENTORNO=produccion`. |
 
 Extension a DigitalOcean Spaces (no implementado): crear `AlmacenSpaces`
 (S3-compatible) en `packages/infrastructure` que implemente `AlmacenArchivos`
@@ -210,6 +212,15 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
   Cada reembolso emite una nota de credito (61) y registra `auditoria_log` (accion `reembolsar`, antes/despues, motivo) en la misma transaccion. 409 `ORDEN_NO_PAGADA` / `MONTO_EXCEDE_SALDO`.
   Sin tabla de reembolsos: el acumulado es la suma de las notas de credito. Parcial: `estado_pago` sigue `pagado` (el enum no tiene "parcial"); al cubrir el total: `estado_pago = reembolsado` y `orden.estado = reembolsada`.
 - Punto de extension para devolver el dinero por pasarela (KAN-148): dependencia opcional `devolverDinero` de `crearReembolso` (se invoca tras confirmar la transaccion; resultado en `devolucionPasarela`).
+
+## Checkout y pago con Webpay (KAN-95)
+
+- `GET /carro/opciones-entrega` (cliente): direcciones de la organización y puntos de retiro activos de los proveedores del carro.
+- `GET /comunas` (público): comunas con su región, para una dirección nueva.
+- `POST /ordenes/:id/pago` (cliente dueño): crea la transacción en Webpay Plus (`iniciarPago`) y devuelve `urlPago` y `token`.
+- `GET|POST /pagos/webpay/retorno` (público, lo llama el navegador al volver de Webpay): `confirmarRetornoPago` confirma, marca la orden y emite documentos; redirige a `ECOMMERCE_URL/checkout/resultado`. Acepta el formulario `x-www-form-urlencoded` de Webpay (parser en `server/app.ts`).
+
+La pasarela es el puerto `PasarelaPago`; `src/lib/pasarela.ts` arma `WebpayPlus` según `WEBPAY_ENTORNO`. En tests se usa `PasarelaEnMemoria`. El ambiente de integración de Transbank bloquea (Imperva, 403) un POST cuyo `Origin` es `http://[::1]:…`: para probar en local usar `http://localhost:4200`.
 
 ## Imagen de producción (`Dockerfile`)
 

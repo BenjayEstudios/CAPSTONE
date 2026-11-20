@@ -1,5 +1,5 @@
 import type { FastifyRequest, RouteOptions } from "fastify";
-import { confirmarCarro, obtenerCarro, reemplazarCarro } from "@cotizapp/application";
+import { confirmarCarro, obtenerCarro, obtenerOpcionesEntrega, reemplazarCarro } from "@cotizapp/application";
 import { DrizzleCarroRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
@@ -35,4 +35,12 @@ export const confirmarCarroRoute: RouteOptions = {
   }
 };
 
-export const carroRoutes: RouteOptions[] = [getCarroRoute, putCarroRoute, confirmarCarroRoute];
+// Direcciones guardadas y puntos de retiro de los proveedores del carro (KAN-95).
+export const opcionesEntregaRoute: RouteOptions = {
+  method: "GET",
+  url: "/carro/opciones-entrega",
+  preHandler,
+  handler: async (request) => obtenerOpcionesEntrega(deps(request))(uid(request))
+};
+
+export const carroRoutes: RouteOptions[] = [getCarroRoute, putCarroRoute, opcionesEntregaRoute, confirmarCarroRoute];

@@ -17,14 +17,6 @@ documentados sobre Fastify.
 
 **Bloquea:** el arranque de los tickets de API (KAN-144 a KAN-156).
 
-## 3. Pasarela de pago
-
-**Aplica en:** KAN-148
-
-Webpay o MercadoPago, ambas en sandbox. Ya está decidido que el split entre
-proveedores es simulado en la base propia (ver
-[cerradas](DECISIONES-CERRADAS.md)); falta elegir la pasarela.
-
 ## 5. Dominio y HTTPS
 
 **Aplica en:** KAN-159
@@ -143,3 +135,25 @@ ofrece **filtrar por marca** (con las marcas de los resultados). Para
 "marca propia" de verdad haría falta, por ejemplo, `producto.marca_propia_de`
 (id del proveedor dueño de la marca) o una marca por oferta. Falta decidir si
 vale la pena para la demo.
+
+## 16. Transferencia y línea de crédito en el checkout
+
+**Aplica en:** KAN-95 (checkout), KAN-148 (pagos) · **Afecta:** paso 3 del pago en el ecommerce y la app
+
+El checkout ofrece tarjeta (crédito, débito o prepago) por Webpay Plus. KAN-95
+pide además transferencia bancaria y línea de crédito para empresas a 30
+días, que hoy aparecen como "pronto disponible" y el backend responde
+`409 MEDIO_PAGO_NO_DISPONIBLE`. Falta decidir:
+
+- **Transferencia:** la orden quedaría `pendiente_pago` con los datos de la
+  cuenta y el folio como glosa, y alguien (admin, o una conciliación) la
+  marca pagada. No hay pantalla ni endpoint para eso.
+- **Línea de crédito:** necesita quién la aprueba, con qué cupo y qué pasa
+  con la orden mientras tanto (`estado_pago = autorizado` existe en el
+  modelo). Sin eso no se puede ofrecer.
+
+Relacionado: el paso 1 del mockup pide nombre, RUT, correo y teléfono, pero
+`POST /carro/confirmar` no los recibe; la boleta o factura sale con los datos
+de la organización. El checkout los muestra desde la cuenta en vez de
+pedirlos. Si un comprador necesita facturar a otro RUT, hay que agregarlo al
+schema.

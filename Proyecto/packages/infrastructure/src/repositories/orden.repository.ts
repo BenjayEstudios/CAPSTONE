@@ -9,7 +9,9 @@ import type {
   OrdenRepository,
   EnvioConLineas,
   ContextoCambioEnvio,
-  PlanCambioEnvio
+  PlanCambioEnvio,
+  RegistroAuditoria,
+  ResultadoPagoOrden
 } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
@@ -122,6 +124,32 @@ export class DrizzleOrdenRepository implements OrdenRepository {
     const [oc] = await this.completar(this.db, [o], alcance, true);
     if (alcance.tipo === "proveedor" && oc.envios.length === 0) return null;
     return oc;
+  }
+
+  async buscarPorReferenciaPasarela(referencia: string) {
+    const [o] = await this.db.select().from(orden).where(eq(orden.referenciaPasarela, referencia));
+    return o ? toOrden(o) : null;
+  }
+
+  async registrarInicioPago(ordenId: number, referencia: string) {
+    await this.db.update(orden).set({ referenciaPasarela: referencia }).where(eq(orden.id, ordenId));
+  }
+
+  async registrarResultadoPago(ordenId: number, r: ResultadoPagoOrden, auditoria: RegistroAuditoria) {
+    return this.db.transaction(async (tx) => {
+      const [o] = await tx.select().from(orden).where(eq(orden.id, ordenId)).for("update");
+      if (!o || o.estado !== "pendiente_pago") return false;
+      await tx
+        .update(orden)
+        .set(
+          r.aprobado
+            ? { estado: "pagada", estadoPago: "pagado", medioPago: r.medioPago, referenciaPasarela: r.referencia, pagadoEn: new Date() }
+            : { estadoPago: "fallido", medioPago: r.medioPago, referenciaPasarela: r.referencia }
+        )
+        .where(eq(orden.id, ordenId));
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
   }
 
   async buscarEnvio(id: number) {

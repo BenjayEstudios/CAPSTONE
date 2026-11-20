@@ -32,8 +32,20 @@ const envSchema = z.object({
   // URL del panel administrativo que se incluye en las invitaciones.
   ADMIN_SITE_URL: z.string().url().default("http://localhost:4300"),
   // URL del ecommerce: base de los enlaces de recuperacion de clave de compradores y proveedores.
-  ECOMMERCE_URL: z.string().url().default("http://localhost:4200")
+  ECOMMERCE_URL: z.string().url().default("http://localhost:4200"),
+  // Pasarela de pago (KAN-95): Webpay Plus. En "integracion" (default) usa
+  // las credenciales publicas de prueba de Transbank si no se indican otras;
+  // en "produccion" el codigo de comercio y la API key son obligatorios.
+  // La URL de retorno es PUBLIC_BASE_URL + /pagos/webpay/retorno.
+  WEBPAY_ENTORNO: z.enum(["integracion", "produccion"]).default("integracion"),
+  WEBPAY_CODIGO_COMERCIO: z.string().min(1).optional(),
+  WEBPAY_API_KEY: z.string().min(1).optional()
 }).superRefine((v, ctx) => {
+  if (v.WEBPAY_ENTORNO === "produccion") {
+    for (const k of ["WEBPAY_CODIGO_COMERCIO", "WEBPAY_API_KEY"] as const) {
+      if (!v[k]) ctx.addIssue({ code: "custom", path: [k], message: k + " es obligatorio con WEBPAY_ENTORNO=produccion" });
+    }
+  }
   if (v.MAIL_DRIVER === "smtp") {
     for (const k of ["SMTP_HOST", "SMTP_FROM"] as const) {
       if (!v[k]) ctx.addIssue({ code: "custom", path: [k], message: k + " es obligatorio con MAIL_DRIVER=smtp" });

@@ -25,10 +25,10 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 | `GET /catalogo/productos` | ✅ | Inicio, listado y búsqueda (KAN-127, 128) |
 | `GET /catalogo/productos/:id` | ✅ | Ficha con comparador (KAN-129) |
 | `GET /carro` · `PUT /carro` | ✅ | Carro (KAN-130) |
-| `GET /carro/opciones-entrega` | ⏳ | Checkout (KAN-131) |
-| `GET /comunas` | ⏳ | Checkout (KAN-131) |
+| `GET /carro/opciones-entrega` | ✅ | Checkout (KAN-131, KAN-95) |
+| `GET /comunas` | ✅ | Checkout (KAN-131, KAN-95) |
 | `POST /carro/confirmar` | ✅ | Checkout (KAN-131) |
-| `POST /ordenes/:id/pago` | ⏳ | Checkout y pago (KAN-131, KAN-148) |
+| `POST /ordenes/:id/pago` | ✅ Webpay | Checkout y pago (KAN-131, KAN-95, KAN-148) |
 | `GET /ordenes` · `GET /ordenes/:id` | ✅ + campos ⏳ | Mis pedidos (KAN-132), órdenes vigentes (KAN-136) |
 | `PATCH /ordenes/envios/:id/estado` | ✅ | Órdenes vigentes (KAN-136) |
 | `POST /ordenes/envios/:id/calificacion` | ⏳ | Mis pedidos (KAN-132) |
@@ -210,7 +210,7 @@ con la ficha del catálogo (nombre del proveedor, plazo, mínimo, despacho,
 ahorro). **Ojo con el seed**: el carro de El Fogón pide 24 cajas de leche y
 la oferta tiene 20; la app lo marca y no deja pagar hasta ajustar.
 
-## ⏳ `GET /carro/opciones-entrega` — KAN-131
+## ✅ `GET /carro/opciones-entrega` — KAN-131, KAN-95
 
 Token cliente. Direcciones guardadas de la organización y puntos de retiro
 de los proveedores (los ids que piden `direccionId` y `retiros` de
@@ -231,10 +231,11 @@ de los proveedores (los ids que piden `direccionId` y `retiros` de
 }
 ```
 
-Direcciones: las de la organización del token (incluidas las creadas con
-`direccion` en un checkout anterior). Puntos de retiro: los activos.
+Direcciones: las de la organización del token (la de su ficha y las usadas
+en sus órdenes, incluidas las creadas con `direccion` en un checkout
+anterior). Puntos de retiro: los activos de los proveedores del carro abierto.
 
-## ⏳ `GET /comunas` — KAN-131
+## ✅ `GET /comunas` — KAN-131, KAN-95
 
 Público. Para escribir una dirección nueva:
 `[{ "id": 20, "nombre": "Ñuñoa", "regionCodigo": "13", "regionNombre": "Metropolitana de Santiago" }]`
@@ -270,22 +271,31 @@ Errores `409` en este orden (`planificarOrden`): `CARRO_VACIO`,
 checkout **no** van en el body (el schema no los acepta): la factura sale de
 los datos de la organización.
 
-## ⏳ `POST /ordenes/:id/pago` — KAN-131 / KAN-148
+## ✅ `POST /ordenes/:id/pago` — KAN-95 (Webpay Plus; KAN-148)
 
-Token cliente dueño de la orden. Inicia el pago en la pasarela y devuelve
-adónde mandar al usuario.
+Token cliente dueño de la orden. Crea la transacción en Webpay Plus por el
+total de la orden y guarda el token en `orden.referencia_pasarela`.
 
-Request: `{ "medioPago": "tarjeta", "urlRetorno": "cotizapp://pago" }`
-(`tarjeta | transferencia | linea_credito`).
+Request: `{ "medioPago": "tarjeta" }` (default `tarjeta`; `transferencia` y
+`linea_credito` responden `409 MEDIO_PAGO_NO_DISPONIBLE`, ver decisión abierta
+16). Un `urlRetorno` en el body se ignora.
 
-Response `201`: `{ "ordenId": 12, "urlPago": "https://webpay3gint.transbank.cl/...", "expiraEn": "2026-11-18T15:15:00.000Z" }`
+Response `201`:
+`{ "ordenId": 12, "codigo": "CM-90012", "total": 80150, "pasarela": "webpay", "urlPago": "https://webpay3gint.transbank.cl/webpayserver/initTransaction", "token": "01ab…" }`
 
-La app abre `urlPago` en el navegador y, al volver, relee
-`GET /ordenes/:id`: el backend debe dejar `estado = pagada`,
-`estadoPago = pagado`, `pagadoEn` y `medioPago` al confirmar la pasarela, o
-`estadoPago = fallido` (la orden sigue `pendiente_pago` y se puede
-reintentar). Errores: `409 ORDEN_YA_PAGADA`, `404 ORDEN_NO_ENCONTRADA`. La
-app todavía no registra el esquema `cotizapp://` (el usuario vuelve a mano).
+El cliente envía `token_ws=<token>` a `urlPago` con un **formulario POST**
+(así lo pide Transbank). Webpay devuelve al comprador a
+`GET|POST /pagos/webpay/retorno` en el backend (público), que confirma la
+transacción, deja la orden `estado = pagada`, `estadoPago = pagado`,
+`medioPago = tarjeta` y `pagadoEn` (o `estadoPago = fallido` si se rechazó o
+anuló; la orden sigue `pendiente_pago` y se puede reintentar), emite los
+documentos tributarios y redirige (303) a
+`ECOMMERCE_URL/checkout/resultado?orden=12&pago=aprobado|rechazado|anulado|error`.
+Cada reintento crea otra transacción (la orden de compra lleva un sufijo).
+Errores: `409 ORDEN_YA_PAGADA`, `404 ORDEN_NO_ENCONTRADA`.
+
+**Pendiente para la app:** el retorno va al ecommerce, no a la app. Hay que
+registrar `cotizapp://` y que el retorno sepa a qué app volver (KAN-148).
 
 ## ✅ `GET /ordenes` · `GET /ordenes/:id` — KAN-132, KAN-136
 

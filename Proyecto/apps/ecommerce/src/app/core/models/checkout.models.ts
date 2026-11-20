@@ -1,0 +1,102 @@
+// Formas del API para el checkout (apps/mobile/API_CONTRACT.md, KAN-95).
+
+export interface DireccionGuardada {
+  id: number;
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  referencia: string | null;
+  comunaId: number;
+  comuna: string;
+  region: string;
+}
+
+export interface PuntoRetiro {
+  id: number;
+  proveedorId: number;
+  nombre: string;
+  horario: string | null;
+  direccion: string;
+}
+
+/** GET /carro/opciones-entrega */
+export interface OpcionesEntrega {
+  direcciones: DireccionGuardada[];
+  puntosRetiro: PuntoRetiro[];
+}
+
+/** GET /comunas */
+export interface Comuna {
+  id: number;
+  nombre: string;
+  regionCodigo: string;
+  regionNombre: string;
+}
+
+export interface DireccionNueva {
+  comunaId: number;
+  calle: string;
+  numero?: string;
+  complemento?: string;
+  referencia?: string;
+}
+
+/** POST /carro/confirmar */
+export interface ConfirmarCarroRequest {
+  direccionId?: number;
+  direccion?: DireccionNueva;
+  retiros: Array<{ proveedorId: number; puntoRetiroId: number }>;
+  requiereFactura: boolean;
+}
+
+export interface OrdenCreada {
+  ordenId: number;
+  codigo: string;
+  estado: "pendiente_pago";
+  subtotal: number;
+  costoDespachoTotal: number;
+  total: number;
+}
+
+export type MedioPago = "tarjeta" | "transferencia" | "linea_credito";
+
+/** POST /ordenes/:id/pago */
+export interface PagoIniciado {
+  ordenId: number;
+  codigo: string;
+  total: number;
+  pasarela: string;
+  urlPago: string;
+  token: string;
+}
+
+export interface EnvioOrden {
+  id: number;
+  proveedorId: number;
+  proveedorNombre: string;
+  modalidad: "despacho" | "retiro";
+  plazoHoras: number | null;
+  costoDespacho: number;
+  subtotal: number;
+  estado: string;
+  lineas?: Array<{ ofertaId: number; nombreProducto: string; formato: string | null; precioUnitario: number; cantidad: number; totalLinea: number }>;
+}
+
+/** GET /ordenes/:id (vista del cliente) */
+export interface OrdenDetalle {
+  id: number;
+  codigo: string;
+  estado: "pendiente_pago" | "pagada" | "en_preparacion" | "despachada" | "entregada" | "reembolsada";
+  estadoPago: "autorizado" | "pagado" | "fallido" | "reembolsado";
+  medioPago: MedioPago | null;
+  creadaEn: string;
+  pagadoEn: string | null;
+  requiereFactura: boolean;
+  subtotal: number;
+  costoDespachoTotal: number;
+  total: number;
+  envios: EnvioOrden[];
+}
+
+/** Lo que vuelve en ?pago= desde el retorno de Webpay. */
+export type ResultadoPago = "aprobado" | "rechazado" | "anulado" | "error";

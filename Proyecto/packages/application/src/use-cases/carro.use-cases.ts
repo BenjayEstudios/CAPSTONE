@@ -261,3 +261,19 @@ export function confirmarCarro(deps: Deps) {
     };
   };
 }
+
+/**
+ * GET /carro/opciones-entrega (KAN-95): direcciones guardadas de la
+ * organizacion y puntos de retiro activos de los proveedores del carro
+ * abierto (los ids que pide POST /carro/confirmar).
+ */
+export function obtenerOpcionesEntrega(deps: Deps) {
+  return async (usuarioId: number) => {
+    const u = await exigirCliente(deps, usuarioId);
+    const carro = await deps.carroRepository.obtenerAbierto(usuarioId);
+    const ids = carro?.items.map((i) => i.ofertaId) ?? [];
+    const ofertas = ids.length ? await deps.carroRepository.ofertasPorIds(ids) : [];
+    const proveedorIds = [...new Set(ofertas.map((o) => o.proveedorId))];
+    return deps.carroRepository.opcionesEntrega(u.usuario.organizacionId, proveedorIds);
+  };
+}

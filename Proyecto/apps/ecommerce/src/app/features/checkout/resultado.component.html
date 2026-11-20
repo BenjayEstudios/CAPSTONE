@@ -1,0 +1,45 @@
+<div class="contenedor checkout resultado">
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Revisando tu pago…</p> }
+    @case ("no-encontrada") {
+      <div class="vacio">
+        <h1>No encontramos esa orden</h1>
+        <p>Si pagaste, el comprobante llega a tu correo.</p>
+        <a routerLink="/catalogo" class="btn btn-secondary">Ir al catálogo</a>
+      </div>
+    }
+    @default {
+      @if (orden(); as o) {
+        <p class="etiqueta" [class.ok]="pagada()">{{ pagada() ? "Pago aprobado" : "Pago pendiente" }}</p>
+        <h1>{{ titulo() }}</h1>
+        @if (pagada()) {
+          <p class="intro">Orden <strong>{{ o.codigo }}</strong> · Total pagado <strong>{{ clp(o.total) }}</strong> con tarjeta (Webpay). Cada distribuidor ya tiene su parte del pedido.</p>
+        } @else {
+          <p class="intro">Tu orden <strong>{{ o.codigo }}</strong> quedó guardada y pendiente de pago por <strong>{{ clp(o.total) }}</strong>. Puedes intentarlo de nuevo; no se te cobró nada.</p>
+          @if (errorReintento(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+          <p class="acciones">
+            <button type="button" class="btn btn-primary" [disabled]="reintentando()" (click)="reintentar()">
+              {{ reintentando() ? "Te llevamos a Webpay…" : "Reintentar el pago" }}
+            </button>
+            <a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a>
+          </p>
+        }
+
+        <section class="paso" aria-labelledby="como-llega">
+          <h2 id="como-llega">Así llega tu pedido</h2>
+          @for (e of o.envios; track e.id) {
+            <div class="llegada">
+              <div><strong>{{ e.proveedorNombre }}</strong> <span class="suave">· {{ e.lineas?.length ?? 0 }} {{ e.lineas?.length === 1 ? "producto" : "productos" }}</span></div>
+              <div class="suave">{{ e.modalidad === "retiro" ? "Retiro en bodega" : "Despacho" }} · {{ plazo(e.plazoHoras) }}</div>
+              <div class="monto">{{ clp(e.subtotal + e.costoDespacho) }}</div>
+            </div>
+          }
+        </section>
+
+        @if (pagada()) {
+          <p class="acciones"><a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a></p>
+        }
+      }
+    }
+  }
+</div>

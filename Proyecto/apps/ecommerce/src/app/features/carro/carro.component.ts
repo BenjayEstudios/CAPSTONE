@@ -1,13 +1,12 @@
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { Router, RouterLink } from "@angular/router";
-import { CatalogoService } from "../../core/catalogo/catalogo.service";
-import { FichaProducto } from "../../core/models/catalogo.models";
 import { CarroState } from "../../core/state/carro.state";
 import { SessionState } from "../../core/state/session.state";
 import { cajas } from "../../shared/compra";
 import { formatearClp, plazo } from "../../shared/formato";
 import { armarCarro, LineaCarro } from "./carro.calculo";
+import { FichasDelCarro } from "./fichas-del-carro";
 
 // /carro (KAN-94): un solo carro con ofertas de varios distribuidores,
 // agrupado por distribuidor con su plazo, subtotal y despacho. Cambia
@@ -17,17 +16,16 @@ import { armarCarro, LineaCarro } from "./carro.calculo";
   selector: "app-carro",
   standalone: true,
   imports: [RouterLink],
+  providers: [FichasDelCarro],
   templateUrl: "./carro.component.html",
   styleUrl: "./carro.component.css"
 })
 export class CarroComponent {
   readonly carro = inject(CarroState);
   readonly session = inject(SessionState);
-  private readonly catalogo = inject(CatalogoService);
+  private readonly fichas = inject(FichasDelCarro).fichas;
   private readonly router = inject(Router);
 
-  /** Fichas de los productos del carro, por productoId. */
-  readonly fichas = signal<ReadonlyMap<number, FichaProducto>>(new Map());
   readonly guardando = signal<number | "todo" | null>(null);
   readonly error = signal<string | null>(null);
 
@@ -40,20 +38,6 @@ export class CarroComponent {
   constructor() {
     // El carro se recarga al entrar: puede haber cambiado en otra pestana o en la app.
     void this.carro.recargar();
-    effect(() => {
-      const ids = [...new Set(this.carro.items().map((i) => i.productoId).filter((id): id is number => id !== null))];
-      untracked(() => void this.cargarFichas(ids));
-    });
-  }
-
-  private async cargarFichas(ids: number[]): Promise<void> {
-    const faltan = ids.filter((id) => !this.fichas().has(id));
-    if (!faltan.length) return;
-    const leidas = await Promise.allSettled(faltan.map((id) => this.catalogo.ficha(id)));
-    const mapa = new Map(this.fichas());
-    // Un producto que ya no esta publicado da 404: su linea se muestra con lo que trae el carro.
-    leidas.forEach((r) => r.status === "fulfilled" && mapa.set(r.value.id, r.value));
-    this.fichas.set(mapa);
   }
 
   private async ejecutar(clave: number | "todo", accion: () => Promise<void>): Promise<void> {

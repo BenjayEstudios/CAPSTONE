@@ -37,3 +37,5 @@ export * from "./documentos-tributarios.use-cases.js";
 export * from "./reembolsos.use-cases.js";
 export * from "./catalogo.use-cases.js";
 export * from "./ofertas.use-cases.js";
+export * from "./pagos.use-cases.js";
+export * from "./comunas.use-cases.js";

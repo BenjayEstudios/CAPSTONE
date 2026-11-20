@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Ecommerce: checkout único con Webpay](2026-11-20-ecommerce-checkout-con-webpay.md) | KAN-85 | KAN-95 (avanza KAN-148) |
 | 2026-11-20 | [Ecommerce: carro multiproveedor](2026-11-20-ecommerce-carro-multiproveedor.md) | KAN-85 | KAN-94 |
 | 2026-11-20 | [Ecommerce: ficha de producto y comparador](2026-11-20-ecommerce-ficha-y-comparador.md) | KAN-85 | KAN-92, 93 |
 | 2026-11-20 | [Ecommerce: catálogo con filtros y búsqueda](2026-11-20-ecommerce-catalogo-y-busqueda.md) | KAN-85 | KAN-90, 91 |

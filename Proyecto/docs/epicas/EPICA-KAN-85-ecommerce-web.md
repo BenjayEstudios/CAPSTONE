@@ -27,8 +27,9 @@ documentos, liquidaciones).
 - Carro multiproveedor agrupado por distribuidor, con cantidades, avisos de
   precio y stock, despachos y ahorro (KAN-94)
   ([entrada](../cambios/2026-11-20-ecommerce-carro-multiproveedor.md)).
-- El checkout es una pantalla provisoria hasta KAN-95; ya aplica la regla de
-  acceso (catálogo público, checkout con sesión).
+- Checkout único en tres pasos con entrega por distribuidor y pago con
+  Webpay Plus; resultado del pago con reintento (KAN-95)
+  ([entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -44,7 +45,7 @@ documentos, liquidaciones).
 | KAN-92 | Ficha de producto con comparador de proveedores | ✅ [entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md) |
 | KAN-93 | Comparación lado a lado | ✅ [entrada](../cambios/2026-11-20-ecommerce-ficha-y-comparador.md) |
 | KAN-94 | Carro multiproveedor | ✅ [entrada](../cambios/2026-11-20-ecommerce-carro-multiproveedor.md) |
-| KAN-95 | Checkout único | ⏳ |
+| KAN-95 | Checkout único | ✅ [entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md) (Webpay; transferencia y línea de crédito pendientes, decisión abierta 16) |
 | KAN-96 | Confirmación y detalle de compra consolidado | ⏳ |
 | KAN-97 | Registro e inicio de sesión de comprador | ✅ [entrada](../cambios/2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) |
 | KAN-98 | Mis pedidos y seguimiento | ⏳ |

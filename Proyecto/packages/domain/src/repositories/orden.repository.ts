@@ -1,4 +1,4 @@
-import type { Orden, OrdenEstado } from "../entities/orden.entity.js";
+import type { Orden, OrdenEstado, PagoMedio } from "../entities/orden.entity.js";
 import type { OrdenEnvio, OrdenEnvioEstado } from "../entities/orden-envio.entity.js";
 import type { OrdenLinea } from "../entities/orden-linea.entity.js";
 import type { RegistroAuditoria } from "./proveedor.repository.js";
@@ -63,7 +63,25 @@ export interface PlanCambioEnvio {
   auditoria: RegistroAuditoria[];
 }
 
+/** Resultado del pago que se persiste en la orden (KAN-95). */
+export interface ResultadoPagoOrden {
+  aprobado: boolean;
+  medioPago: PagoMedio;
+  referencia: string;
+}
+
 export interface OrdenRepository {
+  /** Orden por su token de pasarela (orden.referencia_pasarela); null si no hay. */
+  buscarPorReferenciaPasarela(referencia: string): Promise<Orden | null>;
+  /** Guarda el token de la transaccion recien iniciada (un reintento lo reemplaza). */
+  registrarInicioPago(ordenId: number, referencia: string): Promise<void>;
+  /**
+   * Transaccion: bloquea la orden (FOR UPDATE) y, solo si sigue
+   * pendiente_pago, aplica el resultado (aprobado: estado pagada, estado_pago
+   * pagado, medio, pagado_en; rechazado: estado_pago fallido) y la auditoria.
+   * Devuelve false si la orden ya no estaba pendiente (retorno repetido).
+   */
+  registrarResultadoPago(ordenId: number, resultado: ResultadoPagoOrden, auditoria: RegistroAuditoria): Promise<boolean>;
   listar(f: FiltrosOrdenes): Promise<{ items: OrdenCompleta[]; total: number }>;
   /** null si no existe o queda fuera del alcance. */
   buscarPorId(id: number, alcance: AlcanceOrdenes): Promise<OrdenCompleta | null>;

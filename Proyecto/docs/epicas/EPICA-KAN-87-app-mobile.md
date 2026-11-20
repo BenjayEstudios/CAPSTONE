@@ -40,9 +40,12 @@ cuando el backend tenga el endpoint, sin tocar pantallas.
 - **APK apuntando al API productivo** (criterio de KAN-138): falta el dominio
   de producción y el login. El comando está listo en el
   [README de mobile](../../apps/mobile/README.md#release-kan-138).
-- **Pasarela real** (KAN-148): la app ya llama `POST /ordenes/:id/pago` y
-  abre `urlPago` en el navegador; falta el endpoint y registrar el esquema
-  `cotizapp://` para volver solo a la app.
+- **Pasarela real** (KAN-148): `POST /ordenes/:id/pago` ya existe (Webpay
+  Plus, KAN-95) y devuelve `urlPago` y `token`. Falta en la app: abrir Webpay
+  enviando `token_ws` (formulario POST o `urlPago?token_ws=`), y que el
+  retorno vuelva a la app: hoy el backend redirige al ecommerce
+  (`/checkout/resultado`); hay que registrar `cotizapp://` y que el retorno
+  sepa a qué app volver.
 
 ## Endpoints que espera del backend
 

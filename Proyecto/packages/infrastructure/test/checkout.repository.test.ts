@@ -1,0 +1,90 @@
+import { expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import { DrizzleCarroRepository } from "../src/repositories/carro.repository.js";
+import { DrizzleComunaRepository } from "../src/repositories/comuna.repository.js";
+import { DrizzleOrdenRepository } from "../src/repositories/orden.repository.js";
+import { consultar } from "../src/db/client.js";
+import { orden } from "../src/db/schema/orden.schema.js";
+import { tipoTarjetaWebpay, WebpayPlus } from "../src/pagos/webpay-plus.js";
+import { describeDb } from "./db.js";
+
+// Checkout y pago (KAN-95) contra el seed. Cada test corre en una
+// transaccion que db.ts revierte.
+const ORG = { losAndes: 2, valleCentral: 3, frigoSur: 4, elFogon: 6 };
+
+describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => {
+  it("opcionesEntrega: la direccion de El Fogon y solo los puntos de retiro activos de los proveedores pedidos", async () => {
+    const o = await new DrizzleCarroRepository(db()).opcionesEntrega(ORG.elFogon, [ORG.losAndes, ORG.valleCentral]);
+    expect(o.direcciones).toEqual([
+      expect.objectContaining({ calle: "Av. Irarrázaval", numero: "3450", complemento: "Local 2", comuna: "Ñuñoa", region: "Metropolitana de Santiago" })
+    ]);
+    expect(o.puntosRetiro).toEqual([
+      { id: 1, proveedorId: ORG.losAndes, nombre: "Bodega Quilicura", horario: expect.any(String), direccion: "Av. Presidente Eduardo Frei Montalva 9650, Bodega 12, Quilicura" }
+    ]);
+    expect((await new DrizzleCarroRepository(db()).opcionesEntrega(ORG.elFogon, [])).puntosRetiro).toEqual([]);
+  });
+
+  it("comunas: todas, con su region, ordenadas por region y nombre", async () => {
+    const comunas = await new DrizzleComunaRepository(db()).listar();
+    const [{ total }] = await consultar<{ total: number }>(db(), sql`SELECT COUNT(*) AS total FROM comuna`);
+    expect(comunas).toHaveLength(Number(total));
+    expect(comunas.find((c) => c.nombre === "Ñuñoa")).toEqual({ id: expect.any(Number), nombre: "Ñuñoa", regionCodigo: "13", regionNombre: "Metropolitana de Santiago" });
+  });
+
+  it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
+    const repo = new DrizzleOrdenRepository(db());
+    const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);
+    await db().update(orden).set({ estado: "pendiente_pago", estadoPago: "autorizado", medioPago: null, pagadoEn: null }).where(eq(orden.id, id));
+    await repo.registrarInicioPago(id, "tok-prueba");
+    expect((await repo.buscarPorReferenciaPasarela("tok-prueba"))?.id).toBe(id);
+    expect(await repo.buscarPorReferenciaPasarela("no-existe")).toBeNull();
+
+    const auditoria = { usuarioId: null, entidad: "orden", entidadId: id, accion: "editar" as const, datosAntes: null, datosDespues: { operacion: "pago_aprobado" } };
+    expect(await repo.registrarResultadoPago(id, { aprobado: true, medioPago: "tarjeta", referencia: "tok-prueba" }, auditoria)).toBe(true);
+    const o = await repo.buscarPorReferenciaPasarela("tok-prueba");
+    expect(o).toMatchObject({ estado: "pagada", estadoPago: "pagado", medioPago: "tarjeta" });
+    expect(o?.pagadoEn).toBeInstanceOf(Date);
+    // Un retorno repetido no la vuelve a tocar.
+    expect(await repo.registrarResultadoPago(id, { aprobado: false, medioPago: "tarjeta", referencia: "tok-prueba" }, auditoria)).toBe(false);
+    expect((await repo.buscarPorReferenciaPasarela("tok-prueba"))?.estadoPago).toBe("pagado");
+  });
+});
+
+it("WebpayPlus: crea la transaccion y confirma con las cabeceras de Transbank", async () => {
+  const llamadas: Array<{ url: string; init: RequestInit }> = [];
+  const respuestas = [
+    { token: "01ab", url: "https://webpay3gint.transbank.cl/webpayserver/initTransaction" },
+    { status: "AUTHORIZED", response_code: 0, amount: 80150, buy_order: "CM-90012", session_id: "orden-12", authorization_code: "1213", payment_type_code: "VD", installments_number: 0, card_detail: { card_number: "6623" } }
+  ];
+  const fetchFalso = (async (url: string, init: RequestInit) => {
+    llamadas.push({ url, init });
+    return new Response(JSON.stringify(respuestas.shift()), { status: 200 });
+  }) as unknown as typeof fetch;
+  const w = new WebpayPlus({ codigoComercio: "597055555532", apiKey: "secreto", baseUrl: "https://webpay3gint.transbank.cl", fetch: fetchFalso });
+
+  expect(await w.iniciar({ ordenCompra: "CM-90012", sesionId: "orden-12", monto: 80150, urlRetorno: "http://api/pagos/webpay/retorno" })).toEqual({
+    token: "01ab", url: "https://webpay3gint.transbank.cl/webpayserver/initTransaction"
+  });
+  expect(llamadas[0]!.url).toBe("https://webpay3gint.transbank.cl/rswebpaytransaction/api/webpay/v1.2/transactions");
+  expect(llamadas[0]!.init.method).toBe("POST");
+  expect(llamadas[0]!.init.headers).toMatchObject({ "Tbk-Api-Key-Id": "597055555532", "Tbk-Api-Key-Secret": "secreto" });
+  expect(JSON.parse(String(llamadas[0]!.init.body))).toEqual({ buy_order: "CM-90012", session_id: "orden-12", amount: 80150, return_url: "http://api/pagos/webpay/retorno" });
+
+  expect(await w.confirmar("01ab")).toEqual({
+    aprobado: true, ordenCompra: "CM-90012", sesionId: "orden-12", monto: 80150, codigoAutorizacion: "1213", codigoRespuesta: 0,
+    tipoTarjeta: "debito", ultimosDigitos: "6623", cuotas: 0
+  });
+  expect(llamadas[1]!.init.method).toBe("PUT");
+  expect(llamadas[1]!.url).toMatch(/\/transactions\/01ab$/);
+});
+
+it("WebpayPlus: rechazo (response_code distinto de 0) no lanza; un error HTTP si", async () => {
+  const una = (cuerpo: unknown, status = 200) => (async () => new Response(JSON.stringify(cuerpo), { status })) as unknown as typeof fetch;
+  const base = { codigoComercio: "x", apiKey: "y", baseUrl: "https://w" };
+  const rechazo = await new WebpayPlus({ ...base, fetch: una({ status: "FAILED", response_code: -1, amount: 1000 }) }).confirmar("t");
+  expect(rechazo).toMatchObject({ aprobado: false, codigoRespuesta: -1 });
+  await expect(new WebpayPlus({ ...base, fetch: una({ error_message: "Invalid value for parameter: token" }, 422) }).confirmar("t")).rejects.toThrow(
+    "Webpay 422: Invalid value for parameter: token"
+  );
+  expect([tipoTarjetaWebpay("VD"), tipoTarjetaWebpay("VP"), tipoTarjetaWebpay("VN"), tipoTarjetaWebpay(undefined)]).toEqual(["debito", "prepago", "credito", null]);
+});

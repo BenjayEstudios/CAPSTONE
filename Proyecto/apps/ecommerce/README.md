@@ -56,7 +56,11 @@ pnpm test
 
 `features/carro/`: `/carro` agrupado por distribuidor con plazo, subtotal y despacho; cantidades en cajas con +/– (respeta el mínimo y el stock), quitar, aviso de precios cambiados ("Aceptar los precios nuevos"), ofertas no disponibles, y resumen con despachos, ahorro vs. el más caro y total. `GET /carro` no trae distribuidor, plazo, mínimo ni despacho: salen de la ficha de cada producto. Los montos los calcula `carro.calculo.ts` (`armarCarro`, pura) con las mismas reglas que el checkout del backend. Los cambios pasan por `CarroState` (`PUT /carro` con el carro completo). `shared/compra.ts` tiene `cajasMinimas`, que usan la ficha y el carro.
 
-Ruta provisoria hasta su historia: `/checkout` (KAN-95). La vista de status está en `/estado`.
+## Checkout y pago (KAN-95)
+
+`features/checkout/`: `/checkout` en tres pasos (boleta o factura; entrega por distribuidor, despacho o retiro en su bodega, con dirección guardada o nueva; tarjeta por Webpay) con "Así llega tu pedido" y el total. Pagar llama `POST /carro/confirmar` y `POST /ordenes/:id/pago` (`core/checkout/checkout.service.ts`) y `NavegadorPasarela` envía `token_ws` a Webpay con un formulario POST. Webpay vuelve al backend, que redirige a `/checkout/resultado?orden=&pago=`: lee la orden (no confía solo en `?pago=`) y, si sigue pendiente, ofrece "Reintentar el pago". `FichasDelCarro` (en `features/carro/`) carga las fichas que usan el carro y el checkout.
+
+Para probar el pago en local usar `http://localhost:4200`: el ambiente de integración de Transbank rechaza (403) un formulario con origen `http://[::1]:4200`. Tarjeta de prueba de Transbank: 4051 8856 0044 6623, CVV 123; en el banco simulado, RUT 11.111.111-1 y clave 123. La vista de status está en `/estado`.
 
 ## Tests
 
