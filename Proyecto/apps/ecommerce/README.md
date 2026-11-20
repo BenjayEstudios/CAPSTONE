@@ -92,6 +92,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publicada, posición entre las del mismo producto ("2.º de 5"), diferencia con el más bajo y el precio más bajo (`GET /ofertas/comparacion`). Se recalcula al cambiar precio o estado.
 
+## Órdenes de venta (KAN-105)
+
+`features/proveedor/ventas.component.ts`: pestaña "Órdenes" (`/proveedor/ventas`). Tabla de los envíos del proveedor (`GET /proveedor/ventas`): folio, cliente, comuna, fecha, líneas, cajas, monto y estado, con filtros por estado y su conteo, y "Ver más" de a 50. Cada fila tiene el botón del siguiente paso (Preparar → Marcar despachado o listo para retiro → Marcar entregado), que llama a `PATCH /ordenes/envios/:id/estado` y recarga. Servicio: `core/proveedor/ventas-proveedor.service.ts`.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

@@ -1,6 +1,6 @@
 import type { RouteOptions } from "fastify";
-import { miCobertura } from "@cotizapp/application";
-import { DrizzleProveedorRepository } from "@cotizapp/infrastructure";
+import { listarVentas, miCobertura } from "@cotizapp/application";
+import { DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 // Datos propios del proveedor de la sesion para su panel (KAN-102). La
@@ -13,4 +13,17 @@ export const miCoberturaRoute: RouteOptions = {
     miCobertura({ proveedorRepository: new DrizzleProveedorRepository(request.server.db) })(Number(request.auth?.organizacionId))
 };
 
-export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute];
+// Ordenes de venta (KAN-105): los envios del proveedor de la sesion.
+// ?estado=&pagina=&tamano=. El estado se avanza con PATCH /ordenes/envios/:id/estado.
+export const misVentasRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/ventas",
+  preHandler: [requireAuth, requirePermiso("ver_ordenes_propias")],
+  handler: async (request) =>
+    listarVentas({
+      ordenRepository: new DrizzleOrdenRepository(request.server.db),
+      usuarioRepository: new DrizzleUsuarioRepository(request.server.db)
+    })(Number(request.auth?.sub), request.query)
+};
+
+export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute];

@@ -1,7 +1,11 @@
-import { and, count, desc, eq, inArray, ne, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, inArray, ne, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/mysql-core";
 import type {
   AlcanceOrdenes,
   FiltrosOrdenes,
+  FiltrosVentas,
+  OrdenEnvioEstado,
+  VentaProveedor,
   Orden,
   OrdenCompleta,
   OrdenEnvio,
@@ -145,6 +149,78 @@ export class DrizzleOrdenRepository implements OrdenRepository {
           .limit(f.tamano)
           .offset((f.pagina - 1) * f.tamano);
     return { items: await this.completar(this.db, filas.map((x) => x.o), a, false), total };
+  }
+
+  // Ordenes de venta del proveedor (KAN-105). Entra por
+  // ix_orden_envio_proveedor_estado; lineas y cajas salen de orden_linea por
+  // su FK (orden_envio_id). La comuna es la de la direccion de entrega o la
+  // del punto de retiro, segun la modalidad.
+  async ventasDeProveedor(f: FiltrosVentas) {
+    const comunaEntrega = alias(comuna, "comuna_entrega");
+    const comunaRetiro = alias(comuna, "comuna_retiro");
+    const dirEntrega = alias(direccion, "dir_entrega");
+    const dirRetiro = alias(direccion, "dir_retiro");
+    const base = and(eq(ordenEnvio.proveedorId, f.proveedorId), ne(orden.estado, "pendiente_pago"));
+    const where = f.estado ? and(base, eq(ordenEnvio.estado, f.estado)) : base;
+
+    const filas = await this.db
+      .select({
+        envioId: ordenEnvio.id,
+        ordenId: orden.id,
+        folio: orden.codigo,
+        cliente: sql<string>`COALESCE(${organizacion.nombreFantasia}, ${organizacion.razonSocial})`,
+        modalidad: ordenEnvio.modalidad,
+        comunaEntrega: comunaEntrega.nombre,
+        comunaRetiro: comunaRetiro.nombre,
+        pagadoEn: orden.pagadoEn,
+        creadaEn: orden.creadaEn,
+        lineas: sql<number>`(SELECT COUNT(*) FROM orden_linea l WHERE l.orden_envio_id = ${ordenEnvio.id})`.mapWith(Number),
+        cajas: sql<number>`(SELECT COALESCE(SUM(l.cantidad), 0) FROM orden_linea l WHERE l.orden_envio_id = ${ordenEnvio.id})`.mapWith(Number),
+        subtotal: ordenEnvio.subtotal,
+        costoDespacho: ordenEnvio.costoDespacho,
+        estado: ordenEnvio.estado,
+        ordenEstado: orden.estado
+      })
+      .from(ordenEnvio)
+      .innerJoin(orden, eq(orden.id, ordenEnvio.ordenId))
+      .innerJoin(organizacion, eq(organizacion.id, orden.organizacionId))
+      .leftJoin(dirEntrega, eq(dirEntrega.id, ordenEnvio.direccionEntregaId))
+      .leftJoin(comunaEntrega, eq(comunaEntrega.id, dirEntrega.comunaId))
+      .leftJoin(puntoRetiro, eq(puntoRetiro.id, ordenEnvio.puntoRetiroId))
+      .leftJoin(dirRetiro, eq(dirRetiro.id, puntoRetiro.direccionId))
+      .leftJoin(comunaRetiro, eq(comunaRetiro.id, dirRetiro.comunaId))
+      .where(where)
+      .orderBy(desc(orden.id), desc(ordenEnvio.id))
+      .limit(f.tamano)
+      .offset((f.pagina - 1) * f.tamano);
+
+    const porEstado = await this.db
+      .select({ estado: ordenEnvio.estado, n: count() })
+      .from(ordenEnvio)
+      .innerJoin(orden, eq(orden.id, ordenEnvio.ordenId))
+      .where(base)
+      .groupBy(ordenEnvio.estado);
+    const conteo: Partial<Record<OrdenEnvioEstado, number>> = {};
+    for (const c of porEstado) conteo[c.estado] = c.n;
+
+    const items = filas.map(
+      (v): VentaProveedor => ({
+        envioId: v.envioId,
+        ordenId: v.ordenId,
+        folio: v.folio,
+        cliente: v.cliente,
+        modalidad: v.modalidad,
+        comuna: (v.modalidad === "despacho" ? v.comunaEntrega : v.comunaRetiro) ?? null,
+        fecha: v.pagadoEn ?? v.creadaEn,
+        lineas: v.lineas,
+        cajas: v.cajas,
+        monto: v.subtotal + (v.costoDespacho ?? 0),
+        estado: v.estado,
+        ordenEstado: v.ordenEstado
+      })
+    );
+    const total = f.estado ? (conteo[f.estado] ?? 0) : Object.values(conteo).reduce((t, n) => t + n, 0);
+    return { items, total, conteo };
   }
 
   async buscarPorId(id: number, alcance: AlcanceOrdenes) {

@@ -140,6 +140,35 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(items.some((p) => typeof p.contenido === "number" && p.contenido > 0)).toBe(true);
   });
 
+  it("ventasDeProveedor (KAN-105): solo los envios del proveedor de ordenes pagadas, con lineas, cajas, monto y comuna", async () => {
+    const repo = new DrizzleOrdenRepository(db());
+    const r = await repo.ventasDeProveedor({ proveedorId: ORG.losAndes, pagina: 1, tamano: 100 });
+    const esperado = await consultar<{ envioId: number; folio: string; lineas: number; cajas: string; monto: number; estado: string; comuna: string | null }>(
+      db(),
+      sql`SELECT oe.id AS envioId, o.codigo AS folio, oe.estado,
+                 (SELECT COUNT(*) FROM orden_linea l WHERE l.orden_envio_id = oe.id) AS lineas,
+                 (SELECT SUM(l.cantidad) FROM orden_linea l WHERE l.orden_envio_id = oe.id) AS cajas,
+                 oe.subtotal + COALESCE(oe.costo_despacho, 0) AS monto,
+                 (SELECT c.nombre FROM direccion d JOIN comuna c ON c.id = d.comuna_id
+                   WHERE d.id = COALESCE(oe.direccion_entrega_id, (SELECT pr.direccion_id FROM punto_retiro pr WHERE pr.id = oe.punto_retiro_id))) AS comuna
+          FROM orden_envio oe JOIN orden o ON o.id = oe.orden_id
+          WHERE oe.proveedor_id = ${ORG.losAndes} AND o.estado <> 'pendiente_pago'
+          ORDER BY o.id DESC, oe.id DESC`
+    );
+    expect(r.total).toBe(esperado.length);
+    expect(r.items.map((v) => ({ envioId: v.envioId, folio: v.folio, lineas: v.lineas, cajas: v.cajas, monto: v.monto, estado: v.estado, comuna: v.comuna }))).toEqual(
+      esperado.map((e) => ({ ...e, lineas: Number(e.lineas), cajas: Number(e.cajas) }))
+    );
+    expect(r.items.every((v) => v.fecha instanceof Date && v.cliente.length > 0)).toBe(true);
+    expect(Object.values(r.conteo).reduce((t, n) => t + n, 0)).toBe(r.total);
+
+    const entregados = await repo.ventasDeProveedor({ proveedorId: ORG.losAndes, estado: "entregado", pagina: 1, tamano: 2 });
+    expect(entregados.items).toHaveLength(Math.min(2, r.conteo.entregado ?? 0));
+    expect(entregados.items.every((v) => v.estado === "entregado")).toBe(true);
+    expect(entregados.total).toBe(r.conteo.entregado ?? 0);
+    expect(entregados.conteo).toEqual(r.conteo);
+  });
+
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
     const repo = new DrizzleOrdenRepository(db());
     const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);

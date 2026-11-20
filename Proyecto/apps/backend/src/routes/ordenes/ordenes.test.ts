@@ -46,6 +46,11 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     async buscarPorId() {
       return null;
     }
+    async ventasDeProveedor(f: { proveedorId: number; estado?: string }) {
+      const v = { envioId: 1, ordenId: 100, folio: "CM-100", cliente: "El Fogón", modalidad: "despacho", comuna: "Santiago", fecha: new Date("2026-11-20T12:00:00Z"), lineas: 2, cajas: 5, monto: 6000, estado: "por_despachar", ordenEstado: "pagada" };
+      const items = f.proveedorId === 2 && (!f.estado || f.estado === v.estado) ? [v] : [];
+      return { items, total: items.length, conteo: { por_despachar: 1 } };
+    }
     async buscarEnvio(id: number) {
       return id === 1 ? envioMem : null;
     }
@@ -66,10 +71,11 @@ beforeAll(async () => {
   vi.stubEnv("JWT_SECRET", SECRET);
   const { carroRoutes } = await import("../carro/index.js");
   const { ordenRoutes } = await import("./index.js");
+  const { panelProveedorRoutes } = await import("../panel-proveedor/index.js");
   const { errorHandler } = await import("../../lib/error-handler.js");
   app = Fastify();
   app.setErrorHandler(errorHandler);
-  [...carroRoutes, ...ordenRoutes].forEach((r) => app.route(r));
+  [...carroRoutes, ...ordenRoutes, ...panelProveedorRoutes].forEach((r) => app.route(r));
 });
 
 describe("rutas de carro", () => {
@@ -112,5 +118,16 @@ describe("rutas de ordenes", () => {
     expect(inv.statusCode).toBe(409);
     expect(inv.json().error.code).toBe("TRANSICION_INVALIDA");
     expect((await app.inject({ method: "PATCH", url: "/ordenes/envios/7/estado", headers: bearer("3"), payload: { estado: "cancelado" } })).statusCode).toBe(404);
+  });
+});
+
+describe("GET /proveedor/ventas (KAN-105)", () => {
+  it("sin token 401; cliente 403; proveedor ve sus envios con el siguiente paso", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/ventas?estado=por_despachar", headers: bearer("3") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ total: 1, conteo: { por_despachar: 1 }, items: [{ folio: "CM-100", cajas: 5, siguiente: "en_preparacion" }] });
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas?estado=pagada", headers: bearer("3") })).statusCode).toBe(400);
   });
 });

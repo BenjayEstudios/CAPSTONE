@@ -11,6 +11,14 @@ export const listarOrdenesQuerySchema = z.object({
 });
 export type ListarOrdenesQueryDto = z.infer<typeof listarOrdenesQuerySchema>;
 
+// GET /proveedor/ventas (KAN-105): los envios del proveedor, filtrables por estado del envio.
+export const listarVentasQuerySchema = z.object({
+  estado: z.enum(ORDEN_ENVIO_ESTADOS).optional(),
+  pagina: z.coerce.number().int().min(1).default(1),
+  tamano: z.coerce.number().int().min(1).max(100).default(20)
+});
+export type ListarVentasQueryDto = z.infer<typeof listarVentasQuerySchema>;
+
 export const cambiarEstadoEnvioSchema = z.object({ estado: z.enum(ORDEN_ENVIO_ESTADOS) });
 export type CambiarEstadoEnvioDto = z.infer<typeof cambiarEstadoEnvioSchema>;
 

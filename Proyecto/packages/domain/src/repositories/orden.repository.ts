@@ -1,5 +1,5 @@
 import type { Orden, OrdenEstado, PagoMedio } from "../entities/orden.entity.js";
-import type { OrdenEnvio, OrdenEnvioEstado } from "../entities/orden-envio.entity.js";
+import type { OrdenEnvio, OrdenEnvioEstado, OrdenEnvioModalidad } from "../entities/orden-envio.entity.js";
 import type { OrdenLinea } from "../entities/orden-linea.entity.js";
 import type { RegistroAuditoria } from "./proveedor.repository.js";
 
@@ -75,6 +75,36 @@ export interface PlanCambioEnvio {
   auditoria: RegistroAuditoria[];
 }
 
+/**
+ * Un envio del proveedor visto como orden de venta (KAN-105): solo su tramo
+ * (sus lineas y su monto), nunca el resto de la orden.
+ */
+export interface VentaProveedor {
+  envioId: number;
+  ordenId: number;
+  folio: string;
+  /** Nombre de fantasia de la organizacion compradora (o su razon social). */
+  cliente: string;
+  modalidad: OrdenEnvioModalidad;
+  /** Comuna de la direccion de entrega (despacho) o del punto de retiro. */
+  comuna: string | null;
+  /** Fecha de pago de la orden (o de creacion si no la tiene). */
+  fecha: Date;
+  lineas: number;
+  cajas: number;
+  /** Subtotal del envio + su costo de despacho. */
+  monto: number;
+  estado: OrdenEnvioEstado;
+  ordenEstado: OrdenEstado;
+}
+
+export interface FiltrosVentas {
+  proveedorId: number;
+  estado?: OrdenEnvioEstado;
+  pagina: number;
+  tamano: number;
+}
+
 /** Resultado del pago que se persiste en la orden (KAN-95). */
 export interface ResultadoPagoOrden {
   aprobado: boolean;
@@ -97,6 +127,11 @@ export interface OrdenRepository {
   listar(f: FiltrosOrdenes): Promise<{ items: OrdenCompleta[]; total: number }>;
   /** null si no existe o queda fuera del alcance. */
   buscarPorId(id: number, alcance: AlcanceOrdenes): Promise<OrdenCompleta | null>;
+  /**
+   * Envios del proveedor de ordenes ya pagadas (sin pendiente_pago), del mas
+   * reciente al mas antiguo, con el conteo por estado del envio (sin el filtro).
+   */
+  ventasDeProveedor(f: FiltrosVentas): Promise<{ items: VentaProveedor[]; total: number; conteo: Partial<Record<OrdenEnvioEstado, number>> }>;
   /** Envio (sin alcance) para validar propiedad antes de operar; null si no existe. */
   buscarEnvio(id: number): Promise<OrdenEnvio | null>;
   /**

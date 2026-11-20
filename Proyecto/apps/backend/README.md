@@ -135,6 +135,10 @@ Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva
 
 Precio sobre referencia + tope %: una oferta que queda publicada responde `409 PRECIO_SOBRE_TOPE` (`detalle.precioMaximo`); como borrador o pausada se guarda y abre el caso `precio_fuera_rango` (uno por oferta abierto) con `revisionPrecio != null` (KAN-102). `GET /ofertas/productos-disponibles` trae `contenido`. `GET /proveedor/cobertura` (`miCobertura`): corte, despacho gratis desde y zonas del proveedor de la sesion. Cada alta y cada cambio de precio o cajas inserta en `oferta_precio_historial` en la misma transaccion.
 
+## Ordenes de venta del proveedor (KAN-105)
+
+`GET /proveedor/ventas?estado=&pagina=&tamano=` (`ver_ordenes_propias`, solo organizaciones proveedor; otra = `403 SOLO_PROVEEDORES`): los envios del proveedor de la sesion de ordenes ya pagadas (sin `pendiente_pago`), del mas reciente al mas antiguo. Cada fila: `envioId`, `ordenId`, `folio`, `cliente`, `modalidad`, `comuna` (de la direccion de entrega o del punto de retiro), `fecha` (pago), `lineas`, `cajas`, `monto` (subtotal + despacho del envio), `estado`, `ordenEstado` y `siguiente` (proximo estado hacia la entrega, sin cancelar; `null` si termino o la orden se reembolso). Trae `conteo` por estado del envio (sin el filtro) para los filtros. Solo el tramo del proveedor: nunca el total de la orden. El estado se avanza con `PATCH /ordenes/envios/:id/estado`.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:

@@ -17,8 +17,10 @@ import {
   cambiarEstadoEnvio,
   estadoOrdenDesdeEnvios,
   listarOrdenes,
+  listarVentas,
   obtenerOrden,
   porcentajeATiempo,
+  siguienteEstadoEnvio,
   transicionesPermitidas
 } from "./ordenes.use-cases.js";
 
@@ -177,7 +179,7 @@ const ordenBase = (extra: Partial<Orden> = {}): Orden => ({
 });
 
 function setupOrdenes(ordenExtra: Partial<Orden> = {}, envios = [envio(1, 2, "por_despachar"), envio(2, 3, "por_despachar")]) {
-  const st = { orden: ordenBase(ordenExtra), envios, auditoria: [] as unknown[], pct: undefined as number | null | undefined, entregados: [] as never[] };
+  const st = { filtrosVentas: [] as unknown[], orden: ordenBase(ordenExtra), envios, auditoria: [] as unknown[], pct: undefined as number | null | undefined, entregados: [] as never[] };
   const completa = (alcance: any) => ({
     orden: st.orden,
     envios: st.envios.filter((e) => alcance.tipo !== "proveedor" || e.proveedorId === alcance.proveedorId).map((e) => ({ ...e, proveedorNombre: `P${e.proveedorId}`, lineas: [] })),
@@ -191,6 +193,16 @@ function setupOrdenes(ordenExtra: Partial<Orden> = {}, envios = [envio(1, 2, "po
       return c;
     },
     buscarEnvio: async (id) => st.envios.find((e) => e.id === id) ?? null,
+    ventasDeProveedor: async (f) => {
+      st.filtrosVentas.push(f);
+      const items = st.envios
+        .filter((e) => e.proveedorId === f.proveedorId && (!f.estado || e.estado === f.estado))
+        .map((e) => ({
+          envioId: e.id, ordenId: st.orden.id, folio: st.orden.codigo, cliente: "OrgCli", modalidad: e.modalidad, comuna: "Santiago",
+          fecha: st.orden.creadaEn, lineas: 1, cajas: 2, monto: e.subtotal + (e.costoDespacho ?? 0), estado: e.estado, ordenEstado: st.orden.estado
+        }));
+      return { items, total: items.length, conteo: { [items[0]?.estado ?? "por_despachar"]: items.length } };
+    },
     cambiarEstadoEnvio: async (id, planificar) => {
       const e = st.envios.find((x) => x.id === id)!;
       const plan: PlanCambioEnvio = await planificar({ envio: e, orden: st.orden, hermanos: st.envios, entregadosProveedor: async () => st.entregados });
@@ -287,5 +299,31 @@ describe("maquina de estados del envio", () => {
     expect(porcentajeATiempo([d(10, 48), d(10, null)])).toBe(100);
     expect(porcentajeATiempo([d(10, null)])).toBeNull();
     expect(porcentajeATiempo([d(10, 48), d(50, 48), d(60, 48)])).toBe(33.33);
+  });
+});
+
+describe("ordenes de venta del proveedor (KAN-105)", () => {
+  it("el proveedor ve solo sus envios, con el siguiente paso; el filtro pasa al repositorio", async () => {
+    const { deps, st } = setupOrdenes({ estado: "pagada" });
+    const r = await listarVentas(deps)(3, { estado: "por_despachar", pagina: "1", tamano: "10" });
+    expect(st.filtrosVentas).toEqual([{ proveedorId: 2, estado: "por_despachar", pagina: 1, tamano: 10 }]);
+    expect(r.items.map((v) => v.envioId)).toEqual([1]);
+    expect(r.items[0]).toMatchObject({ monto: 6000, siguiente: "en_preparacion" });
+    expect(r).toMatchObject({ total: 1, totalPaginas: 1, conteo: { por_despachar: 1 } });
+  });
+  it("un cliente o un admin no tienen ordenes de venta; un estado desconocido -> 400", async () => {
+    const { deps } = setupOrdenes();
+    expect(await falla(listarVentas(deps)(5, {}))).toMatchObject({ statusCode: 403, code: "SOLO_PROVEEDORES" });
+    expect(await falla(listarVentas(deps)(1, {}))).toMatchObject({ statusCode: 403 });
+    expect(await falla(listarVentas(deps)(3, { estado: "pagada" }))).toMatchObject({ statusCode: 400 });
+  });
+  it("siguiente paso: preparar, despachar o dejar listo para retiro, entregar; nada al final o si se reembolso", () => {
+    expect(siguienteEstadoEnvio("despacho", "por_despachar", "pagada")).toBe("en_preparacion");
+    expect(siguienteEstadoEnvio("despacho", "en_preparacion", "en_preparacion")).toBe("despachado");
+    expect(siguienteEstadoEnvio("retiro", "en_preparacion", "en_preparacion")).toBe("listo_retiro");
+    expect(siguienteEstadoEnvio("retiro", "listo_retiro", "despachada")).toBe("entregado");
+    expect(siguienteEstadoEnvio("despacho", "entregado", "entregada")).toBeNull();
+    expect(siguienteEstadoEnvio("despacho", "cancelado", "pagada")).toBeNull();
+    expect(siguienteEstadoEnvio("despacho", "por_despachar", "reembolsada")).toBeNull();
   });
 });

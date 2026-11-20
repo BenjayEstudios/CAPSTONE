@@ -1,6 +1,7 @@
 import {
   cambiarEstadoEnvioSchema,
   listarOrdenesQuerySchema,
+  listarVentasQuerySchema,
   ORDEN_ENVIO_ESTADOS,
   ORDEN_ESTADOS,
   type AlcanceOrdenes,
@@ -138,6 +139,38 @@ export function transicionesPermitidas(modalidad: OrdenEnvio["modalidad"], desde
     default:
       return [];
   }
+}
+
+// Siguiente paso hacia la entrega (sin cancelar): el boton de la fila en las
+// ordenes de venta del proveedor. null si el envio ya termino o la orden se
+// reembolso.
+export function siguienteEstadoEnvio(
+  modalidad: OrdenEnvio["modalidad"],
+  estado: OrdenEnvioEstado,
+  ordenEstado: OrdenEstado
+): OrdenEnvioEstado | null {
+  if (ordenEstado === "reembolsada" || ordenEstado === "pendiente_pago") return null;
+  return transicionesPermitidas(modalidad, estado).find((e) => e !== "cancelado") ?? null;
+}
+
+// GET /proveedor/ventas (KAN-105): los envios del proveedor de la sesion
+// (su tramo de cada orden pagada), con el conteo por estado para los filtros
+// y el siguiente estado que puede marcar. Solo para organizaciones proveedor.
+export function listarVentas(deps: Deps) {
+  return async (usuarioId: number, input: unknown) => {
+    const alcance = resolverAlcance(await contexto(deps, usuarioId));
+    if (alcance.tipo !== "proveedor") throw new ErrorAplicacion(403, "SOLO_PROVEEDORES", "Solo un proveedor tiene ordenes de venta");
+    const f = validar(listarVentasQuerySchema, input);
+    const { items, total, conteo } = await deps.ordenRepository.ventasDeProveedor({ proveedorId: alcance.proveedorId, ...f });
+    return {
+      items: items.map((v) => ({ ...v, siguiente: siguienteEstadoEnvio(v.modalidad, v.estado, v.ordenEstado) })),
+      conteo,
+      pagina: f.pagina,
+      tamano: f.tamano,
+      total,
+      totalPaginas: Math.max(1, Math.ceil(total / f.tamano))
+    };
+  };
 }
 
 // Estado de la orden derivado de sus envios no cancelados. null = sin envios activos (no se toca).
