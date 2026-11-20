@@ -76,6 +76,19 @@ export interface CambioOferta {
   cambiadoEn: string;
 }
 
+/** GET /ofertas/comparacion (KAN-104). */
+export interface ComparacionOferta {
+  ofertaId: number;
+  productoId: number;
+  producto: string;
+  formato: string | null;
+  miPrecio: number;
+  posicion: number;
+  total: number;
+  precioMasBajo: number;
+  diferencia: number;
+}
+
 export interface CambiosOferta {
   precioUnitario?: number;
   cajasDisponibles?: number;
@@ -123,6 +136,11 @@ export class OfertasProveedorService {
   /** Solo borradores sin ventas. */
   eliminar(id: number): Promise<void> {
     return firstValueFrom(this.api.delete(`/ofertas/${id}`)).then(() => undefined);
+  }
+
+  /** Posicion de cada oferta publicada frente a las demas del mismo producto. */
+  comparacion(): Promise<ComparacionOferta[]> {
+    return firstValueFrom(this.api.get<{ items: ComparacionOferta[] }>("/ofertas/comparacion")).then((r) => r.items);
   }
 
   historial(id: number): Promise<CambioOferta[]> {

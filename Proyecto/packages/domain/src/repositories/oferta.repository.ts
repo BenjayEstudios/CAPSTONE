@@ -3,7 +3,8 @@ import type {
   OfertaEstado,
   OfertaProveedorDto,
   ProductoDisponibleDto,
-  CambioOfertaDto
+  CambioOfertaDto,
+  ComparacionOfertaDto
 } from "../dtos/oferta.dto.js";
 import type { ProductoEstado } from "../entities/producto.entity.js";
 
@@ -64,4 +65,6 @@ export interface OfertaRepository {
   eliminar(id: number): Promise<void>;
   /** Ultimos cambios de precio y stock de la oferta (oferta_precio_historial), del mas nuevo al mas viejo. */
   historial(ofertaId: number, limite: number): Promise<CambioOfertaDto[]>;
+  /** Posicion de cada oferta publicada del proveedor frente a las visibles del mismo producto (KAN-104). */
+  comparacion(proveedorId: number): Promise<ComparacionOfertaDto[]>;
 }

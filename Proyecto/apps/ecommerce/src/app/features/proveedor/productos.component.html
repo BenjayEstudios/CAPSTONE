@@ -108,4 +108,27 @@
       }
     }
   }
+
+  <section class="comparacion" aria-labelledby="titulo-comparacion">
+    <h3 id="titulo-comparacion">Cómo se compara tu precio</h3>
+    <p class="bajada">Posición de cada oferta publicada frente a los demás distribuidores del mismo producto, con lo que ve el comprador.</p>
+    @if (comparacion(); as lista) {
+      @if (lista.length) {
+        <ul class="ranking">
+          @for (c of lista; track c.ofertaId) {
+            <li [class.primero]="c.posicion === 1">
+              <span class="nombre">{{ c.producto }}<small>{{ c.formato }}</small></span>
+              <span class="puesto">{{ textoPosicion(c) }}</span>
+              <span class="diferencia" [class.arriba]="c.diferencia > 0">{{ textoDiferencia(c) }}</span>
+              @if (c.total > 1) { <span class="minimo">el más bajo publica {{ clp(c.precioMasBajo) }}</span> }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="suave">Cuando publiques ofertas verás aquí cómo se comparan.</p>
+      }
+    } @else {
+      <p class="suave">Cargando la comparación…</p>
+    }
+  </section>
 </section>

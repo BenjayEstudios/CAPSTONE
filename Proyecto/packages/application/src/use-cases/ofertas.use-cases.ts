@@ -207,8 +207,15 @@ export function actualizarOferta(deps: DepsOfertas) {
   };
 }
 
-// DELETE /ofertas/:id: solo borradores sin ventas. Una oferta que ya se
-// publico se pausa, para no perder su historial ni las ordenes que la citan.
+// GET /ofertas/comparacion (KAN-104): por cada oferta publicada mia, su
+// posicion entre las del mismo producto, el precio mas bajo y la diferencia.
+export function compararMisPrecios(deps: DepsOfertas) {
+  return async (usuarioId: number) => {
+    const ctx = await proveedorDeSesion(deps, usuarioId);
+    return { items: await deps.ofertaRepository.comparacion(ctx.organizacion.id) };
+  };
+}
+
 // GET /ofertas/:id/historial (KAN-103): los ultimos cambios de precio y stock de una oferta mia.
 export function historialMiOferta(deps: DepsOfertas) {
   return async (usuarioId: number, params: unknown) => {
@@ -218,6 +225,8 @@ export function historialMiOferta(deps: DepsOfertas) {
   };
 }
 
+// DELETE /ofertas/:id: solo borradores sin ventas. Una oferta que ya se
+// publico se pausa, para no perder su historial ni las ordenes que la citan.
 export function eliminarOferta(deps: DepsOfertas) {
   return async (usuarioId: number, params: unknown): Promise<void> => {
     const ctx = await proveedorDeSesion(deps, usuarioId);

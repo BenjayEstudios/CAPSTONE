@@ -89,6 +89,26 @@ export interface OfertaProveedorDto {
   };
 }
 
+/**
+ * Posicion de una oferta publicada del proveedor frente a las demas ofertas
+ * visibles del mismo producto (GET /ofertas/comparacion, KAN-104). Visible =
+ * oferta publicada de un proveedor activo, como en el catalogo publico.
+ */
+export interface ComparacionOfertaDto {
+  ofertaId: number;
+  productoId: number;
+  producto: string;
+  formato: string | null;
+  miPrecio: number;
+  /** 1 = el mas barato; los empates comparten posicion. */
+  posicion: number;
+  /** Ofertas visibles del producto, incluida la mia. */
+  total: number;
+  precioMasBajo: number;
+  /** miPrecio - precioMasBajo (0 si soy el mas barato). */
+  diferencia: number;
+}
+
 /** Una fila de oferta_precio_historial (GET /ofertas/:id/historial, KAN-103). */
 export interface CambioOfertaDto {
   id: number;

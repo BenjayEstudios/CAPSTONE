@@ -5,6 +5,7 @@ import { RouterLink } from "@angular/router";
 import {
   CambioOferta,
   CambiosOferta,
+  ComparacionOferta,
   EstadoOferta,
   OfertaProveedor,
   OfertasProveedorService,
@@ -25,6 +26,18 @@ export function estadoVisible(o: Pick<OfertaProveedor, "estado" | "cajasDisponib
   if (o.cajasDisponibles === 0) return { texto: "Sin stock", tono: "aviso" };
   if (o.cajasDisponibles !== null && o.cajasDisponibles <= STOCK_BAJO) return { texto: "Stock bajo", tono: "aviso" };
   return { texto: "Publicada", tono: "ok" };
+}
+
+/** "2.º de 5" */
+export function textoPosicion(c: Pick<ComparacionOferta, "posicion" | "total">): string {
+  return `${c.posicion}.º de ${c.total}`;
+}
+
+/** "eres el más bajo", "eres el único" o "+$200 sobre el más bajo". */
+export function textoDiferencia(c: Pick<ComparacionOferta, "total" | "diferencia" | "posicion">): string {
+  if (c.total === 1) return "eres el único que lo publica";
+  if (c.diferencia === 0) return c.posicion === 1 ? "eres el más bajo" : "empatas con el más bajo";
+  return `+${formatearClp(c.diferencia)} sobre el más bajo`;
 }
 
 /** "Precio $12.990 → $12.490 · Cajas 40 → 34" */
@@ -62,6 +75,8 @@ export class MisProductosComponent {
   private readonly servicio = inject(OfertasProveedorService);
 
   readonly ofertas = signal<OfertaProveedor[]>([]);
+  /** Como se compara cada oferta publicada (KAN-104). */
+  readonly comparacion = signal<ComparacionOferta[] | null>(null);
   readonly estado = signal<"cargando" | "ok" | "error">("cargando");
   readonly filtro = signal<EstadoOferta | null>(null);
   readonly q = signal("");
@@ -81,6 +96,8 @@ export class MisProductosComponent {
   readonly plazo = plazo;
   readonly estadoVisible = estadoVisible;
   readonly textoCambio = textoCambio;
+  readonly textoPosicion = textoPosicion;
+  readonly textoDiferencia = textoDiferencia;
   readonly fecha = (iso: string) => FECHA.format(new Date(iso));
 
   readonly filtros: Array<{ estado: EstadoOferta | null; etiqueta: string }> = [
@@ -113,8 +130,17 @@ export class MisProductosComponent {
     try {
       this.ofertas.set((await this.servicio.listar({ tamano: 100 })).items);
       this.estado.set("ok");
+      void this.compararPrecios();
     } catch {
       this.estado.set("error");
+    }
+  }
+
+  async compararPrecios(): Promise<void> {
+    try {
+      this.comparacion.set(await this.servicio.comparacion());
+    } catch {
+      this.comparacion.set([]);
     }
   }
 
@@ -211,6 +237,8 @@ export class MisProductosComponent {
       const r = await this.servicio.actualizar(o.id, cambios);
       this.ofertas.update((l) => l.map((x) => (x.id === o.id ? { ...x, ...r.oferta, producto: x.producto } : x)));
       this.aviso.set(r.revisionPrecio ? `${ok} El precio supera el tope: el equipo de Cotizapp lo revisará.` : ok);
+      // Un cambio de precio o de estado mueve la posicion frente a los demas.
+      if (cambios.precioUnitario !== undefined || cambios.estado !== undefined) void this.compararPrecios();
       if (this.editando() === o.id) {
         if (cambios.precioUnitario !== undefined || cambios.cajasDisponibles !== undefined) {
           this.historial.set(await this.servicio.historial(o.id).catch(() => this.historial()));

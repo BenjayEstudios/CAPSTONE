@@ -24,7 +24,6 @@ const alta = (cajas: number | null = 30): CambioPrecioStock => ({
 describeDb("DrizzleOfertaRepository", (db) => {
   const repo = () => new DrizzleOfertaRepository(db());
   const limpiar = async () => {
-    await db().execute(sql`ROLLBACK`);
     await db().execute(sql`DELETE h FROM oferta_precio_historial h JOIN oferta o ON o.id = h.oferta_id WHERE o.producto_id = ${TOMATE} AND o.proveedor_id = ${LOS_ANDES}`);
     await db().execute(sql`DELETE FROM oferta WHERE producto_id = ${TOMATE} AND proveedor_id = ${LOS_ANDES}`);
   };

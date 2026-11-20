@@ -44,6 +44,21 @@ h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; col
 .cuando { color: var(--color-text-soft); margin-right: 6px; font-variant-numeric: tabular-nums; }
 .historial em, .quien { margin-left: 4px; }
 .quien { color: var(--color-text-soft); }
+/* Como se compara tu precio (KAN-104) */
+.comparacion { margin-top: 28px; }
+.comparacion h3 { font-size: 19px; margin: 0; }
+.ranking { list-style: none; margin: 0; padding: 0; background: var(--color-card); border: 1px solid var(--color-divider); }
+.ranking li { display: grid; grid-template-columns: minmax(0, 2fr) 90px minmax(0, 1.3fr) minmax(0, 1.3fr); gap: 12px; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--color-divider); font-size: 14px; }
+.ranking li:last-child { border-bottom: 0; }
+.ranking .nombre { font-weight: 600; }
+.ranking .nombre small { display: block; font-weight: 400; font-size: 12px; color: var(--color-text-soft); }
+.puesto { font-family: var(--font-heading); font-weight: 700; font-variant-numeric: tabular-nums; }
+.primero .puesto { color: var(--color-accent-800); }
+.diferencia { color: var(--color-accent-800); }
+.diferencia.arriba { color: var(--color-accent-2-800); }
+.minimo { color: var(--color-text-soft); font-size: 13px; }
+@media (max-width: 640px) { .ranking li { grid-template-columns: minmax(0, 1fr) auto; } .ranking .diferencia, .ranking .minimo { grid-column: 1 / -1; } }
+
 .visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (max-width: 720px) {

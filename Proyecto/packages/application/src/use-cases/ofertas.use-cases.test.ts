@@ -12,6 +12,7 @@ import type {
 } from "@cotizapp/domain";
 import {
   actualizarOferta,
+  compararMisPrecios,
   crearOferta,
   eliminarOferta,
   historialMiOferta,
@@ -71,7 +72,11 @@ function montar(o: { tipoOrg?: "proveedor" | "cliente" | "interna"; estadoOrg?: 
         .filter((h) => h.ofertaId === id)
         .reverse()
         .slice(0, limite)
-        .map((h, i) => ({ id: i + 1, precioAnterior: h.precioAnterior, precioNuevo: h.precioNuevo, cajasAnteriores: h.cajasAnteriores, cajasNuevas: h.cajasNuevas, motivo: h.motivo, cambiadoPor: "Ventas", cambiadoEn: new Date() }))
+        .map((h, i) => ({ id: i + 1, precioAnterior: h.precioAnterior, precioNuevo: h.precioNuevo, cajasAnteriores: h.cajasAnteriores, cajasNuevas: h.cajasNuevas, motivo: h.motivo, cambiadoPor: "Ventas", cambiadoEn: new Date() })),
+    comparacion: async (pid) =>
+      [...ofertas.values()]
+        .filter((x) => x.proveedorId === pid && x.estado === "publicada")
+        .map((x) => ({ ofertaId: x.id, productoId: x.productoId, producto: x.producto.nombre, formato: null, miPrecio: x.precioUnitario, posicion: 1, total: 1, precioMasBajo: x.precioUnitario, diferencia: 0 }))
   };
   const moderacionRepository = {
     buscarAbierto: async (tipo: string, entidad: string, entidadId: number) =>
@@ -218,5 +223,19 @@ describe("eliminarOferta", () => {
     const conVentas = montar({ ventas: true });
     const b2 = (await crearOferta(conVentas.deps)(USUARIO, { ...base, estado: "borrador" })).oferta;
     await expect(eliminarOferta(conVentas.deps)(USUARIO, { id: b2.id })).rejects.toMatchObject({ code: "OFERTA_NO_ELIMINABLE" });
+  });
+});
+
+describe("compararMisPrecios (KAN-104)", () => {
+  it("compara las ofertas publicadas de la organizacion del usuario", async () => {
+    const m = montar();
+    const publicada = (await crearOferta(m.deps)(USUARIO, base)).oferta;
+    await crearOferta(m.deps)(USUARIO, { ...base, productoId: 11, estado: "borrador" });
+    const { items } = await compararMisPrecios(m.deps)(USUARIO);
+    expect(items).toEqual([expect.objectContaining({ ofertaId: publicada.id, miPrecio: 5290 })]);
+  });
+
+  it("solo un proveedor tiene comparacion", async () => {
+    await expect(compararMisPrecios(montar({ tipoOrg: "cliente" }).deps)(USUARIO)).rejects.toMatchObject({ statusCode: 403 });
   });
 });

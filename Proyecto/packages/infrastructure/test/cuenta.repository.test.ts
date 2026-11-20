@@ -7,9 +7,8 @@ import { DrizzleUsuarioAdminRepository } from "../src/repositories/usuario-admin
 import { consultar } from "../src/db/client.js";
 import { describeDb } from "./db.js";
 
-// DrizzleCuentaRepository abre su propia transaccion, y en MySQL un BEGIN
-// confirma la transaccion externa de describeDb: el ROLLBACK de db.ts no
-// alcanza. Por eso estos tests borran lo que crean (email/RUT exclusivos).
+// Ademas del rollback de describeDb, estos tests borran lo que crean
+// (email/RUT exclusivos) por si una corrida anterior quedo a medias.
 const EMAIL = "kan144-test@cotizapp.test";
 const RUT = "33333333-3";
 
@@ -24,7 +23,6 @@ const cuenta = (over: Partial<NuevaCuenta["usuario"]> = {}, rut = RUT): NuevaCue
 
 describeDb("DrizzleCuentaRepository", (db) => {
   afterEach(async () => {
-    await db().execute(sql`ROLLBACK`);
     await db().execute(sql`DELETE FROM usuario WHERE email LIKE 'kan144-%'`);
     await db().execute(sql`DELETE FROM organizacion WHERE rut IN (${RUT}, '44444444-4')`);
   });

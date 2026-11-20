@@ -113,6 +113,26 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(h[0]).toMatchObject({ precioNuevo: expect.any(Number), cambiadoPor: expect.any(String), cambiadoEn: expect.any(Date) });
   });
 
+  it("comparacion (KAN-104): posicion, total y mas bajo coinciden con contar las ofertas visibles", async () => {
+    const lista = await new DrizzleOfertaRepository(db()).comparacion(ORG.losAndes);
+    const [{ publicadas }] = await consultar<{ publicadas: number }>(
+      db(),
+      sql`SELECT COUNT(*) AS publicadas FROM oferta WHERE proveedor_id = ${ORG.losAndes} AND estado = 'publicada'`
+    );
+    expect(lista).toHaveLength(Number(publicadas));
+    for (const c of lista) {
+      const [e] = await consultar<{ total: number; baratas: number; minimo: number }>(
+        db(),
+        sql`SELECT COUNT(*) AS total, SUM(o.precio_unitario < ${c.miPrecio}) AS baratas, MIN(o.precio_unitario) AS minimo
+            FROM oferta o JOIN organizacion org ON org.id = o.proveedor_id
+            WHERE o.producto_id = ${c.productoId} AND o.estado = 'publicada' AND org.estado = 'activa'`
+      );
+      expect([c.total, c.posicion, c.precioMasBajo, c.diferencia]).toEqual([Number(e!.total), Number(e!.baratas) + 1, Number(e!.minimo), c.miPrecio - Number(e!.minimo)]);
+    }
+    // Hay al menos un producto donde Los Andes no es el mas barato.
+    expect(lista.some((c) => c.posicion > 1 && c.diferencia > 0)).toBe(true);
+  });
+
   it("productos disponibles traen el contenido del formato (KAN-102)", async () => {
     const { items } = await new DrizzleOfertaRepository(db()).productosDisponibles(ORG.losAndes, { pagina: 1, tamano: 50 });
     expect(items.length).toBeGreaterThan(0);
@@ -123,19 +143,20 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
     const repo = new DrizzleOrdenRepository(db());
     const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);
+    const token = "tok-prueba";
     await db().update(orden).set({ estado: "pendiente_pago", estadoPago: "autorizado", medioPago: null, pagadoEn: null }).where(eq(orden.id, id));
-    await repo.registrarInicioPago(id, "tok-prueba");
-    expect((await repo.buscarPorReferenciaPasarela("tok-prueba"))?.id).toBe(id);
+    await repo.registrarInicioPago(id, token);
+    expect((await repo.buscarPorReferenciaPasarela(token))?.id).toBe(id);
     expect(await repo.buscarPorReferenciaPasarela("no-existe")).toBeNull();
 
-    const auditoria = { usuarioId: null, entidad: "orden", entidadId: id, accion: "editar" as const, datosAntes: null, datosDespues: { operacion: "pago_aprobado" } };
-    expect(await repo.registrarResultadoPago(id, { aprobado: true, medioPago: "tarjeta", referencia: "tok-prueba" }, auditoria)).toBe(true);
-    const o = await repo.buscarPorReferenciaPasarela("tok-prueba");
+    const auditoria = { usuarioId: null, entidad: "orden", entidadId: id, accion: "editar" as const, datosAntes: null, datosDespues: { operacion: "prueba_pago", token } };
+    expect(await repo.registrarResultadoPago(id, { aprobado: true, medioPago: "tarjeta", referencia: token }, auditoria)).toBe(true);
+    const o = await repo.buscarPorReferenciaPasarela(token);
     expect(o).toMatchObject({ estado: "pagada", estadoPago: "pagado", medioPago: "tarjeta" });
     expect(o?.pagadoEn).toBeInstanceOf(Date);
     // Un retorno repetido no la vuelve a tocar.
-    expect(await repo.registrarResultadoPago(id, { aprobado: false, medioPago: "tarjeta", referencia: "tok-prueba" }, auditoria)).toBe(false);
-    expect((await repo.buscarPorReferenciaPasarela("tok-prueba"))?.estadoPago).toBe("pagado");
+    expect(await repo.registrarResultadoPago(id, { aprobado: false, medioPago: "tarjeta", referencia: token }, auditoria)).toBe(false);
+    expect((await repo.buscarPorReferenciaPasarela(token))?.estadoPago).toBe("pagado");
   });
 });
 

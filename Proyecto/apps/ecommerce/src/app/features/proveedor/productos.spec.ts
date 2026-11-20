@@ -4,7 +4,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { environment } from "../../../environments/environment";
 import { OfertaProveedor } from "../../core/proveedor/ofertas-proveedor.service";
-import { estadoVisible, MisProductosComponent, textoCambio } from "./productos.component";
+import { estadoVisible, MisProductosComponent, textoCambio, textoDiferencia, textoPosicion } from "./productos.component";
 
 const API = environment.apiUrl;
 const oferta = (id: number, nombre: string, extra: Partial<OfertaProveedor> = {}): OfertaProveedor => ({
@@ -20,6 +20,12 @@ const OFERTAS = [
   oferta(31, "Palta Hass", { estado: "borrador" })
 ];
 
+const COMPARACION = [
+  { ofertaId: 1, productoId: 1, producto: "Aceite vegetal maravilla", formato: "Bidón 5 L", miPrecio: 12490, posicion: 1, total: 2, precioMasBajo: 12490, diferencia: 0 },
+  { ofertaId: 5, productoId: 3, producto: "Arroz grado 1 grano largo", formato: "Saco 5 kg", miPrecio: 7190, posicion: 2, total: 2, precioMasBajo: 6990, diferencia: 200 },
+  { ofertaId: 34, productoId: 17, producto: "Guantes de nitrilo", formato: "Caja 100 un", miPrecio: 7590, posicion: 1, total: 1, precioMasBajo: 7590, diferencia: 0 }
+];
+
 describe("Mis productos publicados (KAN-103)", () => {
   let ctrl: HttpTestingController;
 
@@ -29,6 +35,9 @@ describe("Mis productos publicados (KAN-103)", () => {
     const f = TestBed.createComponent(MisProductosComponent);
     f.detectChanges();
     ctrl.expectOne(`${API}/ofertas?pagina=1&tamano=100`).flush({ items: OFERTAS, total: OFERTAS.length });
+    await f.whenStable();
+    ctrl.expectOne(`${API}/ofertas/comparacion`).flush({ items: COMPARACION });
+    await new Promise((r) => setTimeout(r));
     await f.whenStable();
     f.detectChanges();
     return f;
@@ -123,5 +132,25 @@ describe("Mis productos publicados (KAN-103)", () => {
     expect(estadoVisible({ estado: "publicada", cajasDisponibles: 21 }).texto).toBe("Publicada");
     expect(estadoVisible({ estado: "borrador", cajasDisponibles: 0 }).texto).toBe("Borrador");
     expect(textoCambio({ id: 1, precioAnterior: null, precioNuevo: 7000, cajasAnteriores: null, cajasNuevas: 30, motivo: null, cambiadoPor: null, cambiadoEn: "" })).toBe("Alta a $7.000, 30 cajas");
+  });
+
+  it("como se compara tu precio (KAN-104): posicion, diferencia con el mas bajo y el precio mas bajo", async () => {
+    const f = await montar();
+    const filasRanking = Array.from((f.nativeElement as HTMLElement).querySelectorAll(".ranking li")).map((li) => li.textContent!.replace(/\s+/g, " ").trim());
+    expect(filasRanking).toHaveSize(3);
+    expect(filasRanking[0]).toContain("1.º de 2");
+    expect(filasRanking[0]).toContain("eres el más bajo");
+    expect(filasRanking[1]).toContain("2.º de 2");
+    expect(filasRanking[1]).toContain("+$200 sobre el más bajo");
+    expect(filasRanking[1]).toContain("el más bajo publica $6.990");
+    expect(filasRanking[2]).toContain("eres el único que lo publica");
+    expect(filasRanking[2]).not.toContain("el más bajo publica");
+  });
+
+  it("textos de posicion", () => {
+    expect(textoPosicion({ posicion: 2, total: 5 })).toBe("2.º de 5");
+    expect(textoDiferencia({ posicion: 1, total: 3, diferencia: 0 })).toBe("eres el más bajo");
+    expect(textoDiferencia({ posicion: 2, total: 3, diferencia: 1500 })).toBe("+$1.500 sobre el más bajo");
+    expect(textoDiferencia({ posicion: 3, total: 3, diferencia: 0 })).toBe("empatas con el más bajo");
   });
 });

@@ -129,6 +129,7 @@ Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva
 
 - `GET /ofertas?estado&q&pagina&tamano`, `GET /ofertas/:id`, `GET /ofertas/productos-disponibles?q&categoriaId` (productos publicados aun sin oferta mia). La oferta trae `producto.contenido` y `producto.topeSobreReferenciaPct` (KAN-103).
 - `GET /ofertas/:id/historial`: ultimos 20 cambios de precio y stock (`oferta_precio_historial`) con quien los hizo (KAN-103).
+- `GET /ofertas/comparacion`: por cada oferta publicada mia, posicion entre las publicadas del mismo producto (proveedores activos), total, precio mas bajo y diferencia (KAN-104).
 - `POST /ofertas { productoId, precioUnitario, unidadesPorCaja?, cajasDisponibles?, minimoCompra?, plazoHoras?, modalidadEntrega, notasCliente?, estado? }` -> `201 { oferta, revisionPrecio }`. Una por producto x proveedor (`409 OFERTA_DUPLICADA`).
 - `PATCH /ofertas/:id` (mismos campos + `estado: publicada|pausada` + `motivo?`). `DELETE /ofertas/:id` solo borradores sin ventas.
 

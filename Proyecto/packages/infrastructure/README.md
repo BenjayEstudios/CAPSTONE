@@ -150,7 +150,10 @@ SELECT crudo usa `consultar<T>(db, sql)` de `src/db/client.ts`.
 
 `test/` tiene tests de integración de los repositorios contra el MySQL
 local **con el seed cargado** (`pnpm db:migrate && pnpm db:seed`). Cada test
-corre en una transacción que se revierte, así que no ensucian los datos.
+corre en una transacción de Drizzle que se revierte, así que no ensucian los
+datos; si el repositorio abre la suya, queda como `SAVEPOINT` adentro y
+también se revierte. No uses `START TRANSACTION`/`ROLLBACK` crudos en un test:
+en MySQL un `BEGIN` confirma la transacción en curso.
 Se niegan a correr contra un host que no sea local. En CI (`CI` definida)
 no hay MySQL: si la base no responde, la suite se salta; en local, falla
 diciendo por qué. `check-types` también revisa `test/` (`test/tsconfig.json`).

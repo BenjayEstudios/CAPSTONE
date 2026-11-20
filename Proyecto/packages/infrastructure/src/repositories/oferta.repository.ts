@@ -8,9 +8,10 @@ import type {
   OfertaRepository,
   ProductoDisponibleDto,
   ProductoParaOfertar,
-  CambioOfertaDto
+  CambioOfertaDto,
+  ComparacionOfertaDto
 } from "@cotizapp/domain";
-import type { DbClient } from "../db/client.js";
+import { consultar, type DbClient } from "../db/client.js";
 import { oferta } from "../db/schema/oferta.schema.js";
 import { ofertaPrecioHistorial } from "../db/schema/oferta-precio-historial.schema.js";
 import { ordenLinea } from "../db/schema/orden-linea.schema.js";
@@ -172,6 +173,35 @@ export class DrizzleOfertaRepository implements OfertaRepository {
       .where(eq(ofertaPrecioHistorial.ofertaId, ofertaId))
       .orderBy(desc(ofertaPrecioHistorial.cambiadoEn), desc(ofertaPrecioHistorial.id))
       .limit(limite);
+  }
+
+  // Una consulta: cada oferta publicada mia con el conteo, el minimo y las
+  // mas baratas entre las visibles del mismo producto (publicadas de
+  // proveedores activos, la misma regla que el catalogo).
+  async comparacion(proveedorId: number): Promise<ComparacionOfertaDto[]> {
+    const filas = await consultar<{ ofertaId: number; productoId: number; producto: string; formato: string | null; miPrecio: number; total: number; masBaratas: number; precioMasBajo: number }>(
+      this.db,
+      sql`
+        SELECT mia.id AS ofertaId, p.id AS productoId, p.nombre AS producto, p.formato, mia.precio_unitario AS miPrecio,
+               COUNT(o.id) AS total,
+               SUM(o.precio_unitario < mia.precio_unitario) AS masBaratas,
+               MIN(o.precio_unitario) AS precioMasBajo
+        FROM oferta mia
+        JOIN producto p ON p.id = mia.producto_id
+        JOIN oferta o ON o.producto_id = mia.producto_id AND o.estado = 'publicada'
+        JOIN organizacion org ON org.id = o.proveedor_id AND org.estado = 'activa'
+        WHERE mia.proveedor_id = ${proveedorId} AND mia.estado = 'publicada'
+        GROUP BY mia.id, p.id, p.nombre, p.formato, mia.precio_unitario
+        ORDER BY p.nombre`
+    );
+    return filas.map((f) => {
+      const miPrecio = Number(f.miPrecio);
+      const precioMasBajo = Number(f.precioMasBajo);
+      return {
+        ofertaId: f.ofertaId, productoId: f.productoId, producto: f.producto, formato: f.formato, miPrecio,
+        posicion: Number(f.masBaratas) + 1, total: Number(f.total), precioMasBajo, diferencia: miPrecio - precioMasBajo
+      };
+    });
   }
 
   async eliminar(id: number): Promise<void> {

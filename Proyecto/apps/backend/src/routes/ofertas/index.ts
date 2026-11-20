@@ -6,7 +6,7 @@ import {
   listarMisOfertas,
   listarProductosDisponibles,
   obtenerMiOferta,
-  type DepsOfertas, historialMiOferta } from "@cotizapp/application";
+  type DepsOfertas, historialMiOferta, compararMisPrecios } from "@cotizapp/application";
 import { DrizzleModeracionRepository, DrizzleOfertaRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
@@ -56,6 +56,14 @@ const createRoute: RouteOptions = {
   handler: async (request, reply) => reply.status(201).send(await crearOferta(deps(request))(uid(request), request.body))
 };
 
+// Posicion de cada oferta publicada mia frente a las demas del producto (KAN-104).
+const comparacionRoute: RouteOptions = {
+  method: "GET",
+  url: "/ofertas/comparacion",
+  preHandler: guardias,
+  handler: async (request) => compararMisPrecios(deps(request))(uid(request))
+};
+
 // Ultimos cambios de precio y stock (oferta_precio_historial) de una oferta mia (KAN-103).
 const historialRoute: RouteOptions = {
   method: "GET",
@@ -82,4 +90,4 @@ const deleteRoute: RouteOptions = {
   }
 };
 
-export const ofertaRoutes: RouteOptions[] = [listRoute, disponiblesRoute, getRoute, createRoute, updateRoute, deleteRoute, historialRoute];
+export const ofertaRoutes: RouteOptions[] = [listRoute, disponiblesRoute, getRoute, createRoute, updateRoute, deleteRoute, historialRoute, comparacionRoute];
