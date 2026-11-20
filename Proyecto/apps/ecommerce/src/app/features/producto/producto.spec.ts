@@ -8,7 +8,8 @@ import { FichaProducto, OfertaFicha } from "../../core/models/catalogo.models";
 import { CarroState } from "../../core/state/carro.state";
 import { SessionState } from "../../core/state/session.state";
 import { usuarioDePrueba } from "../../core/testing/usuario-de-prueba";
-import { cajasMinimas, ProductoComponent } from "./producto.component";
+import { cajasMinimas } from "../../shared/compra";
+import { ProductoComponent } from "./producto.component";
 
 const API = environment.apiUrl;
 const oferta = (id: number, precio: number, nombre: string, over: Partial<OfertaFicha> = {}): OfertaFicha => ({

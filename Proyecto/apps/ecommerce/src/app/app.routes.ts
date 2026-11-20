@@ -35,7 +35,8 @@ export const routes: Routes = [
   {
     path: "carro",
     canActivate: [sesionGuard],
-    ...pendiente({ titulo: "Carro", ticket: "KAN-94", texto: "Aquí va el carro multiproveedor." })
+    loadComponent: () => import("./features/carro/carro.component").then((m) => m.CarroComponent),
+    title: "Carro · Cotizapp"
   },
   {
     path: "checkout",

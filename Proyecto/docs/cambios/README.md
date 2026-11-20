@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Ecommerce: carro multiproveedor](2026-11-20-ecommerce-carro-multiproveedor.md) | KAN-85 | KAN-94 |
 | 2026-11-20 | [Ecommerce: ficha de producto y comparador](2026-11-20-ecommerce-ficha-y-comparador.md) | KAN-85 | KAN-92, 93 |
 | 2026-11-20 | [Ecommerce: catálogo con filtros y búsqueda](2026-11-20-ecommerce-catalogo-y-busqueda.md) | KAN-85 | KAN-90, 91 |
 | 2026-11-20 | [Ecommerce: inicio](2026-11-20-ecommerce-inicio.md) | KAN-85 | KAN-89 |

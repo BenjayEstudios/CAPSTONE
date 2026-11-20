@@ -7,13 +7,8 @@ import { CatalogoService } from "../../core/catalogo/catalogo.service";
 import { FichaProducto, OfertaFicha, OrigenVisita } from "../../core/models/catalogo.models";
 import { CarroState } from "../../core/state/carro.state";
 import { SessionState } from "../../core/state/session.state";
+import { cajas as textoCajas, cajasMinimas } from "../../shared/compra";
 import { formatearClp, plazo } from "../../shared/formato";
-
-/** Cajas que hay que pedir para cumplir el minimo de compra (en unidades); al menos 1. */
-export function cajasMinimas(o: Pick<OfertaFicha, "minimoCompra" | "unidadesPorCaja">): number {
-  if (!o.minimoCompra) return 1;
-  return Math.max(1, Math.ceil(o.minimoCompra / (o.unidadesPorCaja ?? 1)));
-}
 
 export interface Aviso {
   tipo: "ok" | "error";
@@ -118,7 +113,7 @@ export class ProductoComponent {
       await this.carro.agregar(o.id, cajas, o.precioUnitario);
       this.aviso.set({
         tipo: "ok",
-        texto: `Agregaste ${cajas} ${cajas === 1 ? "caja" : "cajas"} de ${ficha.nombre} de ${o.proveedor.nombre}.`,
+        texto: `Agregaste ${textoCajas(cajas)} de ${ficha.nombre} de ${o.proveedor.nombre}.`,
         conEnlaceCarro: true
       });
     } catch (err) {

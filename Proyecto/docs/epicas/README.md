@@ -14,7 +14,7 @@ cambia el resumen, esta tabla. La entrada de qué se hizo va en
 
 | Épica | Contenido | Responsable | Estado |
 |---|---|---|---|
-| [KAN-85](EPICA-KAN-85-ecommerce-web.md) | Ecommerce web: sitio de compra del cliente y panel web del proveedor | Benjamín González | 🔄 En curso: cuenta, inicio, catálogo, búsqueda y ficha con comparador listos (KAN-97, 89 a 93) |
+| [KAN-85](EPICA-KAN-85-ecommerce-web.md) | Ecommerce web: sitio de compra del cliente y panel web del proveedor | Benjamín González | 🔄 En curso: cuenta, inicio, catálogo, búsqueda, ficha con comparador y carro listos (KAN-97, 89 a 94) |
 | [KAN-86](EPICA-KAN-86-admin-site.md) | Página administradora | Sebastián Ramírez | ⏳ Pendiente (scaffold con lint y tests) |
 | [KAN-87](EPICA-KAN-87-app-mobile.md) | App mobile para comprador y distribuidor | Samuel Alarcón | 🔄 Los 14 tickets listos contra fakes y APK de demo; falta la integración real (bloqueada por `POST /auth/login`) |
 | [KAN-88](EPICA-KAN-88-plataforma.md) | Plataforma: BD, API, infraestructura, pagos, QA | Equipo | 🔄 BD casi completa e infra servible; API sin empezar |

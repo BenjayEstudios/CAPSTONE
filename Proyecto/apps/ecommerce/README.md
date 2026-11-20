@@ -52,7 +52,11 @@ pnpm test
 
 `features/producto/`: `/producto/:id` con el precio más bajo hoy, la diferencia entre el más barato y el más caro, y el comparador en **tabla** (todos los distribuidores por precio unitario) o **lado a lado** (`?vista=lado`, los 3 más baratos). Comprar agrega la oferta al carro con `CarroState.agregar` (`PUT /carro` con lo que ya había más la oferta; las cajas cumplen el mínimo de compra). Registra `vista_producto` (con `?origen=catalogo|busqueda`, si no `directo`) y `click_oferta`.
 
-Rutas provisorias hasta su historia: `/carro` (KAN-94), `/checkout` (KAN-95). La vista de status está en `/estado`.
+## Carro (KAN-94)
+
+`features/carro/`: `/carro` agrupado por distribuidor con plazo, subtotal y despacho; cantidades en cajas con +/– (respeta el mínimo y el stock), quitar, aviso de precios cambiados ("Aceptar los precios nuevos"), ofertas no disponibles, y resumen con despachos, ahorro vs. el más caro y total. `GET /carro` no trae distribuidor, plazo, mínimo ni despacho: salen de la ficha de cada producto. Los montos los calcula `carro.calculo.ts` (`armarCarro`, pura) con las mismas reglas que el checkout del backend. Los cambios pasan por `CarroState` (`PUT /carro` con el carro completo). `shared/compra.ts` tiene `cajasMinimas`, que usan la ficha y el carro.
+
+Ruta provisoria hasta su historia: `/checkout` (KAN-95). La vista de status está en `/estado`.
 
 ## Tests
 

@@ -1,0 +1,121 @@
+<div class="contenedor carro-pagina">
+  <h1>Carro</h1>
+  <p class="intro">Puedes mezclar distribuidores en un mismo carro, con un solo pago. Cada distribuidor despacha su parte y verás un plazo por grupo.</p>
+
+  @if (!session.esComprador()) {
+    <div class="vacio">
+      <h2>El carro es para cuentas de comprador</h2>
+      <p>Con una cuenta de distribuidor no se compra en Cotizapp. Ingresa con una cuenta de comprador para armar un carro.</p>
+      <a routerLink="/catalogo" class="btn btn-secondary">Ver el catálogo</a>
+    </div>
+  } @else if (!carro.cargado()) {
+    <p class="cargando">Cargando tu carro…</p>
+  } @else if (!resumen().productos) {
+    <div class="vacio">
+      <h2>Todavía no agregas nada</h2>
+      <p>Abre un producto, revisa qué distribuidores lo venden y compra al que te convenga.</p>
+      <a routerLink="/catalogo" class="btn btn-primary">Ir al catálogo</a>
+    </div>
+  } @else {
+    @if (error(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+
+    @if (resumen().cambiosDePrecio.length) {
+      <div class="aviso" role="status">
+        <p><strong>Algunos precios cambiaron desde que los agregaste.</strong></p>
+        <ul>
+          @for (l of resumen().cambiosDePrecio; track l.ofertaId) {
+            <li>{{ l.nombre }}: {{ clp(l.precioVisto) }} → <strong>{{ clp(l.precioActual!) }}</strong></li>
+          }
+        </ul>
+        <button type="button" class="btn btn-secondary" [disabled]="guardando() !== null" (click)="aceptarPrecios()">Aceptar los precios nuevos</button>
+      </div>
+    }
+
+    @if (resumen().noDisponibles.length) {
+      <div class="aviso" role="status">
+        <p><strong>Ya no están disponibles:</strong> {{ nombresNoDisponibles() }}. El distribuidor pausó o retiró la oferta.</p>
+        <button type="button" class="btn btn-secondary" [disabled]="guardando() !== null" (click)="quitarNoDisponibles()">Quitarlos del carro</button>
+      </div>
+    }
+
+    <div class="columnas">
+      <div class="grupos">
+        @for (g of resumen().grupos; track g.proveedorId) {
+          <section class="grupo" [attr.aria-label]="g.nombre">
+            <header class="cabecera-grupo">
+              <h2>{{ g.nombre }}</h2>
+              <span class="tag">Entrega {{ plazo(g.plazoHoras) }}</span>
+              <span class="subtotal-grupo">Subtotal {{ clp(g.subtotal) }}</span>
+            </header>
+            @for (l of g.lineas; track l.ofertaId) {
+              <div class="linea" [class.atenuada]="guardando() === l.ofertaId">
+                @if (l.imagenUrl) { <img class="miniatura" [src]="l.imagenUrl" [alt]="l.nombre" /> }
+                @else { <span class="miniatura sin-imagen" aria-hidden="true"></span> }
+                <div class="producto">
+                  @if (l.productoId) { <a class="nombre" [routerLink]="['/producto', l.productoId]">{{ l.nombre }}</a> }
+                  @else { <span class="nombre">{{ l.nombre }}</span> }
+                  <span class="detalle">{{ detalle(l) }}</span>
+                  @if (l.precioCambio) { <span class="alerta">Antes {{ clp(l.precioVisto) }}</span> }
+                  @if (l.sinStock) {
+                    <span class="alerta">Solo quedan {{ cajas(l.cajasDisponibles!) }}.
+                      <button type="button" class="btn-link" [disabled]="guardando() !== null" (click)="ajustar(l)">Ajustar a {{ l.cajasDisponibles }}</button></span>
+                  } @else if (l.bajoMinimo) {
+                    <span class="alerta">Bajo el mínimo de compra.
+                      <button type="button" class="btn-link" [disabled]="guardando() !== null" (click)="ajustar(l)">Subir a {{ l.minCajas }}</button></span>
+                  }
+                </div>
+                <span class="precio">{{ clp(l.precioActual ?? l.precioVisto) }} c/u</span>
+                <div class="cantidad" role="group" [attr.aria-label]="'Cantidad de ' + l.nombre">
+                  <button type="button" class="btn btn-secondary btn-icono" [disabled]="guardando() !== null || !puedeBajar(l)"
+                    [attr.aria-label]="'Quitar una caja de ' + l.nombre" (click)="menos(l)">–</button>
+                  <span class="numero"><strong>{{ l.cantidad }}</strong><small>{{ l.cantidad === 1 ? "caja" : "cajas" }}</small></span>
+                  <button type="button" class="btn btn-secondary btn-icono" [disabled]="guardando() !== null || !puedeSubir(l)"
+                    [attr.aria-label]="'Agregar una caja de ' + l.nombre" (click)="mas(l)">+</button>
+                </div>
+                <span class="subtotal">{{ clp(l.subtotal) }}</span>
+                <button type="button" class="btn-ghost quitar" [disabled]="guardando() !== null" [attr.aria-label]="'Quitar ' + l.nombre + ' del carro'" (click)="quitar(l)">×</button>
+              </div>
+            }
+            <p class="nota">{{ g.nota }}</p>
+          </section>
+        }
+
+        @if (resumen().noDisponibles.length) {
+          <section class="grupo no-disponibles" aria-label="No disponibles">
+            <header class="cabecera-grupo"><h2>No disponibles</h2></header>
+            @for (l of resumen().noDisponibles; track l.ofertaId) {
+              <div class="linea atenuada">
+                <span class="miniatura sin-imagen" aria-hidden="true"></span>
+                <div class="producto">
+                  <span class="nombre">{{ l.nombre }}</span>
+                  <span class="detalle">{{ cajas(l.cantidad) }} · la oferta ya no está publicada</span>
+                </div>
+                <button type="button" class="btn-ghost quitar" [disabled]="guardando() !== null" [attr.aria-label]="'Quitar ' + l.nombre + ' del carro'" (click)="quitar(l)">×</button>
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      <aside class="resumen" aria-label="Resumen">
+        <h2>Resumen</h2>
+        <dl>
+          <div><dt>Productos ({{ resumen().productos - resumen().noDisponibles.length }})</dt><dd>{{ clp(resumen().subtotal) }}</dd></div>
+          <div><dt>Despachos ({{ resumen().grupos.length }})</dt><dd>{{ resumen().despachos ? clp(resumen().despachos) : "Sin costo" }}</dd></div>
+          @if (resumen().ahorro > 0) {
+            <div class="ahorro"><dt>Ahorro vs. comprar al más caro</dt><dd>{{ clp(resumen().ahorro) }}</dd></div>
+          }
+        </dl>
+        <div class="total"><span>Total</span><strong>{{ clp(resumen().total) }}</strong></div>
+        @if (resumen().bloqueos.length) {
+          <ul class="bloqueos">
+            @for (b of resumen().bloqueos; track b) { <li>{{ b }}</li> }
+          </ul>
+        }
+        <button type="button" class="btn btn-primary btn-block continuar" [disabled]="resumen().bloqueos.length > 0" (click)="irAlPago()">Continuar al pago</button>
+        <a routerLink="/catalogo" class="btn btn-secondary btn-block">Seguir comprando</a>
+        <p class="letra-chica">Boleta o factura al finalizar. El despacho se calcula para tu comuna y se confirma al elegir la entrega en el pago. Los precios pueden cambiar si un distribuidor actualiza su lista antes del pago.</p>
+      </aside>
+    </div>
+  }
+</div>
