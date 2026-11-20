@@ -2,7 +2,8 @@ import type {
   ModalidadEntrega,
   OfertaEstado,
   OfertaProveedorDto,
-  ProductoDisponibleDto
+  ProductoDisponibleDto,
+  CambioOfertaDto
 } from "../dtos/oferta.dto.js";
 import type { ProductoEstado } from "../entities/producto.entity.js";
 
@@ -61,4 +62,6 @@ export interface OfertaRepository {
   actualizar(id: number, cambios: Partial<DatosOferta>, historial: CambioPrecioStock | null): Promise<OfertaProveedorDto>;
   /** Borra la oferta y su historial (solo para borradores sin ventas). */
   eliminar(id: number): Promise<void>;
+  /** Ultimos cambios de precio y stock de la oferta (oferta_precio_historial), del mas nuevo al mas viejo. */
+  historial(ofertaId: number, limite: number): Promise<CambioOfertaDto[]>;
 }

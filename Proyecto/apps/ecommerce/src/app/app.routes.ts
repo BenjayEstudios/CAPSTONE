@@ -71,6 +71,11 @@ export const routes: Routes = [
         title: "Panel · Cotizapp para distribuidores"
       },
       {
+        path: "productos",
+        loadComponent: () => import("./features/proveedor/productos.component").then((m) => m.MisProductosComponent),
+        title: "Mis productos · Cotizapp para distribuidores"
+      },
+      {
         path: "asignar",
         loadComponent: () => import("./features/proveedor/asignar.component").then((m) => m.AsignarProductoComponent),
         title: "Asignarme un producto · Cotizapp para distribuidores"

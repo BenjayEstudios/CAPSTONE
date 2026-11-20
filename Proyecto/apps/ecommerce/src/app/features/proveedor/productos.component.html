@@ -1,0 +1,111 @@
+<section class="productos" aria-labelledby="titulo-productos">
+  <h2 id="titulo-productos">Mis productos publicados <small>{{ conteo().publicada }} publicadas · {{ conteo().pausada }} pausadas · {{ conteo().borrador }} borradores</small></h2>
+  <p class="bajada">Cada línea es un producto del catálogo de Cotizapp con tu precio, tu stock en cajas y tus condiciones de despacho. El comprador ve estos datos al comparar distribuidores.</p>
+
+  <div class="herramientas">
+    <div class="filtros" role="group" aria-label="Filtrar por estado">
+      @for (f of filtros; track f.etiqueta) {
+        <button type="button" class="chip" [class.activo]="filtro() === f.estado" [attr.aria-pressed]="filtro() === f.estado" (click)="filtro.set(f.estado)">{{ f.etiqueta }}</button>
+      }
+    </div>
+    <label class="buscar"><span class="visualmente-oculto">Buscar en mis productos</span>
+      <input class="input" type="search" placeholder="Buscar por nombre o SKU" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+    </label>
+  </div>
+
+  @if (aviso(); as a) { <p class="mensaje ok" role="status">{{ a }}</p> }
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus productos…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tus productos. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (!ofertas().length) {
+        <div class="vacio"><p>Todavía no ofreces productos.</p><a routerLink="/proveedor/asignar" class="btn btn-primary">Asignarme un producto</a></div>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th><th scope="col">Formato</th><th scope="col" class="num">Tu precio</th><th scope="col" class="num">Unitario</th>
+                <th scope="col" class="num">Cajas</th><th scope="col" class="num">Unidades</th><th scope="col">Despacho</th><th scope="col" class="num">Mínimo</th>
+                <th scope="col">Estado</th><th scope="col"><span class="visualmente-oculto">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of visibles(); track o.id) {
+                <tr [class.abierta]="editando() === o.id">
+                  <th scope="row"><span class="nombre">{{ o.producto.nombre }}</span><small>SKU {{ o.producto.sku }}</small></th>
+                  <td class="suave">{{ o.producto.formato }}</td>
+                  <td class="num fuerte">{{ clp(o.precioUnitario) }}</td>
+                  <td class="num suave">{{ unitario(o) }}</td>
+                  <td class="num">{{ o.cajasDisponibles ?? "—" }}</td>
+                  <td class="num suave">{{ unidades(o) }}</td>
+                  <td>{{ despacho(o) }}</td>
+                  <td class="num suave">{{ o.minimoCompra ? o.minimoCompra + " un." : "—" }}</td>
+                  <td>@let e = estadoVisible(o); <span class="tag" [attr.data-tono]="e.tono">{{ e.texto }}</span></td>
+                  <td class="acciones">
+                    <button type="button" class="btn-link" [attr.aria-expanded]="editando() === o.id" (click)="editar(o)">{{ editando() === o.id ? "Cerrar" : "Editar" }}</button>
+                    @if (o.estado === "publicada") {
+                      <button type="button" class="btn-link" [disabled]="guardando() !== null" (click)="pausar(o)">Pausar</button>
+                    } @else if (o.estado === "pausada") {
+                      <button type="button" class="btn-link" [disabled]="guardando() !== null" (click)="reactivar(o)">Reactivar</button>
+                    } @else {
+                      <button type="button" class="btn-link" [disabled]="guardando() !== null" (click)="publicar(o)">Publicar</button>
+                    }
+                  </td>
+                </tr>
+                @if (error()?.ofertaId === o.id && editando() !== o.id) {
+                  <tr class="fila-error"><td colspan="10"><p class="mensaje error" role="alert">{{ error()!.texto }}</p></td></tr>
+                }
+                @if (editando() === o.id) {
+                  <tr class="editor">
+                    <td colspan="10">
+                      <form class="edicion" (ngSubmit)="guardar(o)" novalidate>
+                        <div class="campos">
+                          <label class="field"><span>Precio por unidad (CLP)</span>
+                            <input class="input" type="number" name="precio" min="1" step="1" [ngModel]="precio()" (ngModelChange)="precio.set($event)" [class.invalido]="sobreTope(o)" />
+                          </label>
+                          <label class="field"><span>Cajas disponibles</span>
+                            <input class="input" type="number" name="cajas" min="0" step="1" [ngModel]="cajas()" (ngModelChange)="cajas.set($event)" />
+                          </label>
+                          <label class="field motivo"><span>Motivo del cambio <small>opcional, queda en el historial</small></span>
+                            <input class="input" name="motivo" maxlength="120" placeholder="Ej.: llegó un camión; ajuste de lista" [ngModel]="motivo()" (ngModelChange)="motivo.set($event)" />
+                          </label>
+                        </div>
+                        @if (tope(o) !== null) {
+                          <p class="tope" [class.sobre]="sobreTope(o)">Tope de publicación: {{ clp(tope(o)!) }}.@if (sobreTope(o)) { Con este precio no puede seguir publicada: bájalo o pausa la oferta. }</p>
+                        }
+                        @if (error()?.ofertaId === o.id) { <p class="mensaje error" role="alert">{{ error()!.texto }}</p> }
+                        <div class="botones">
+                          <button type="submit" class="btn btn-primary" [disabled]="guardando() !== null || sobreTope(o)">{{ guardando() === o.id ? "Guardando…" : "Guardar cambios" }}</button>
+                          <button type="button" class="btn btn-secondary" (click)="cerrar()">Cancelar</button>
+                          @if (o.estado === "borrador") {
+                            <button type="button" class="btn-link peligro" [disabled]="guardando() !== null" (click)="eliminar(o)">Borrar borrador</button>
+                          }
+                        </div>
+                      </form>
+                      <div class="historial">
+                        <h3>Historial de precio y stock</h3>
+                        @if (historial(); as h) {
+                          @if (h.length) {
+                            <ol>
+                              @for (c of h; track c.id) {
+                                <li><span class="cuando">{{ fecha(c.cambiadoEn) }}</span> {{ textoCambio(c) }}@if (c.motivo) { <em>· {{ c.motivo }}</em> }@if (c.cambiadoPor) { <span class="quien">· {{ c.cambiadoPor }}</span> }</li>
+                              }
+                            </ol>
+                          } @else { <p class="suave">Sin cambios registrados.</p> }
+                        } @else { <p class="suave">Cargando…</p> }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              } @empty {
+                <tr><td colspan="10" class="suave">Ningún producto coincide con el filtro.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  }
+</section>

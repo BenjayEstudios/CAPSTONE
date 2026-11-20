@@ -86,6 +86,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/proveedor/asignar.component.ts`: `/proveedor/asignar` (botón en el marco del panel). Busca en `GET /ofertas/productos-disponibles`, calcula stock total, valor del stock, precio por kg/L y posición frente a los precios de la ficha, muestra el tope de publicación y las condiciones de despacho del proveedor (`GET /proveedor/cobertura`), y crea la oferta (`POST /ofertas`) publicada o como borrador. Sobre el tope solo deja guardar borrador. Servicio: `core/proveedor/ofertas-proveedor.service.ts`.
 
+## Mis productos (KAN-103)
+
+`features/proveedor/productos.component.ts`: pestaña "Mis productos" (`/proveedor/productos`). Tabla de las ofertas (`GET /ofertas`) con filtros; "Editar" abre la fila con precio, cajas y motivo (`PATCH /ofertas/:id`) y el historial de precio y stock (`GET /ofertas/:id/historial`); pausar, reactivar, publicar un borrador o borrarlo. Una publicada no se guarda sobre el tope.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

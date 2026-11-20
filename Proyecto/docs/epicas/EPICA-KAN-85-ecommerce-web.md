@@ -48,6 +48,9 @@ documentos, liquidaciones).
 - Proveedor: "Asignarme un producto" (`/proveedor/asignar`) con cálculos,
   posición frente a otros y tope de publicación (KAN-102)
   ([entrada](../cambios/2026-11-20-asignarme-un-producto.md)).
+- Proveedor: "Mis productos" (`/proveedor/productos`), tabla de ofertas con
+  edición de precio y stock, pausar/reactivar e historial (KAN-103)
+  ([entrada](../cambios/2026-11-20-mis-productos-publicados.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -76,7 +79,7 @@ documentos, liquidaciones).
 | KAN-100 | Registro y alta de proveedor | ✅ [entrada](../cambios/2026-11-20-registro-de-proveedor.md) (aprobar aún no cierra el caso de moderación) |
 | KAN-101 | Dashboard de ventas | ✅ [entrada](../cambios/2026-11-20-panel-proveedor-dashboard.md) |
 | KAN-102 | Asignarme un producto (publicar oferta) | ✅ [entrada](../cambios/2026-11-20-asignarme-un-producto.md) (el tope bloquea publicar) |
-| KAN-103 | Mis productos publicados | ⏳ |
+| KAN-103 | Mis productos publicados | ✅ [entrada](../cambios/2026-11-20-mis-productos-publicados.md) |
 | KAN-104 | Cómo se compara tu precio | ⏳ |
 | KAN-105 | Órdenes de venta | ⏳ |
 | KAN-106 | Tus clientes | ⏳ |

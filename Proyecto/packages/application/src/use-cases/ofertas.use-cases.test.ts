@@ -14,6 +14,7 @@ import {
   actualizarOferta,
   crearOferta,
   eliminarOferta,
+  historialMiOferta,
   listarMisOfertas,
   obtenerMiOferta,
   precioMaximoSinRevision,
@@ -64,7 +65,13 @@ function montar(o: { tipoOrg?: "proveedor" | "cliente" | "interna"; estadoOrg?: 
       if (h) historial.push({ ofertaId: id, ...h });
       return ofertas.get(id)!;
     },
-    eliminar: async (id) => void ofertas.delete(id)
+    eliminar: async (id) => void ofertas.delete(id),
+    historial: async (id, limite) =>
+      historial
+        .filter((h) => h.ofertaId === id)
+        .reverse()
+        .slice(0, limite)
+        .map((h, i) => ({ id: i + 1, precioAnterior: h.precioAnterior, precioNuevo: h.precioNuevo, cajasAnteriores: h.cajasAnteriores, cajasNuevas: h.cajasNuevas, motivo: h.motivo, cambiadoPor: "Ventas", cambiadoEn: new Date() }))
   };
   const moderacionRepository = {
     buscarAbierto: async (tipo: string, entidad: string, entidadId: number) =>
@@ -180,6 +187,21 @@ describe("actualizarOferta", () => {
     await expect(obtenerMiOferta(m.deps)(USUARIO, { id: oferta.id })).rejects.toMatchObject({ statusCode: 404, code: "OFERTA_NO_ENCONTRADA" });
     await expect(actualizarOferta(m.deps)(USUARIO, { id: oferta.id }, { precioUnitario: 1 })).rejects.toMatchObject({ statusCode: 404 });
     expect((await listarMisOfertas(m.deps)(USUARIO, {})).total).toBe(0);
+    await expect(historialMiOferta(m.deps)(USUARIO, { id: oferta.id })).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it("historial (KAN-103): el alta y cada cambio de precio o stock, del mas nuevo al mas viejo", async () => {
+    const m = montar();
+    const { oferta } = await crearOferta(m.deps)(USUARIO, { ...base, precioUnitario: 7000, cajasDisponibles: 30 });
+    await actualizarOferta(m.deps)(USUARIO, { id: oferta.id }, { precioUnitario: 6800, motivo: "Ajuste de lista" });
+    await actualizarOferta(m.deps)(USUARIO, { id: oferta.id }, { notasCliente: "Caja cerrada" });
+    await actualizarOferta(m.deps)(USUARIO, { id: oferta.id }, { cajasDisponibles: 45 });
+    const { items } = await historialMiOferta(m.deps)(USUARIO, { id: oferta.id });
+    expect(items.map((h) => [h.precioAnterior, h.precioNuevo, h.cajasAnteriores, h.cajasNuevas, h.motivo])).toEqual([
+      [6800, 6800, 30, 45, null],
+      [7000, 6800, 30, 30, "Ajuste de lista"],
+      [null, 7000, null, 30, "Creacion de la oferta"]
+    ]);
   });
 });
 

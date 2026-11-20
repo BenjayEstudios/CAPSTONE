@@ -81,8 +81,24 @@ export interface OfertaProveedorDto {
     nombre: string;
     formato: string | null;
     unidad: ProductoUnidad;
+    /** Contenido del formato (5 para un bidon de 5 L): precio por kg/L. Aditivo (KAN-103). */
+    contenido: number | null;
     precioReferencia: number | null;
+    /** Tope sobre la referencia, en %: para avisar antes de publicar. Aditivo (KAN-103). */
+    topeSobreReferenciaPct: number | null;
   };
+}
+
+/** Una fila de oferta_precio_historial (GET /ofertas/:id/historial, KAN-103). */
+export interface CambioOfertaDto {
+  id: number;
+  precioAnterior: number | null;
+  precioNuevo: number | null;
+  cajasAnteriores: number | null;
+  cajasNuevas: number | null;
+  motivo: string | null;
+  cambiadoPor: string | null;
+  cambiadoEn: Date;
 }
 
 /** Si el precio supera el tope sobre la referencia: el caso de moderacion abierto. */

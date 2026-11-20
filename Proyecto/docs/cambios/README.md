@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Panel del proveedor: mis productos publicados](2026-11-20-mis-productos-publicados.md) | KAN-85 | KAN-103 |
 | 2026-11-20 | [Panel del proveedor: asignarme un producto](2026-11-20-asignarme-un-producto.md) | KAN-85 | KAN-102 |
 | 2026-11-20 | [Panel del proveedor: dashboard de ventas](2026-11-20-panel-proveedor-dashboard.md) | KAN-85 | KAN-101 (y API de KAN-133, 137) |
 | 2026-11-20 | [Registro y alta de proveedor](2026-11-20-registro-de-proveedor.md) | KAN-85 | KAN-100 |

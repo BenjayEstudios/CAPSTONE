@@ -209,6 +209,15 @@ export function actualizarOferta(deps: DepsOfertas) {
 
 // DELETE /ofertas/:id: solo borradores sin ventas. Una oferta que ya se
 // publico se pausa, para no perder su historial ni las ordenes que la citan.
+// GET /ofertas/:id/historial (KAN-103): los ultimos cambios de precio y stock de una oferta mia.
+export function historialMiOferta(deps: DepsOfertas) {
+  return async (usuarioId: number, params: unknown) => {
+    const ctx = await proveedorDeSesion(deps, usuarioId);
+    const oferta = await miOferta(deps, ctx, validar(idParamSchema, params).id);
+    return { items: await deps.ofertaRepository.historial(oferta.id, 20) };
+  };
+}
+
 export function eliminarOferta(deps: DepsOfertas) {
   return async (usuarioId: number, params: unknown): Promise<void> => {
     const ctx = await proveedorDeSesion(deps, usuarioId);

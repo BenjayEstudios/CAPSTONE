@@ -102,6 +102,17 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(c.ofreceDespacho).toBe(true);
   });
 
+  it("mis ofertas traen contenido y tope del producto, y su historial con quien cambio (KAN-103)", async () => {
+    const repo = new DrizzleOfertaRepository(db());
+    const { items } = await repo.listarDeProveedor(ORG.losAndes, { pagina: 1, tamano: 100 });
+    const aceite = items.find((o) => o.productoId === 1)!;
+    expect(aceite.producto).toMatchObject({ contenido: 5, topeSobreReferenciaPct: expect.any(Number) });
+    const [{ total }] = await consultar<{ total: number }>(db(), sql`SELECT COUNT(*) AS total FROM oferta_precio_historial WHERE oferta_id = ${aceite.id}`);
+    const h = await repo.historial(aceite.id, 20);
+    expect(h).toHaveLength(Math.min(20, Number(total)));
+    expect(h[0]).toMatchObject({ precioNuevo: expect.any(Number), cambiadoPor: expect.any(String), cambiadoEn: expect.any(Date) });
+  });
+
   it("productos disponibles traen el contenido del formato (KAN-102)", async () => {
     const { items } = await new DrizzleOfertaRepository(db()).productosDisponibles(ORG.losAndes, { pagina: 1, tamano: 50 });
     expect(items.length).toBeGreaterThan(0);

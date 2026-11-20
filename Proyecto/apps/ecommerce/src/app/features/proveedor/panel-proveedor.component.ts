@@ -3,7 +3,10 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { SessionState } from "../../core/state/session.state";
 
 /** Pestañas del panel. Cada historia del proveedor (KAN-102 a 111) agrega la suya. */
-export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?: boolean }> = [{ ruta: "/proveedor", etiqueta: "Panel", exacta: true }];
+export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?: boolean }> = [
+  { ruta: "/proveedor", etiqueta: "Panel", exacta: true },
+  { ruta: "/proveedor/productos", etiqueta: "Mis productos" }
+];
 
 // Marco del panel del proveedor (KAN-101): franja con la empresa y las
 // pestañas, como en el mockup del proveedor. Las pantallas van en el outlet.
