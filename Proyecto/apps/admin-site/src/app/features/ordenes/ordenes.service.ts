@@ -1,7 +1,9 @@
 import { HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { ApiClient } from "../../core/api/api.client";
-import { FiltrosOrdenes, OrdenDetalle, OrdenesRespuesta } from "../../core/models/ordenes.models";
+import {
+  DocumentosRespuesta, EmisionDocumentosRespuesta, FiltrosOrdenes, OrdenDetalle, OrdenesRespuesta
+} from "../../core/models/ordenes.models";
 
 export function construirParams(f: FiltrosOrdenes): HttpParams {
   let p = new HttpParams();
@@ -18,5 +20,16 @@ export class OrdenesService {
   }
   obtener(id: number) {
     return this.api.get<OrdenDetalle>(`/ordenes/${id}`);
+  }
+  documentos(ordenId: number) {
+    return this.api.get<DocumentosRespuesta>(`/documentos-tributarios?ordenId=${ordenId}&tamano=100`);
+  }
+  /** Idempotente: emite boleta/factura y una guia por envio; solo para ordenes pagadas. */
+  emitirDocumentos(ordenId: number) {
+    return this.api.post<EmisionDocumentosRespuesta>(`/ordenes/${ordenId}/documentos`, {});
+  }
+  /** Descarga el PDF (requiere el token Bearer, por eso no es un enlace directo). */
+  pdf(pdfUrl: string) {
+    return this.api.getBlob(pdfUrl);
   }
 }

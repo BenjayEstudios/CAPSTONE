@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import { EstadoCaso, TipoCaso } from "../../core/models/moderacion.models";
 
 export const ETIQUETA_TIPO: Record<TipoCaso, string> = {
@@ -46,7 +47,8 @@ export function asignadoParaApi(valor: string, miId: string | null | undefined):
   return undefined;
 }
 
-export function mensajeErrorModeracion(e: any): string {
+export function mensajeErrorModeracion(err: unknown): string {
+  const e = err as HttpErrorResponse;
   const status = e?.status;
   const code = e?.error?.error?.code as string | undefined;
   const msg = e?.error?.error?.message as string | undefined;

@@ -5,29 +5,15 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1790043965404,
-      "tag": "0000_blue_spirit",
+      "when": 1792849833888,
+      "tag": "0000_schema_inicial",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "5",
-      "when": 1792804839760,
-      "tag": "0001_sticky_captain_stacy",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1792815108763,
-      "tag": "0002_messy_hannibal_king",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1792819364151,
-      "tag": "0003_unique_mojo",
+      "when": 1795051158062,
+      "tag": "0001_indices_busqueda_usuarios",
       "breakpoints": true
     }
   ]

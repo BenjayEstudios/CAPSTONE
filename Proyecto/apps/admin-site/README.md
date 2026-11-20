@@ -44,5 +44,8 @@ frontends en paralelo con `pnpm dev` desde la raíz.
 
 ## Estado actual
 
-Scaffold mínimo, sin features implementadas. Ver `docs/ARCHITECTURE.md` en
-la raíz del repo para el detalle de módulos previstos.
+Scaffold mínimo, sin features implementadas. Ver
+[docs/arquitectura/ARQUITECTURA.md](../../docs/arquitectura/ARQUITECTURA.md#admin-site-appsadmin-site)
+para los módulos previstos y
+[docs/epicas/EPICA-KAN-86-admin-site.md](../../docs/epicas/EPICA-KAN-86-admin-site.md)
+para el estado de cada ticket.

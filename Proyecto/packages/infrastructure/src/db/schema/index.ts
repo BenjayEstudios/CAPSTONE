@@ -23,3 +23,4 @@ export * from "./orden-envio.schema.js";
 export * from "./orden-linea.schema.js";
 export * from "./documento-tributario.schema.js";
 export * from "./evento-analitico.schema.js";
+export * from "./calificacion.schema.js";

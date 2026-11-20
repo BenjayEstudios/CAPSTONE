@@ -1,0 +1,51 @@
+<div class="selector">
+  <input
+    [id]="idCampo()"
+    class="input"
+    type="text"
+    role="combobox"
+    autocomplete="off"
+    aria-autocomplete="list"
+    aria-haspopup="listbox"
+    [attr.aria-expanded]="abierto()"
+    [attr.aria-controls]="idCampo() + '-lista'"
+    [attr.aria-activedescendant]="abierto() && activa() >= 0 ? idOpcion(activa()) : null"
+    [placeholder]="placeholder()"
+    [disabled]="deshabilitado()"
+    [value]="texto()"
+    (input)="onInput($any($event.target).value)"
+    (focus)="abrir()"
+    (click)="abrir()"
+    (keydown)="onTecla($event)"
+    (blur)="onBlur()"
+  />
+  @if (texto() && !deshabilitado()) {
+    <!-- mousedown evita que el blur del input cierre la lista antes del click -->
+    <button type="button" class="limpiar" aria-label="Quitar organización" (mousedown)="$event.preventDefault()" (click)="limpiar()">×</button>
+  }
+  @if (abierto()) {
+    <ul class="lista" role="listbox" [id]="idCampo() + '-lista'" [attr.aria-busy]="cargando()">
+      @for (o of opciones(); track o.id; let i = $index) {
+        <li
+          role="option"
+          [id]="idOpcion(i)"
+          [class.activa]="i === activa()"
+          [attr.aria-selected]="i === activa()"
+          (mousedown)="$event.preventDefault()"
+          (click)="elegir(o)"
+          (mousemove)="activa.set(i)"
+        >
+          <span class="nombre">{{ o.razonSocial }}</span>
+          <small>{{ o.rut }} · {{ o.tipo }}@if (o.estado !== "activa") { · {{ o.estado }} }</small>
+        </li>
+      } @empty {
+        <li class="aviso" role="presentation">
+          @if (cargando()) { Buscando… } @else if (errorBusqueda()) { No se pudo buscar. Intenta de nuevo. } @else { Sin coincidencias. }
+        </li>
+      }
+      @if (opciones().length >= 20) {
+        <li class="aviso" role="presentation">Mostrando las primeras 20. Escribe más para acotar.</li>
+      }
+    </ul>
+  }
+</div>

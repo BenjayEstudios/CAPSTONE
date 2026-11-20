@@ -4,7 +4,9 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { EnvioOrden } from "../../core/models/ordenes.models";
 import { OrdenesService, construirParams } from "./ordenes.service";
-import { formatoClp, formatoPct, formatoPlazo, medioPagoEtiqueta, mensajeErrorOrdenes, totalesEnvios } from "./ordenes.util";
+import {
+  formatoClp, formatoPct, formatoPlazo, medioPagoEtiqueta, mensajeErrorDocumentos, mensajeErrorOrdenes, totalesEnvios
+} from "./ordenes.util";
 
 const base = environment.apiUrl;
 const envio = (extra: Partial<EnvioOrden>): EnvioOrden => ({
@@ -34,6 +36,27 @@ describe("OrdenesService", () => {
 
   it("omite estado vacio", () => {
     expect(construirParams({ estado: "" }).has("estado")).toBeFalse();
+  });
+
+  it("lista los documentos de la orden", () => {
+    svc.documentos(7).subscribe();
+    const req = http.expectOne(`${base}/documentos-tributarios?ordenId=7&tamano=100`);
+    expect(req.request.method).toBe("GET");
+    req.flush({ items: [], pagina: 1, tamano: 100, total: 0, totalPaginas: 1 });
+  });
+
+  it("emite los documentos de la orden con POST", () => {
+    svc.emitirDocumentos(7).subscribe();
+    const req = http.expectOne(`${base}/ordenes/7/documentos`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ ordenId: 7, ordenCodigo: "CM-7", nuevos: 2, documentos: [] });
+  });
+
+  it("descarga el pdf como blob", () => {
+    svc.pdf("/documentos-tributarios/3/pdf").subscribe();
+    const req = http.expectOne(`${base}/documentos-tributarios/3/pdf`);
+    expect(req.request.responseType).toBe("blob");
+    req.flush(new Blob(["%PDF"]));
   });
 
   it("obtiene el detalle", () => {
@@ -66,5 +89,11 @@ describe("ordenes.util", () => {
   it("mapea errores", () => {
     expect(mensajeErrorOrdenes({ status: 403 })).toContain("permiso");
     expect(mensajeErrorOrdenes({ status: 0 })).toContain("conexión");
+  });
+  it("mapea errores de documentos", () => {
+    expect(mensajeErrorDocumentos({ status: 409, error: { error: { code: "ORDEN_NO_PAGADA" } } })).toContain("no está pagada");
+    expect(mensajeErrorDocumentos({ status: 403 })).toContain("nivel total");
+    expect(mensajeErrorDocumentos({ status: 404 })).toContain("no existe");
+    expect(mensajeErrorDocumentos({ status: 0 })).toContain("conexión");
   });
 });

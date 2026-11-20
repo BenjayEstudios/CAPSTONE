@@ -28,8 +28,8 @@
     }
 
     <section class="kpis" aria-label="Indicadores del mes">
-      @for (t of tarjetas(); track t.id) {
-        <article class="kpi">
+      @for (t of tarjetas(); track t.id; let i = $index) {
+        <article class="kpi" [class.kpi-destacado]="i === 0">
           <h3>{{ t.titulo }}</h3>
           <p class="valor">{{ valorKpi(t) }}</p>
           <p class="var" [class]="'var ' + claseVar(t.kpi.variacionPct)">
@@ -45,6 +45,7 @@
       @let g = grafico();
       <svg class="grafico" [attr.viewBox]="'0 0 ' + g.ancho + ' ' + g.alto" role="img" aria-labelledby="g-titulo g-desc">
         <title id="g-titulo">Monto transado por semana, {{ etiquetaMes(r.mes) }}</title>
+        <defs><linearGradient id="grad-barra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1fa79d" /><stop offset="1" stop-color="#99e6da" /></linearGradient></defs>
         <desc id="g-desc">Gráfico de barras con {{ r.semanas.length }} semanas. La tabla siguiente detalla los valores.</desc>
         @for (t of g.ticks; track t.y) {
           <line [attr.x1]="78" [attr.x2]="g.ancho - 12" [attr.y1]="t.y" [attr.y2]="t.y" class="grilla" />
@@ -70,6 +71,84 @@
           }
         </tbody>
       </table>
+    </section>
+
+    <section class="panel" aria-labelledby="t-trafico" [class.cargando]="cargandoTrafico()">
+      <h3 id="t-trafico">Tráfico y demanda</h3>
+      @if (errorTrafico()) {
+        <p class="mensaje" role="alert">
+          {{ errorTrafico() }} <button type="button" class="btn btn-secondary" (click)="cargarTrafico()">Reintentar</button>
+        </p>
+      } @else if (!trafico()) {
+        <p class="estado" role="status">Cargando tráfico…</p>
+      } @else {
+        @let t = trafico()!;
+        <p class="nota">Del {{ dia(t.desde) }} al {{ dia(t.hasta) }} · eventos anónimos de la tienda (sin datos personales).</p>
+        @if (sinTrafico()) {
+          <p class="vacio" role="status">No hay eventos de tráfico en este período.</p>
+        }
+        <section class="kpis kpis-chicos" aria-label="Indicadores de tráfico">
+          <article class="kpi"><h3>Vistas de producto</h3><p class="valor">{{ t.totales.vistas.toLocaleString("es-CL") }}</p></article>
+          <article class="kpi"><h3>Clicks en ofertas</h3><p class="valor">{{ t.totales.clicks.toLocaleString("es-CL") }}</p></article>
+          <article class="kpi"><h3>Búsquedas</h3><p class="valor">{{ t.totales.busquedas.toLocaleString("es-CL") }}</p></article>
+          <article class="kpi"><h3>Conversión vista → click</h3><p class="valor">{{ conversion(t.conversionVistaClick) }}</p></article>
+        </section>
+
+        @let gt = graficoTrafico();
+        <svg class="grafico" [attr.viewBox]="'0 0 ' + gt.ancho + ' ' + gt.alto" role="img" aria-labelledby="gt-titulo">
+          <defs><linearGradient id="grad-barra-t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1fa79d" /><stop offset="1" stop-color="#99e6da" /></linearGradient></defs>
+          <title id="gt-titulo">Vistas de producto por día</title>
+          @for (k of gt.ticks; track k.y) {
+            <line [attr.x1]="44" [attr.x2]="gt.ancho - 12" [attr.y1]="k.y" [attr.y2]="k.y" class="grilla" />
+            <text [attr.x]="38" [attr.y]="k.y + 4" text-anchor="end" class="eje">{{ k.valor.toLocaleString("es-CL") }}</text>
+          }
+          <line [attr.x1]="44" [attr.x2]="gt.ancho - 12" [attr.y1]="gt.base" [attr.y2]="gt.base" class="eje-x" />
+          @for (b of gt.barras; track b.fecha) {
+            <rect [attr.x]="b.x" [attr.y]="b.y" [attr.width]="b.ancho" [attr.height]="b.alto" class="barra barra-t">
+              <title>{{ dia(b.fecha) }}: {{ b.valor }} vistas</title>
+            </rect>
+          }
+          @if (gt.barras.length > 0) {
+            <text [attr.x]="44" [attr.y]="gt.base + 16" class="eje">{{ dia(t.desde) }}</text>
+            <text [attr.x]="gt.ancho - 12" [attr.y]="gt.base + 16" text-anchor="end" class="eje">{{ dia(t.hasta) }}</text>
+          }
+        </svg>
+
+        <div class="dos-col">
+          <div>
+            <h4>Productos más vistos</h4>
+            @if (t.productosMasVistos.length === 0) {
+              <p class="estado">Sin vistas en el período.</p>
+            } @else {
+              <ol class="ranking">
+                @for (p of t.productosMasVistos; track p.productoId) {
+                  <li>
+                    <a [routerLink]="['/catalogo-maestro', p.productoId]">{{ p.nombre }}</a>
+                    <span class="cifra">{{ p.vistas.toLocaleString("es-CL") }}</span>
+                    <span class="barra-rel" [style.width.%]="(p.vistas / maxVistasProducto()) * 100"></span>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+          <div>
+            <h4>Términos más buscados</h4>
+            @if (t.terminosMasBuscados.length === 0) {
+              <p class="estado">Sin búsquedas en el período.</p>
+            } @else {
+              <ol class="ranking">
+                @for (x of t.terminosMasBuscados; track x.termino) {
+                  <li>
+                    <span class="termino">{{ x.termino }}</span>
+                    <span class="cifra">{{ x.busquedas.toLocaleString("es-CL") }}</span>
+                    <span class="barra-rel" [style.width.%]="(x.busquedas / maxBusquedasTermino()) * 100"></span>
+                  </li>
+                }
+              </ol>
+            }
+          </div>
+        </div>
+      }
     </section>
 
     <div class="dos-col">

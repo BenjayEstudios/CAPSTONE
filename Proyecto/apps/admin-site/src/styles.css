@@ -1,46 +1,86 @@
-/* Estilos globales: tokens y componentes base tomados de la maqueta
-   (Mockups/CompraMejor Administrador.html). Los estilos por feature van
-   junto a su componente. */
+/* Estilos globales del admin-site. Tema "Laguna": azul marino profundo, teal,
+   menta muy claro y acentos crema, con ondas y circulos decorativos. Los
+   nombres de las variables se mantienen para que los estilos por feature
+   (junto a cada componente) hereden la paleta sin tocarse. */
 :root {
-  --color-bg: #f3f2f2;
-  --color-surface: #eae9e9;
-  --color-text: #201e1d;
-  --color-accent: #0088b0;
-  --color-accent-2: #d6006c;
-  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
-  --color-accent-100: #e9f8ff;
-  --color-accent-600: #1186ac;
-  --color-accent-700: #006786;
-  --color-accent-800: #004961;
-  --color-accent-2-100: #fff1f4;
-  --color-accent-2-700: #aa0b56;
-  --color-accent-2-800: #790e3d;
-  --font-heading: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --radius-md: 2px;
+  /* Paleta de marca */
+  --tinta: #0b3d5c;
+  --tinta-clara: #134e72;
+  --color-bg: #eef6f5;
+  --color-surface: #d9eae7;
+  --color-card: #fafdfd;
+  --color-text: #0b3d5c;
+  --color-text-soft: #4d6f80;
+  --color-divider: rgba(11, 61, 92, 0.14);
+  --color-accent: #1fa79d;
+  --color-primary: #138a80;
+  --color-primary-600: #0f736b;
+  --color-primary-100: rgba(19, 138, 128, 0.12);
+  --color-menta: #99e6da;
+  --color-crema: #f3e2c7;
+  --color-yellow: #f3e2c7;
+
+  /* Teal: informativo / graficos */
+  --color-accent-100: #e1f3f1;
+  --color-accent-600: #1b8f87;
+  --color-accent-700: #0f6f68;
+  --color-accent-800: #0b4f4b;
+
+  /* Salmon suave: atencion, errores, acciones pendientes */
+  --color-accent-2: #c8483a;
+  --color-accent-2-100: #f9ddd7;
+  --color-accent-2-700: #a63a2a;
+  --color-accent-2-800: #7f2a1d;
+
+  /* Verde: estados positivos (activo, pagado, resuelto) */
+  --color-ok: #1f9d6b;
+  --color-ok-100: #def3ea;
+  --color-ok-800: #14664a;
+
+  --font-heading: Manrope, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-body: var(--font-heading);
+
+  --radius-sm: 10px;
+  --radius-md: 14px; /* controles */
+  --radius-lg: 20px; /* tarjetas */
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(11, 61, 92, 0.05), 0 6px 18px rgba(11, 61, 92, 0.06);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
-h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 10px; }
-a { color: var(--color-accent); }
+body {
+  margin: 0; background: var(--color-bg); color: var(--color-text);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5; accent-color: var(--color-primary);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 10px; }
+h1 { font-size: 28px; }
+h2 { font-size: 26px; }
+h3 { font-size: 18px; }
+h4 { font-size: 16px; font-weight: 700; }
+a { color: var(--color-primary); }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
+/* Botones: píldora, como FilledButton / OutlinedButton de mobile */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none;
   font-family: var(--font-heading); font-weight: 600; font-size: 14px; line-height: 1.2; color: var(--color-text);
-  background: transparent; border: 1px solid transparent; padding: 10px 18px; border-radius: var(--radius-md);
+  background: transparent; border: 1px solid transparent; padding: 10px 20px; min-height: 40px; border-radius: var(--radius-pill);
+  transition: background-color .15s, border-color .15s, box-shadow .15s;
 }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: var(--color-accent); color: var(--color-bg); }
-.btn-primary:hover:not(:disabled) { background: var(--color-accent-600); }
-.btn-secondary { border-color: var(--color-divider); }
-.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.btn-block { width: 100%; margin-top: 10px; }
+.btn-primary { background: var(--color-primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--color-primary-600); }
+.btn-secondary { background: var(--color-card); border-color: var(--color-divider); }
+.btn-secondary:hover:not(:disabled) { background: var(--color-primary-100); border-color: color-mix(in srgb, var(--color-primary) 40%, transparent); }
+.btn-block { width: 100%; margin-top: 10px; min-height: 48px; }
 
-.field > label { display: block; font-size: 12px; margin-bottom: 5px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+/* Formularios */
+.field > label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-soft); }
 .input {
-  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit; font-size: 14px; color: var(--color-text);
-  caret-color: var(--color-accent); background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+  width: 100%; min-height: 42px; padding: 8px 14px; font: inherit; font-size: 14px; color: var(--color-text);
+  caret-color: var(--color-primary); background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
-.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
-.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 35%, transparent); }
+.input:focus-visible { border-color: var(--color-primary); outline: 2px solid color-mix(in srgb, var(--color-primary) 25%, transparent); outline-offset: 0; }
+textarea.input { padding-top: 10px; }

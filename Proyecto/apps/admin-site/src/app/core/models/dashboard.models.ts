@@ -22,6 +22,24 @@ export interface DetalleSalud {
   producto: string;
   problema: ProblemaCatalogo;
 }
+// GET /estadisticas/plataforma (KAN-154): eventos anonimos, sin sesion ni usuario.
+export interface DiaTrafico {
+  fecha: string;
+  vistas: number;
+  clicks: number;
+  busquedas: number;
+}
+export interface EstadisticasPlataforma {
+  desde: string;
+  hasta: string;
+  totales: { vistas: number; clicks: number; busquedas: number };
+  /** clicks / vistas, entre 0 y 1 (0 si no hay vistas). */
+  conversionVistaClick: number;
+  porDia: DiaTrafico[];
+  productosMasVistos: Array<{ productoId: number; nombre: string; vistas: number }>;
+  terminosMasBuscados: Array<{ termino: string; busquedas: number }>;
+}
+
 export interface ResumenDashboard {
   mes: string;
   mesAnterior: string;

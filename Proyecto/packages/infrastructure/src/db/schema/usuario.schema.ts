@@ -22,5 +22,7 @@ export const usuario = mysqlTable(
     ultimoAcceso: datetime("ultimo_acceso"),
     estado: mysqlEnum("estado", ["activo", "invitado", "suspendido"]).notNull().default("invitado")
   },
-  (t) => [index("usuario_estado_idx").on(t.estado)]
+  // usuario_nombre_idx: orden por nombre y busqueda por prefijo. El FULLTEXT usuario_busqueda_ft
+  // (nombre, email) lo usa la busqueda del listado; Drizzle no lo modela, vive en la migracion 0001.
+  (t) => [index("usuario_estado_idx").on(t.estado), index("usuario_nombre_idx").on(t.nombre)]
 );

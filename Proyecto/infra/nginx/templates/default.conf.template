@@ -1,0 +1,36 @@
+# Plantilla de Nginx de producción. Al arrancar el contenedor, la imagen
+# oficial la pasa por envsubst y la deja en /etc/nginx/conf.d/default.conf
+# (contexto http). Variables que se reemplazan: ${APP_DOMAIN}.
+# Las variables propias de Nginx ($uri, $host...) no se tocan porque no
+# existen como variables de entorno del contenedor.
+
+server_tokens off;
+
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml;
+
+# DNS interno de Docker. Con "resolve" Nginx vuelve a resolver "backend"
+# cuando el contenedor se recrea y cambia de IP (sin esto, queda apuntando a
+# la IP vieja y responde 502 hasta un reload). Disponible desde Nginx 1.27.3.
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+upstream backend_api {
+    zone backend_api 64k;
+    server backend:8000 resolve;
+    keepalive 16;
+}
+
+# apps/ecommerce: tienda para clientes y proveedores.
+server {
+    listen 80 default_server;
+    server_name ${APP_DOMAIN};
+
+    root /usr/share/nginx/html/ecommerce;
+
+    include /etc/nginx/snippets/api-proxy.conf;
+    include /etc/nginx/snippets/spa.conf;
+}
