@@ -82,6 +82,10 @@ Para probar el pago en local usar `http://localhost:4200`: el ambiente de integr
 
 `features/proveedor/`: `/proveedor` (guard `proveedorGuard`) con el marco del panel (`panel-proveedor.component.ts`: franja de la empresa y pestañas en `PESTANAS_PROVEEDOR`; cada historia del proveedor agrega su ruta hija y su pestaña) y el dashboard (`dashboard.component.ts`): KPIs del mes vs. el mismo tramo del anterior, venta semanal de 12 semanas (barras con tooltip y tabla accesible), más vendidos y "Requiere atención". Datos de `core/proveedor/panel-proveedor.service.ts`; fechas y cifras en `dashboard.calculo.ts`. Un proveedor que ingresa sin destino llega al panel y ve "Mi panel" en la cabecera.
 
+## Asignarme un producto (KAN-102)
+
+`features/proveedor/asignar.component.ts`: `/proveedor/asignar` (botón en el marco del panel). Busca en `GET /ofertas/productos-disponibles`, calcula stock total, valor del stock, precio por kg/L y posición frente a los precios de la ficha, muestra el tope de publicación y las condiciones de despacho del proveedor (`GET /proveedor/cobertura`), y crea la oferta (`POST /ofertas`) publicada o como borrador. Sobre el tope solo deja guardar borrador. Servicio: `core/proveedor/ofertas-proveedor.service.ts`.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

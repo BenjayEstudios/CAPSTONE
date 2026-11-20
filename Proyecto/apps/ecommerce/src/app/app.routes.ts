@@ -69,6 +69,11 @@ export const routes: Routes = [
         pathMatch: "full",
         loadComponent: () => import("./features/proveedor/dashboard.component").then((m) => m.DashboardProveedorComponent),
         title: "Panel · Cotizapp para distribuidores"
+      },
+      {
+        path: "asignar",
+        loadComponent: () => import("./features/proveedor/asignar.component").then((m) => m.AsignarProductoComponent),
+        title: "Asignarme un producto · Cotizapp para distribuidores"
       }
     ]
   },

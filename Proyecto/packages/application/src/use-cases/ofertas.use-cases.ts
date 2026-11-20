@@ -59,9 +59,23 @@ export function precioMaximoSinRevision(p: Pick<ProductoParaOfertar, "precioRefe
 
 const clp = (n: number) => "$" + n.toLocaleString("es-CL");
 
-// Si el precio supera el tope, abre (o reutiliza) un caso precio_fuera_rango
-// para que un administrador lo revise. La oferta se guarda igual: el caso no
-// bloquea la publicacion (ver docs/decisiones/DECISIONES-CERRADAS.md).
+// Tope de publicacion (KAN-102): una oferta PUBLICADA no puede quedar sobre
+// referencia x (1 + tope%): 409 PRECIO_SOBRE_TOPE con el maximo. Un borrador o
+// una pausada si puede (no se muestran al comprador); en ese caso se abre (o
+// reutiliza) un caso precio_fuera_rango para que un administrador lo revise.
+// Ver docs/decisiones/DECISIONES-CERRADAS.md.
+function exigirBajoTope(producto: ProductoParaOfertar, precio: number) {
+  const maximo = precioMaximoSinRevision(producto);
+  if (maximo === null || precio <= maximo) return;
+  throw new ErrorAplicacion(
+    409,
+    "PRECIO_SOBRE_TOPE",
+    `El precio supera el tope de publicacion de la ficha (maximo ${clp(maximo)})`,
+    { precioMaximo: maximo, precioReferencia: producto.precioReferencia, topePct: producto.topeSobreReferenciaPct }
+  );
+}
+
+// Si el precio supera el tope (borrador o pausada), abre o reutiliza el caso de moderacion.
 async function revisarTope(
   deps: DepsOfertas,
   producto: ProductoParaOfertar,
@@ -125,6 +139,7 @@ export function crearOferta(deps: DepsOfertas) {
     if (!producto || producto.estado !== "publicado") {
       throw new ErrorAplicacion(400, "PRODUCTO_NO_DISPONIBLE", "El producto no existe o no esta publicado en el catalogo");
     }
+    if (d.estado === "publicada") exigirBajoTope(producto, d.precioUnitario);
     if (await deps.ofertaRepository.buscarPorProductoYProveedor(d.productoId, ctx.organizacion.id)) {
       throw new ErrorAplicacion(409, "OFERTA_DUPLICADA", "Ya tienes una oferta para este producto: editala en vez de crear otra");
     }
@@ -166,6 +181,10 @@ export function actualizarOferta(deps: DepsOfertas) {
     if (c.estado === "publicada") exigirOrganizacionActiva(ctx);
 
     const cambiaPrecio = c.precioUnitario !== undefined && c.precioUnitario !== antes.precioUnitario;
+    const estadoFinal = c.estado ?? antes.estado;
+    // Publicar o cambiar el precio de una publicada: no puede quedar sobre el tope.
+    const producto = cambiaPrecio || c.estado === "publicada" ? await deps.ofertaRepository.productoParaOfertar(antes.productoId) : null;
+    if (producto && estadoFinal === "publicada") exigirBajoTope(producto, c.precioUnitario ?? antes.precioUnitario);
     const cambiaCajas = c.cajasDisponibles !== undefined && c.cajasDisponibles !== antes.cajasDisponibles;
     const historial =
       cambiaPrecio || cambiaCajas
@@ -183,10 +202,7 @@ export function actualizarOferta(deps: DepsOfertas) {
     const oferta = await deps.ofertaRepository.actualizar(antes.id, cambios, historial);
 
     let revisionPrecio: RevisionPrecioDto | null = null;
-    if (cambiaPrecio) {
-      const producto = await deps.ofertaRepository.productoParaOfertar(antes.productoId);
-      if (producto) revisionPrecio = await revisarTope(deps, producto, oferta.id, oferta.precioUnitario, usuarioId);
-    }
+    if (cambiaPrecio && producto) revisionPrecio = await revisarTope(deps, producto, oferta.id, oferta.precioUnitario, usuarioId);
     return { oferta, revisionPrecio };
   };
 }

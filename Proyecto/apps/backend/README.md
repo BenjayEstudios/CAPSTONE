@@ -131,7 +131,7 @@ Plantillas en `packages/application/src/use-cases/correos.ts` (invitacion, nueva
 - `POST /ofertas { productoId, precioUnitario, unidadesPorCaja?, cajasDisponibles?, minimoCompra?, plazoHoras?, modalidadEntrega, notasCliente?, estado? }` -> `201 { oferta, revisionPrecio }`. Una por producto x proveedor (`409 OFERTA_DUPLICADA`).
 - `PATCH /ofertas/:id` (mismos campos + `estado: publicada|pausada` + `motivo?`). `DELETE /ofertas/:id` solo borradores sin ventas.
 
-Precio sobre referencia + tope % -> caso `precio_fuera_rango` (uno por oferta abierto) y `revisionPrecio != null`; no bloquea. Cada alta y cada cambio de precio o cajas inserta en `oferta_precio_historial` en la misma transaccion.
+Precio sobre referencia + tope %: una oferta que queda publicada responde `409 PRECIO_SOBRE_TOPE` (`detalle.precioMaximo`); como borrador o pausada se guarda y abre el caso `precio_fuera_rango` (uno por oferta abierto) con `revisionPrecio != null` (KAN-102). `GET /ofertas/productos-disponibles` trae `contenido`. `GET /proveedor/cobertura` (`miCobertura`): corte, despacho gratis desde y zonas del proveedor de la sesion. Cada alta y cada cambio de precio o cajas inserta en `oferta_precio_historial` en la misma transaccion.
 
 ## Catalogo publico y comparador (KAN-145)
 

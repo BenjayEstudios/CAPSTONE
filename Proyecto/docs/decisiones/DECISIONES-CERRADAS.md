@@ -110,12 +110,17 @@ El contrato sugería registrar la visita en `GET /catalogo/productos/:id`, pero
 las apps ya la mandan por `POST /eventos/lote`: registrarla en los dos lados
 la contaría doble en la analítica del proveedor.
 
-### Precio sobre el tope: caso de moderación, sin bloquear
+### Precio sobre el tope: no se publica; como borrador, con caso de moderación
 
-Una oferta con precio sobre `precio_referencia × (1 + tope_sobre_referencia_pct)`
-se guarda y publica igual, y abre un caso `precio_fuera_rango` para que un
-administrador lo revise. Bloquear exigiría un "aprobar precio" que moderación
-no tiene (KAN-146, [entrada](../cambios/2026-11-20-ofertas-del-proveedor.md)).
+Una oferta **publicada** no puede tener precio sobre
+`precio_referencia × (1 + tope_sobre_referencia_pct)`: `409 PRECIO_SOBRE_TOPE`
+con el máximo. Como borrador (o pausada) sí se guarda, y abre un caso
+`precio_fuera_rango` para que un administrador lo revise; para publicarla hay
+que bajar el precio. Decidido el 2026-11-20 en KAN-102, cuyo criterio pide
+rechazar el precio sobre el tope. Reemplaza la regla de KAN-146 ("publica y
+abre caso, sin bloquear"), que se había tomado porque moderación no tiene un
+"aprobar precio": con el borrador el caso sigue existiendo sin que el precio
+llegue al comprador ([entrada](../cambios/2026-11-20-asignarme-un-producto.md)).
 
 ### Una oferta publicada no se borra, se pausa
 

@@ -3,7 +3,9 @@ import { eq, sql } from "drizzle-orm";
 import { DrizzleAnaliticaRepository } from "../src/repositories/analitica.repository.js";
 import { DrizzleCarroRepository } from "../src/repositories/carro.repository.js";
 import { DrizzleComunaRepository } from "../src/repositories/comuna.repository.js";
+import { DrizzleOfertaRepository } from "../src/repositories/oferta.repository.js";
 import { DrizzleOrdenRepository } from "../src/repositories/orden.repository.js";
+import { DrizzleProveedorRepository } from "../src/repositories/proveedor.repository.js";
 import { consultar } from "../src/db/client.js";
 import { orden } from "../src/db/schema/orden.schema.js";
 import { tipoTarjetaWebpay, WebpayPlus } from "../src/pagos/webpay-plus.js";
@@ -85,6 +87,26 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(p.enviosPorDespachar).toBe(Number(esperado!.porDespachar));
     expect(p.liquidacionesPendientes).toBe(Number(esperado!.pendientes));
     expect(p.liquidacionesPendientes).toBeGreaterThan(0);
+  });
+
+  it("cobertura del proveedor (KAN-102): corte, despacho gratis y una zona por fila de proveedor_cobertura", async () => {
+    const c = await new DrizzleProveedorRepository(db()).cobertura(ORG.losAndes);
+    const [esperado] = await consultar<{ zonas: number; corte: string | null }>(
+      db(),
+      sql`SELECT (SELECT COUNT(*) FROM proveedor_cobertura WHERE proveedor_id = ${ORG.losAndes}) AS zonas,
+                 (SELECT TIME_FORMAT(hora_corte, '%H:%i') FROM organizacion WHERE id = ${ORG.losAndes}) AS corte`
+    );
+    expect(c.zonas).toHaveLength(Number(esperado!.zonas));
+    expect(c.horaCorte).toBe(esperado!.corte);
+    expect(c.zonas.find((z) => z.regionCodigo === "13")).toMatchObject({ comunaId: null, region: "Metropolitana de Santiago", costoDespacho: 4990 });
+    expect(c.ofreceDespacho).toBe(true);
+  });
+
+  it("productos disponibles traen el contenido del formato (KAN-102)", async () => {
+    const { items } = await new DrizzleOfertaRepository(db()).productosDisponibles(ORG.losAndes, { pagina: 1, tamano: 50 });
+    expect(items.length).toBeGreaterThan(0);
+    for (const p of items) expect(p.contenido === null || typeof p.contenido === "number").toBe(true);
+    expect(items.some((p) => typeof p.contenido === "number" && p.contenido > 0)).toBe(true);
   });
 
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {

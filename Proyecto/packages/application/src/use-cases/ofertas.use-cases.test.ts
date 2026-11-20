@@ -101,14 +101,28 @@ describe("crearOferta", () => {
     ]);
   });
 
-  it("sobre el tope: guarda la oferta y abre un caso precio_fuera_rango (uno solo por oferta)", async () => {
+  it("sobre el tope no se publica (409 PRECIO_SOBRE_TOPE con el maximo) ni se crea nada (KAN-102)", async () => {
     const m = montar();
-    const r = await crearOferta(m.deps)(USUARIO, { ...base, precioUnitario: 7990 });
+    await expect(crearOferta(m.deps)(USUARIO, { ...base, precioUnitario: 7990 })).rejects.toMatchObject({
+      statusCode: 409, code: "PRECIO_SOBRE_TOPE", detalle: { precioMaximo: 7137, precioReferencia: 5490, topePct: 30 }
+    });
+    expect(m.casos).toHaveLength(0);
+    // Una publicada tampoco puede subir sobre el tope.
+    const ok = await crearOferta(m.deps)(USUARIO, { ...base, precioUnitario: 7000 });
+    await expect(actualizarOferta(m.deps)(USUARIO, { id: ok.oferta.id }, { precioUnitario: 8500 })).rejects.toMatchObject({ code: "PRECIO_SOBRE_TOPE" });
+  });
+
+  it("sobre el tope como borrador: se guarda y abre un caso precio_fuera_rango (uno solo); publicarlo se rechaza", async () => {
+    const m = montar();
+    const r = await crearOferta(m.deps)(USUARIO, { ...base, precioUnitario: 7990, estado: "borrador" });
     expect(r.revisionPrecio).toEqual({ casoId: 1, precioReferencia: 5490, topePct: 30, precioMaximo: 7137 });
     expect(m.casos[0]).toMatchObject({ tipo: "precio_fuera_rango", entidad: "oferta", entidadId: r.oferta.id });
     const otra = await actualizarOferta(m.deps)(USUARIO, { id: r.oferta.id }, { precioUnitario: 8500 });
     expect(otra.revisionPrecio?.casoId).toBe(1);
     expect(m.casos).toHaveLength(1);
+    await expect(actualizarOferta(m.deps)(USUARIO, { id: r.oferta.id }, { estado: "publicada" })).rejects.toMatchObject({ code: "PRECIO_SOBRE_TOPE" });
+    // Bajando el precio al tope si se publica.
+    expect((await actualizarOferta(m.deps)(USUARIO, { id: r.oferta.id }, { precioUnitario: 7137, estado: "publicada" })).oferta.estado).toBe("publicada");
   });
 
   it("justo en el tope no abre caso; sin referencia nunca", async () => {

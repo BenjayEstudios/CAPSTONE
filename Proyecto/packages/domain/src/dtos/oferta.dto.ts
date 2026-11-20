@@ -106,6 +106,8 @@ export interface ProductoDisponibleDto {
   marca: string | null;
   formato: string | null;
   unidad: ProductoUnidad;
+  /** Contenido del formato en la unidad (5 para un bidon de 5 L); null si no se declaro. Aditivo (KAN-102). */
+  contenido: number | null;
   categoriaId: number;
   precioReferencia: number | null;
   topeSobreReferenciaPct: number | null;

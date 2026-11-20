@@ -1,0 +1,50 @@
+h2 { font-size: clamp(24px, 3vw, 30px); margin: 0; }
+.bajada { margin: 4px 0 20px; font-size: 14px; color: var(--color-text-soft); max-width: 64ch; }
+.creada { margin-bottom: 18px; }
+.creada .acciones { display: block; margin-top: 6px; }
+
+.columnas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 24px; align-items: start; }
+
+.buscador, .formulario { background: var(--color-card); border: 1px solid var(--color-divider); padding: 18px 20px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--color-text-soft); border: 0; padding: 0; margin: 0; min-width: 0; }
+.field small { font-size: 12px; }
+.field .input { color: var(--color-text); font-size: 15px; }
+.input.invalido { border-color: var(--color-accent-2); }
+.conteo { font-size: 12.5px; color: var(--color-text-soft); margin: 8px 0; }
+.resultados { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 520px; overflow-y: auto; }
+.resultado { width: 100%; text-align: left; font: inherit; background: #fff; border: 1px solid var(--color-divider); padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; color: var(--color-text); }
+.resultado:hover { border-color: var(--color-accent); }
+.resultado.activo { border-color: var(--color-accent); box-shadow: inset 3px 0 0 var(--color-accent); background: var(--color-accent-100); }
+.nombre { font-weight: 600; }
+.meta { font-size: 12.5px; color: var(--color-text-soft); }
+.vacio, .sin-eleccion { color: var(--color-text-soft); font-size: 14px; }
+
+.formulario h3 { font-size: 21px; margin: 2px 0 2px; }
+.formulario > .meta { margin: 0 0 14px; }
+.formulario h4 { font-size: 15px; margin: 18px 0 8px; }
+.campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.tope { font-size: 13px; margin: 10px 0 0; color: var(--color-text-soft); }
+.tope.sobre { color: var(--color-accent-2-800); background: var(--color-accent-2-100); padding: 8px 10px; }
+.calculos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0 0; background: var(--color-surface); padding: 12px 14px; }
+.calculos dt { font-size: 12px; color: var(--color-text-soft); }
+.calculos dd { margin: 2px 0 0; font-family: var(--font-heading); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+.posicion { margin: 8px 0 0; font-size: 13.5px; color: var(--color-accent-800); }
+.modalidad label { display: flex; gap: 6px; align-items: center; color: var(--color-text); font-size: 14px; }
+.modalidad legend { padding: 0; }
+.condiciones { font-size: 13.5px; background: var(--color-surface); padding: 10px 14px; margin: 14px 0; }
+.condiciones p { margin: 0 0 4px; }
+.condiciones ul { margin: 0 0 4px; padding-left: 18px; }
+.zona { display: inline-block; margin-right: 10px; }
+.suave { color: var(--color-text-soft); font-size: 12.5px; }
+.publicar { display: flex; gap: 18px; flex-wrap: wrap; margin: 14px 0; font-size: 14px; }
+.publicar label { display: flex; gap: 6px; align-items: center; }
+.mensaje { margin: 0 0 10px; }
+.acciones-form { display: flex; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .columnas { grid-template-columns: 1fr; }
+  .resultados { max-height: 300px; }
+}
+@media (max-width: 520px) {
+  .campos, .calculos { grid-template-columns: 1fr; }
+}

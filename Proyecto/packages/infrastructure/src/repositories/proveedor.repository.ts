@@ -7,9 +7,10 @@ import type {
   ProveedorListado,
   ProveedorRepository,
   RegistroAuditoria,
-  RevisionDocumento
+  RevisionDocumento,
+  CondicionesEntregaProveedor
 } from "@cotizapp/domain";
-import type { DbClient } from "../db/client.js";
+import { consultar, type DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
 import { proveedorDocumento } from "../db/schema/proveedor-documento.schema.js";
@@ -90,6 +91,32 @@ function toDocumento(f: {
 // Implementacion Drizzle/MySQL del puerto ProveedorRepository.
 export class DrizzleProveedorRepository implements ProveedorRepository {
   constructor(private readonly db: DbClient) {}
+
+  async cobertura(proveedorId: number): Promise<CondicionesEntregaProveedor> {
+    const [org] = await this.db
+      .select({ horaCorte: organizacion.horaCorte, despachoGratisDesde: organizacion.despachoGratisDesde, plazoEstandarHoras: organizacion.plazoEstandarHoras, ofreceDespacho: organizacion.ofreceDespacho, ofreceRetiro: organizacion.ofreceRetiro })
+      .from(organizacion)
+      .where(eq(organizacion.id, proveedorId));
+    // La region se nombra desde cualquier comuna con ese codigo (comuna_id NULL = toda la region).
+    const zonas = await consultar<{ comunaId: number | null; comuna: string | null; regionCodigo: string; region: string; costoDespacho: number; plazoHoras: number | null }>(
+      this.db,
+      sql`
+        SELECT pc.comuna_id AS comunaId, c.nombre AS comuna, pc.region_codigo AS regionCodigo,
+               (SELECT MIN(r.region_nombre) FROM comuna r WHERE r.region_codigo = pc.region_codigo) AS region,
+               pc.costo_despacho AS costoDespacho, pc.plazo_horas AS plazoHoras
+        FROM proveedor_cobertura pc LEFT JOIN comuna c ON c.id = pc.comuna_id
+        WHERE pc.proveedor_id = ${proveedorId}
+        ORDER BY pc.region_codigo, pc.comuna_id IS NOT NULL, c.nombre`
+    );
+    return {
+      horaCorte: org?.horaCorte ? org.horaCorte.slice(0, 5) : null,
+      despachoGratisDesde: org?.despachoGratisDesde ?? null,
+      plazoEstandarHoras: org?.plazoEstandarHoras ?? null,
+      ofreceDespacho: org?.ofreceDespacho === 1,
+      ofreceRetiro: org?.ofreceRetiro === 1,
+      zonas: zonas.map((z) => ({ ...z, costoDespacho: Number(z.costoDespacho), plazoHoras: z.plazoHoras === null ? null : Number(z.plazoHoras) }))
+    };
+  }
 
   async listar(f: FiltrosProveedores): Promise<{ items: ProveedorListado[]; total: number }> {
     const cond: SQL[] = [eq(organizacion.tipo, "proveedor")];

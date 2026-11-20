@@ -92,3 +92,16 @@ export function alertasProveedor(deps: { analiticaRepository: AnaliticaRepositor
     };
   };
 }
+
+/**
+ * GET /proveedor/cobertura: condiciones de entrega del proveedor de la sesion
+ * (corte, despacho gratis desde, zonas con su costo). Valen para todas sus
+ * ofertas; la pantalla "Asignarme un producto" las muestra (KAN-102) y se
+ * editan en "Cobertura de despacho" (KAN-109).
+ */
+export function miCobertura(deps: { proveedorRepository: ProveedorRepository }) {
+  return async (proveedorId: number) => {
+    exigirProveedor(proveedorId);
+    return deps.proveedorRepository.cobertura(proveedorId);
+  };
+}

@@ -27,7 +27,29 @@ export interface RevisionDocumento {
 }
 
 // Puerto de persistencia de proveedores (organizacion tipo = proveedor) y sus documentos.
+/** Zona de despacho de un proveedor: una comuna, o toda la region si comunaId es null. */
+export interface ZonaCobertura {
+  comunaId: number | null;
+  comuna: string | null;
+  regionCodigo: string;
+  region: string;
+  costoDespacho: number;
+  plazoHoras: number | null;
+}
+
+/** Condiciones de entrega del proveedor (valen para todas sus ofertas). */
+export interface CondicionesEntregaProveedor {
+  horaCorte: string | null;
+  despachoGratisDesde: number | null;
+  plazoEstandarHoras: number | null;
+  ofreceDespacho: boolean;
+  ofreceRetiro: boolean;
+  zonas: ZonaCobertura[];
+}
+
 export interface ProveedorRepository {
+  /** Condiciones de entrega y zonas de despacho del proveedor (KAN-102, se editan en KAN-109). */
+  cobertura(proveedorId: number): Promise<CondicionesEntregaProveedor>;
   listar(f: FiltrosProveedores): Promise<{ items: ProveedorListado[]; total: number }>;
   /** null si no existe o no es tipo proveedor. */
   buscarPorId(id: number): Promise<Proveedor | null>;

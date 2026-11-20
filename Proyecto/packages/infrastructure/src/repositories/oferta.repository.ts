@@ -100,7 +100,7 @@ export class DrizzleOfertaRepository implements OfertaRepository {
     }
     if (f.q) cond.push(or(like(producto.nombre, patron(f.q)), like(producto.marca, patron(f.q)), like(producto.sku, patron(f.q))) as SQL);
     const where = and(...cond);
-    const items: ProductoDisponibleDto[] = await this.db
+    const filas = await this.db
       .select({
         id: producto.id,
         sku: producto.sku,
@@ -108,6 +108,7 @@ export class DrizzleOfertaRepository implements OfertaRepository {
         marca: producto.marca,
         formato: producto.formato,
         unidad: producto.unidad,
+        contenido: producto.contenido,
         categoriaId: producto.categoriaId,
         precioReferencia: producto.precioReferencia,
         topeSobreReferenciaPct: producto.topeSobreReferenciaPct
@@ -117,6 +118,7 @@ export class DrizzleOfertaRepository implements OfertaRepository {
       .orderBy(asc(producto.nombre))
       .limit(f.tamano)
       .offset((f.pagina - 1) * f.tamano);
+    const items: ProductoDisponibleDto[] = filas.map((f) => ({ ...f, contenido: f.contenido === null ? null : Number(f.contenido) }));
     const [{ total }] = await this.db.select({ total: count() }).from(producto).where(where);
     return { items, total };
   }
