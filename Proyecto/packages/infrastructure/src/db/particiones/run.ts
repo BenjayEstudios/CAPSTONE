@@ -1,5 +1,6 @@
 import mysql from "mysql2/promise";
-import { particionesFaltantes, sqlReorganizar, TABLA_PARTICIONADA } from "./particiones.js";
+import { asegurarParticiones } from "./asegurar.js";
+import { TABLA_PARTICIONADA } from "./particiones.js";
 
 // Entry point de `pnpm --filter @cotizapp/infrastructure db:particiones`.
 // Crea las particiones mensuales de evento_analitico que falten para cubrir
@@ -17,24 +18,12 @@ if (!Number.isInteger(mesesAdelante) || mesesAdelante < 0) {
 
 const connection = await mysql.createConnection(url);
 try {
-  const [filas] = await connection.query<mysql.RowDataPacket[]>(
-    `SELECT PARTITION_DESCRIPTION AS limite FROM information_schema.PARTITIONS
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND PARTITION_DESCRIPTION <> 'MAXVALUE'`,
-    [TABLA_PARTICIONADA]
-  );
-  // PARTITION_DESCRIPTION viene como "'2026-12-01'".
-  const limites = filas.map((f) => new Date(`${String(f.limite).replace(/'/g, "")}T00:00:00Z`));
-
-  const hoy = new Date();
-  const hasta = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() + mesesAdelante, 1));
-  const faltantes = particionesFaltantes(limites, hasta);
-
+  const { hasta, creadas } = await asegurarParticiones(connection, mesesAdelante);
   const host = new URL(url).hostname;
-  if (faltantes.length === 0) {
-    console.log(`${TABLA_PARTICIONADA} en ${host} ya tiene particiones hasta ${hasta.toISOString().slice(0, 7)}.`);
+  if (creadas.length === 0) {
+    console.log(`${TABLA_PARTICIONADA} en ${host} ya tiene particiones hasta ${hasta}.`);
   } else {
-    await connection.query(sqlReorganizar(faltantes));
-    console.log(`Creadas en ${host}: ${faltantes.map((p) => p.nombre).join(", ")}.`);
+    console.log(`Creadas en ${host}: ${creadas.join(", ")}.`);
   }
 } finally {
   await connection.end();

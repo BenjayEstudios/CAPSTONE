@@ -45,7 +45,7 @@ Hoy existen `GET /health-check` y `GET/POST /categorias`, más los
 | KAN-158 | Servir el build de `apps/ecommerce` en producción | ✅ [entrada](../cambios/2026-10-23-stack-de-produccion-servible.md) |
 | KAN-168 | Servir el build de `apps/admin-site` | ✅ [entrada](../cambios/2026-11-18-admin-site-en-produccion.md) |
 | KAN-157 | Almacenamiento de imágenes y documentos | ✅ [entrada](../cambios/2026-11-18-almacenamiento-de-archivos-en-volumen.md) (endpoint de documentos de proveedor queda en KAN-150) |
-| KAN-161 | Pipeline de despliegue (CI/CD) | 🔄 CI de tests listo; deploy escrito pero apagado; faltan imágenes en GHCR y migraciones en el deploy |
+| KAN-161 | Pipeline de despliegue (CI/CD) | ✅ [entrada](../cambios/2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) — código listo; el deploy queda apagado hasta tener droplet y secrets (`DEPLOY_ENABLED`). Alternativa gratis en Oracle Cloud ([entrada](../cambios/2026-11-19-qa-en-oracle-cloud-always-free.md)), apagada hasta `ORACLE_ENABLED` |
 | KAN-160 | Respaldos automáticos de MySQL | ⏳ |
 | KAN-159 | HTTPS con Let's Encrypt | ⏳ |
 | KAN-162 | Hardening y control de accesos del droplet | ⏳ |

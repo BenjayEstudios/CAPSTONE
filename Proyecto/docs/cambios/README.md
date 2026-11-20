@@ -10,6 +10,9 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Droplet de dev creado en Digital Ocean](2026-11-20-droplet-de-dev-creado.md) | KAN-88 | KAN-161 |
+| 2026-11-19 | [QA adicional en Oracle Cloud Always Free](2026-11-19-qa-en-oracle-cloud-always-free.md) | KAN-88 | KAN-161 |
+| 2026-11-19 | [Deploy con imágenes en GHCR y migraciones](2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) | KAN-88 | KAN-161 |
 | 2026-11-18 | [Mobile: build de release para la demo](2026-11-18-mobile-build-de-release.md) | KAN-87 | KAN-138 |
 | 2026-11-18 | [Mobile: alertas del distribuidor](2026-11-18-mobile-alertas-del-distribuidor.md) | KAN-87 | KAN-137 |
 | 2026-11-18 | [Mobile: calificaciones recibidas del distribuidor](2026-11-18-mobile-calificaciones-recibidas.md) | KAN-87 | KAN-135 |

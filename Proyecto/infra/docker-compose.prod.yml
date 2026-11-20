@@ -1,5 +1,6 @@
 # Stack de producción del droplet: nginx (frontends + reverse proxy) +
-# backend (Fastify) + mysql. Se levanta desde Proyecto/infra/:
+# backend (Fastify) + mysql. En el droplet las imágenes vienen de GHCR, ya
+# construidas por el CI (deploy/desplegar.sh). En local se pueden construir:
 #   docker compose -f docker-compose.prod.yml up -d --build
 # Variables: infra/.env (ver .env.example). Documentación: infra/README.md.
 # El docker-compose.yml de Proyecto/ es solo para desarrollo.
@@ -7,6 +8,8 @@ name: cotizapp
 
 services:
   nginx:
+    # IMAGE_TAG: SHA del commit (lo fija el deploy) o "dev" (último build de dev).
+    image: ${IMAGE_REGISTRY:-ghcr.io/benjayestudios}/cotizapp-nginx:${IMAGE_TAG:-dev}
     build:
       context: ..
       dockerfile: infra/nginx/Dockerfile
@@ -25,6 +28,7 @@ services:
         condition: service_healthy
 
   backend:
+    image: ${IMAGE_REGISTRY:-ghcr.io/benjayestudios}/cotizapp-backend:${IMAGE_TAG:-dev}
     build:
       context: ..
       dockerfile: apps/backend/Dockerfile
