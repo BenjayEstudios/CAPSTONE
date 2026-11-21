@@ -267,3 +267,15 @@ descartó escribir el `.env` desde Secrets en cada deploy: dependería del
 único admin del repo para cada cambio y movería los secretos en cada deploy;
 solo valdría la pena si el droplet se recreara seguido. Los `.env` locales y
 el de mobile no van a Secrets (no son del servidor). 2026-11-20, KAN-161.
+
+### HTTPS con DuckDNS, certbot por webroot y Nginx
+
+Dominio de QA en DuckDNS (gratis): un subdominio (`cotizapp.duckdns.org`) y
+su sub-subdominio `admin.` para el panel. nip.io queda descartado para HTTPS:
+Let's Encrypt comparte su límite con todo el mundo. Certificados con el
+servicio `certbot` del compose por webroot (HTTP-01), sin API del DNS ni
+socket de Docker; Nginx se mantiene y recarga cada 12 h. Un solo interruptor,
+`PUBLIC_SCHEME` en `infra/.env`. Si más adelante se compra un dominio, solo
+cambian `APP_DOMAIN`/`ADMIN_DOMAIN` y se vuelve a correr
+`infra/deploy/certificado.sh`. 2026-11-21, KAN-159.
+

@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-21 | [HTTPS con Let's Encrypt (código)](2026-11-21-https-con-lets-encrypt.md) | KAN-88 | KAN-159 |
 | 2026-11-20 | [Droplet de dev creado en Digital Ocean](2026-11-20-droplet-de-dev-creado.md) | KAN-88 | KAN-161 |
 | 2026-11-19 | [QA adicional en Oracle Cloud Always Free](2026-11-19-qa-en-oracle-cloud-always-free.md) | KAN-88 | KAN-161 |
 | 2026-11-19 | [Deploy con imágenes en GHCR y migraciones](2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) | KAN-88 | KAN-161 |
