@@ -59,7 +59,7 @@ El orden de la tabla es el orden acordado en
 | Ticket | Historia | Estado |
 |---|---|---|
 | KAN-164 | Pruebas end-to-end del flujo de compra | ✅ [entrada](../cambios/2026-11-20-pruebas-e2e-flujo-de-compra.md) |
-| KAN-165 | Pruebas de usabilidad con usuarios piloto | ⏳ |
+| KAN-165 | Pruebas de usabilidad con usuarios piloto | 🔄 Guion, formulario y plantilla listos ([entrada](../cambios/2026-11-20-material-pruebas-de-usabilidad.md)); faltan las sesiones y el informe |
 
 ## Pendiente transversal
 
