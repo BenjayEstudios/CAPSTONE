@@ -7,3 +7,4 @@ export * from "./correo/correo-memoria.js";
 export * from "./seguridad/clave-temporal.js";
 export * from "./pagos/webpay-plus.js";
 export * from "./pagos/pasarela-memoria.js";
+export * from "./pagos/pasarela-simulada.js";

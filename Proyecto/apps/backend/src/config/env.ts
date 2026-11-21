@@ -38,6 +38,10 @@ const envSchema = z.object({
   // en "produccion" el codigo de comercio y la API key son obligatorios.
   // La URL de retorno es PUBLIC_BASE_URL + /pagos/webpay/retorno.
   WEBPAY_ENTORNO: z.enum(["integracion", "produccion"]).default("integracion"),
+  // KAN-164: "simulada" aprueba todo pago sin Transbank, para las pruebas
+  // end-to-end (Newman en el CI) y demos. Prohibida en produccion.
+  PASARELA: z.enum(["webpay", "simulada"]).default("webpay"),
+  NODE_ENV: z.string().optional(),
   WEBPAY_CODIGO_COMERCIO: z.string().min(1).optional(),
   WEBPAY_API_KEY: z.string().min(1).optional()
 }).superRefine((v, ctx) => {
@@ -45,6 +49,9 @@ const envSchema = z.object({
     for (const k of ["WEBPAY_CODIGO_COMERCIO", "WEBPAY_API_KEY"] as const) {
       if (!v[k]) ctx.addIssue({ code: "custom", path: [k], message: k + " es obligatorio con WEBPAY_ENTORNO=produccion" });
     }
+  }
+  if (v.PASARELA === "simulada" && (v.WEBPAY_ENTORNO === "produccion" || v.NODE_ENV === "production")) {
+    ctx.addIssue({ code: "custom", path: ["PASARELA"], message: "PASARELA=simulada no se permite en produccion" });
   }
   if (v.MAIL_DRIVER === "smtp") {
     for (const k of ["SMTP_HOST", "SMTP_FROM"] as const) {

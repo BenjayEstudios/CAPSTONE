@@ -39,3 +39,15 @@ describe("variables vacias", () => {
     expect(() => loadEnv({ ...base, JWT_SECRET: "" })).toThrow();
   });
 });
+
+describe("PASARELA (KAN-164)", () => {
+  it("webpay por defecto; simulada solo fuera de produccion", async () => {
+    expect(loadEnv(base).PASARELA).toBe("webpay");
+    expect(loadEnv({ ...base, PASARELA: "simulada" }).PASARELA).toBe("simulada");
+    expect(() => loadEnv({ ...base, PASARELA: "simulada", NODE_ENV: "production" })).toThrow(/simulada/);
+    expect(() => loadEnv({ ...base, PASARELA: "simulada", WEBPAY_ENTORNO: "produccion", WEBPAY_CODIGO_COMERCIO: "1", WEBPAY_API_KEY: "k" })).toThrow(/simulada/);
+    const { crearPasarelaPago } = await import("../lib/pasarela.js");
+    expect(crearPasarelaPago(loadEnv({ ...base, PASARELA: "simulada" })).nombre).toBe("simulada");
+    expect(crearPasarelaPago(loadEnv(base)).nombre).not.toBe("simulada");
+  });
+});
