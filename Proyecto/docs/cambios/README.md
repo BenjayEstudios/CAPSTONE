@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [CI: fallos intermitentes por la caché de Turborepo](2026-11-20-ci-fallos-intermitentes-tsbuildinfo.md) | — | — |
 | 2026-11-20 | [Panel del proveedor: liquidaciones](2026-11-20-liquidaciones-del-proveedor.md) | KAN-85 | KAN-111 |
 | 2026-11-20 | [Panel del proveedor: documentos](2026-11-20-documentos-del-proveedor.md) | KAN-85 | KAN-110 |
 | 2026-11-20 | [Panel del proveedor: cobertura de despacho y puntos de retiro](2026-11-20-cobertura-y-puntos-de-retiro.md) | KAN-85 | KAN-109 |
