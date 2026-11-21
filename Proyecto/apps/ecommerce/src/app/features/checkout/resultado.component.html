@@ -19,7 +19,7 @@
           @if (errorReintento(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
           <p class="acciones">
             <button type="button" class="btn btn-primary" [disabled]="reintentando()" (click)="reintentar()">
-              {{ reintentando() ? "Te llevamos a Webpay…" : "Reintentar el pago" }}
+              {{ reintentando() ? "Te llevamos a la pasarela de pago…" : "Reintentar el pago" }}
             </button>
             <a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a>
           </p>

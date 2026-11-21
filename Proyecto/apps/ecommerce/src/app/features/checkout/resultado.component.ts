@@ -74,10 +74,10 @@ export class ResultadoPagoComponent {
     this.errorReintento.set(null);
     try {
       const pago = await this.checkout.iniciarPago(o.id, "tarjeta");
-      this.pasarela.ir(pago.urlPago, pago.token);
+      this.pasarela.ir(pago.urlPago, pago.token, pago.metodo);
     } catch {
       this.reintentando.set(false);
-      this.errorReintento.set("No pudimos conectar con Webpay. Inténtalo en unos minutos.");
+      this.errorReintento.set("No pudimos conectar con la pasarela de pago. Inténtalo en unos minutos.");
     }
   }
 }

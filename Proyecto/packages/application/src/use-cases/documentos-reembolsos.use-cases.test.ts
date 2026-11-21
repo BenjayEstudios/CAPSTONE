@@ -221,6 +221,25 @@ describe("reembolsos", () => {
     expect(a.datosAntes).toMatchObject({ estadoPago: "pagado" });
   });
 
+  it("abre un caso de moderacion de tipo reembolso y no falla si el caso no se puede abrir (KAN-155)", async () => {
+    const repo = nuevoRepo(orden(1));
+    const abiertos: unknown[] = [];
+    const moderacionRepository = {
+      async buscarAbierto() { return null; },
+      async crear(c: unknown) { abiertos.push(c); return { id: 5, ...(c as object) }; }
+    } as never;
+    await crearReembolso({ ...deps(repo), moderacionRepository })(7, 1, { motivo: "Producto danado" });
+    expect(abiertos).toHaveLength(1);
+    expect(abiertos[0]).toMatchObject({ tipo: "reembolso", entidad: "orden", entidadId: 1 });
+
+    const repo2 = nuevoRepo(orden(1));
+    const logs: string[] = [];
+    const roto = { async buscarAbierto() { throw new Error("db"); } } as never;
+    const r = await crearReembolso({ ...deps(repo2), moderacionRepository: roto, log: (m: string) => logs.push(m) })(7, 1, { motivo: "x" });
+    expect(r.notaCredito).toMatchObject({ tipoDte: 61 });
+    expect(logs).toHaveLength(1);
+  });
+
   it("parcial deja pagado, baja el saldo y luego el resto cierra el reembolso", async () => {
     const repo = nuevoRepo(orden(1));
     const p = await crearReembolso(deps(repo))(7, 1, { monto: 4000, motivo: "Faltante" });

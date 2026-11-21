@@ -120,3 +120,13 @@ describe("rutas de pago (KAN-95)", () => {
     expect(r.json()[0]).toMatchObject({ nombre: "Ñuñoa", regionCodigo: "13" });
   });
 });
+
+describe("retorno de PayPal (KAN-148)", () => {
+  it("traduce el retorno de PayPal a la forma de Webpay", async () => {
+    const { datosRetornoPayPal } = await import("./index.js");
+    expect(datosRetornoPayPal({ token: "ABC", PayerID: "P", resultado: "ok" })).toEqual({ token_ws: "ABC" });
+    expect(datosRetornoPayPal({ token: "ABC", resultado: "cancelado" })).toEqual({ TBK_TOKEN: "ABC" });
+    expect(datosRetornoPayPal({})).toEqual({});
+    expect(datosRetornoPayPal(undefined)).toEqual({});
+  });
+});

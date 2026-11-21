@@ -258,6 +258,20 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
   `0 6 * * 2  cd /app/apps/backend && TZ=America/Santiago node dist/jobs/liquidaciones.js >> /var/log/liquidaciones.log 2>&1`
   (tras `pnpm build`; en dev `pnpm job:liquidaciones` usa tsx). Alternativas: Cron Job de DigitalOcean App Platform o GitHub Actions `schedule` ejecutando el mismo comando. Al ser idempotente, es seguro reintentar.
 
+### Vigencia de documentos de proveedores (KAN-150)
+
+- Caso de uso `actualizarVigenciaDocumentos`: recalcula `proveedor_documento.estado` (`al_dia` / `por_vencer` / `vencido`) con la misma regla que usa el panel (`vigenciaDocumento`: vencido si la fecha ya pasó, por vencer si faltan <= 45 días). Fecha de hoy en hora de Chile. Solo toca los documentos cuya vigencia guardada difiere de la calculada y deja cada cambio en `auditoria_log` (entidad `proveedor_documento`, usuario null).
+- Idempotente; un documento que falla no frena a los demás; sale con código 1 si hubo errores.
+- Ejecución manual: `pnpm job:vigencia-documentos` (imprime un JSON con revisados, actualizados y cuántos pasaron a cada vigencia).
+- **Programarlo en producción** (no se instala scheduler). Una vez al día, hora de Chile:
+  `0 5 * * *  cd /app/apps/backend && TZ=America/Santiago node dist/jobs/vigencia-documentos.js >> /var/log/vigencia-documentos.log 2>&1`
+
+### Datos de prueba de movimientos
+
+- `pnpm --filter=@cotizapp/backend job:datos-de-prueba` carga compras y su ciclo completo en la base local para probar los paneles: 8 órdenes de 3 compradores (`qa-aromos`, `qa-sanjose`, `qa-vega` `@cotizapp.test`, clave `Cotizapp.2026`) con pagos aprobados, rechazado, anulado y sin iniciar; envíos en distintos estados; factura y boleta; reembolso parcial y total; calificaciones; liquidaciones (una pagada); casos de moderación y eventos analíticos.
+- Solo corre contra una base local y con `NODE_ENV` distinto de `production`. Usa la API real (el backend debe estar arriba, `API_URL` por defecto `http://localhost:8000`) con el administrador de `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (sin 2FA). Los pagos no pasan por PayPal: se ejecutan los casos de uso del retorno con una pasarela en memoria que se audita como `paypal-prueba`.
+- Es de una sola vez: si ya existen las cuentas `qa-*`, no hace nada.
+
 ## Dashboard (KAN-113)
 
 `GET /dashboard/resumen?mes=YYYY-MM` (permiso `ver_todas_ordenes`, solo lectura; mes por defecto = actual en America/Santiago).

@@ -81,6 +81,8 @@ export interface PagoIniciado {
   pasarela: string;
   urlPago: string;
   token: string;
+  /** "POST": formulario con token_ws (Webpay). "GET": redireccion a urlPago (PayPal). Ausente = POST. */
+  metodo?: "POST" | "GET";
 }
 
 export interface EnvioOrden {
@@ -145,5 +147,5 @@ export interface OrdenDetalle {
   envios: EnvioOrden[];
 }
 
-/** Lo que vuelve en ?pago= desde el retorno de Webpay. */
+/** Lo que vuelve en ?pago= desde el retorno de la pasarela (Webpay o PayPal). */
 export type ResultadoPago = "aprobado" | "rechazado" | "anulado" | "error";

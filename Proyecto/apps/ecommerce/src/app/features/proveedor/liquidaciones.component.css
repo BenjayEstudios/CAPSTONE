@@ -21,7 +21,7 @@ h2 { font-size: clamp(24px, 3vw, 30px); margin: 0; }
 .num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fuerte { font-weight: 700; }
 .accion { text-align: right !important; white-space: nowrap; }
-.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; }
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; border-radius: var(--radius-pill); }
 .tag[data-tono="ok"] { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag[data-tono="aviso"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 

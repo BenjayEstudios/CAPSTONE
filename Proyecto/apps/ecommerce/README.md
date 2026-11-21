@@ -31,6 +31,10 @@ pnpm build
 pnpm test
 ```
 
+## Estilo visual (tema Laguna)
+
+Comparte el tema del admin-site: azul marino, teal, menta y crema, Manrope, botones en píldora y tarjetas redondeadas (detalle en `docs/diseno/IDENTIDAD-VISUAL.md`). Los tokens están en `src/styles.css` (se mantienen los nombres propios, p. ej. `--color-accent`, y se suman los del admin-site: `--tinta`, `--color-primary`, `--color-menta`, `--ondas-laguna`). Los estilos de cada feature van junto a su componente y usan solo esas variables: para cambiar el aspecto se tocan los valores, no cada componente. La cabecera (franja marina), la portada (`features/inicio`), el panel de cuenta (`features/cuenta/cuenta.css`) y el pie llevan sol crema y ondas.
+
 ## Cuenta y sesión (KAN-97)
 
 - Rutas: `/ingresar`, `/registro` (persona o empresa), `/recuperar-clave`, `/restablecer-clave?token=` (`features/cuenta/`).

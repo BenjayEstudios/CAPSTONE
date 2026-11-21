@@ -9,7 +9,9 @@
     "start": "node dist/server/index.js",
     "check-types": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "job:liquidaciones": "tsx src/jobs/liquidaciones.ts"
+    "job:liquidaciones": "tsx src/jobs/liquidaciones.ts",
+    "job:vigencia-documentos": "tsx src/jobs/vigencia-documentos.ts",
+    "job:datos-de-prueba": "tsx src/jobs/datos-de-prueba.ts"
   },
   "dependencies": {
     "@cotizapp/application": "workspace:*",

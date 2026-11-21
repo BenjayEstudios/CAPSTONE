@@ -120,7 +120,9 @@ MySQL. Full ER model (DBML) in `DataBase/dbDiagram.sql` — the Drizzle schema u
 
 ### Payments
 
-Webpay/MercadoPago sandbox, consumed only from `apps/backend` (card data never touches our own backend). No native split from the gateway — the payout split across distributors is simulated in our own DB (`liquidacion` table). The gateway integration (KAN-148) is **not implemented yet** (blocked on Webpay-vs-MercadoPago decision and sandbox credentials). Settlement amounts: net = (subtotal + shipping) − commission, NULL commission = 0; run the payout job with `pnpm --filter=@cotizapp/backend job:liquidaciones` (no scheduler wired).
+Consumed only from `apps/backend` behind the `PasarelaPago` port (card data never touches our own backend); adapters in `packages/infrastructure/src/pagos`, selected with `PASARELA=paypal|webpay|simulada`. `paypal` (Orders API v2 sandbox; charges in USD via `PAYPAL_CLP_POR_USD`, needs `PAYPAL_CLIENT_ID/SECRET`) is what is used while there is no Webpay business account; `webpay` is Webpay Plus; both flows are tested end to end. PayPal also refunds through `devolver` when a refund is issued. No native split from the gateway — the payout split across distributors is simulated in our own DB (`liquidacion` table). Settlement amounts: net = (subtotal + shipping) − commission, NULL commission = 0.
+
+Backend jobs (no scheduler wired; run by hand or cron): `pnpm --filter=@cotizapp/backend job:liquidaciones` (weekly payouts), `job:vigencia-documentos` (provider document validity, daily) and `job:datos-de-prueba` (loads varied test orders/payments into a local DB; refuses non-local databases).
 
 ### Testing notes
 

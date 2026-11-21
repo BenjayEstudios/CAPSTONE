@@ -25,3 +25,10 @@ export const calificarEnvioSchema = z.object({
 });
 
 export type CalificarEnvioDto = z.infer<typeof calificarEnvioSchema>;
+
+// GET /calificaciones/recibidas (KAN-200): paginacion del listado.
+export const calificacionesRecibidasQuerySchema = z.object({
+  pagina: z.coerce.number().int().min(1).default(1),
+  tamano: z.coerce.number().int().min(1).max(100).default(20)
+});
+export type CalificacionesRecibidasQueryDto = z.infer<typeof calificacionesRecibidasQuerySchema>;

@@ -41,7 +41,7 @@ describe("Detalle consolidado de la orden (KAN-96)", () => {
     const el = montar().nativeElement as HTMLElement;
     const resumen = texto(el.querySelector(".resumen-orden")!);
     expect(resumen).toContain("CM-10007");
-    expect(resumen).toContain("Tarjeta (Webpay)");
+    expect(resumen).toContain("Tarjeta / PayPal");
     expect(resumen).toContain("Total pagado$170.110");
     expect(resumen).toContain("Boleta electrónica N.º 1 (PDF)");
   });

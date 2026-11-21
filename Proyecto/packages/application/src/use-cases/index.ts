@@ -42,6 +42,8 @@ export * from "./reembolsos.use-cases.js";
 export * from "./catalogo.use-cases.js";
 export * from "./ofertas.use-cases.js";
 export * from "./pagos.use-cases.js";
+export * from "./notificar-orden-pagada.use-case.js";
 export * from "./comunas.use-cases.js";
 export * from "./calificaciones.use-cases.js";
 export * from "./panel-proveedor.use-cases.js";
+export * from "./vigencia-documentos.use-case.js";

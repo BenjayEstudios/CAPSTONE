@@ -15,7 +15,9 @@ import type {
   PuntoRetiroProveedor,
   DireccionPerfil,
   NuevaDireccionPerfil,
-  PerfilProveedor
+  PerfilProveedor,
+  ProveedorDocumentoVigencia,
+  VigenciaDocumento
 } from "@cotizapp/domain";
 import { consultar, type DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
@@ -405,6 +407,27 @@ export class DrizzleProveedorRepository implements ProveedorRepository {
       .where(eq(proveedorDocumento.proveedorId, proveedorId))
       .orderBy(proveedorDocumento.id);
     return filas.map(toDocumento);
+  }
+
+  async listarVigenciaDocumentos(): Promise<VigenciaDocumento[]> {
+    const filas = await this.db
+      .select({
+        id: proveedorDocumento.id,
+        proveedorId: proveedorDocumento.proveedorId,
+        tipo: proveedorDocumento.tipo,
+        venceEn: proveedorDocumento.venceEn,
+        vigencia: proveedorDocumento.estado
+      })
+      .from(proveedorDocumento)
+      .orderBy(proveedorDocumento.id);
+    return filas;
+  }
+
+  async actualizarVigenciaDocumento(documentoId: number, vigencia: ProveedorDocumentoVigencia, auditoria: RegistroAuditoria): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.update(proveedorDocumento).set({ estado: vigencia }).where(eq(proveedorDocumento.id, documentoId));
+      await tx.insert(auditoriaLog).values(auditoria);
+    });
   }
 
   async buscarDocumento(documentoId: number): Promise<ProveedorDocumento | null> {

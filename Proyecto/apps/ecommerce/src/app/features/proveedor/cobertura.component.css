@@ -28,7 +28,7 @@ h3 { font-size: 20px; margin: 0; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--color-text-soft); }
 .field .input { color: var(--color-text); }
 
-.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text-soft); }
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text-soft); border-radius: var(--radius-pill); }
 .tag[data-tono="ok"] { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag[data-tono="aviso"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 

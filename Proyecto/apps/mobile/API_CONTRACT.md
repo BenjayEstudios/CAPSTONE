@@ -9,11 +9,15 @@ llama exactamente lo que dice este archivo. Para pasar a la API real basta
 Estado: ✅ existe en el backend (forma real, sacada de `apps/backend/src/routes/**`
 y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 
-> **Bloqueo principal**: el único login es `POST /auth/admin/login`, que
-> rechaza a quien no sea de la organización interna. Sin
-> [`POST /auth/login`](#-post-authlogin--kan-126) los compradores y
-> distribuidores no obtienen token, así que ni los endpoints ✅ se pueden usar
-> desde la app todavía.
+> **Login**: compradores y distribuidores entran con
+> [`POST /auth/login`](#-post-authlogin--kan-126) (KAN-144); `POST /auth/admin/login`
+> es solo para el admin-site. `POST /auth/login` también acepta cuentas
+> internas: es la app la que decide qué roles admite (`Perfil.desdeRol`).
+>
+> **Verificado contra el backend real (2026-11-21, KAN-201):** los 15 endpoints
+> del índice responden 200 (202 en `/eventos/lote`) con comprador y
+> distribuidor, con las claves que describe este archivo; ver
+> [la bitácora](../../docs/cambios/2026-11-21-mobile-endpoints-verificados-contra-la-api.md).
 
 ## Índice
 
@@ -35,7 +39,7 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 | `GET /estadisticas/proveedor/ventas` | ✅ | Estadísticas de venta (KAN-133, KAN-101) |
 | `GET /estadisticas/proveedor` | ✅ + campo ⏳ | Visitas y conversión (KAN-134) |
 | `POST /eventos/lote` | ✅ | Vistas, búsquedas y clicks del comprador (KAN-134) |
-| `GET /calificaciones/recibidas` | ⏳ | Calificaciones recibidas (KAN-135) |
+| `GET /calificaciones/recibidas` | ✅ | Calificaciones recibidas (KAN-135, API en KAN-200) |
 | `GET /alertas/proveedor` | ✅ | Alertas (KAN-137, KAN-101) |
 
 ## Convenciones
@@ -283,10 +287,11 @@ Errores `409` en este orden (`planificarOrden`): `CARRO_VACIO`,
 checkout **no** van en el body (el schema no los acepta): la factura sale de
 los datos de la organización.
 
-## ✅ `POST /ordenes/:id/pago` — KAN-95 (Webpay Plus; KAN-148)
+## ✅ `POST /ordenes/:id/pago` — KAN-95 (Webpay Plus o PayPal; KAN-148)
 
-Token cliente dueño de la orden. Crea la transacción en Webpay Plus por el
-total de la orden y guarda el token en `orden.referencia_pasarela`.
+Token cliente dueño de la orden. Crea la transacción en la pasarela activa
+(`PASARELA=paypal|webpay`) por el total de la orden y guarda el token en
+`orden.referencia_pasarela`.
 
 Request: `{ "medioPago": "tarjeta" }` (default `tarjeta`; `transferencia` y
 `linea_credito` responden `409 MEDIO_PAGO_NO_DISPONIBLE`, ver decisión abierta
@@ -295,7 +300,12 @@ Request: `{ "medioPago": "tarjeta" }` (default `tarjeta`; `transferencia` y
 Response `201`:
 `{ "ordenId": 12, "codigo": "CM-90012", "total": 80150, "pasarela": "webpay", "urlPago": "https://webpay3gint.transbank.cl/webpayserver/initTransaction", "token": "01ab…" }`
 
-El cliente envía `token_ws=<token>` a `urlPago` con un **formulario POST**
+La respuesta trae `metodo`: `"POST"` (Webpay, el default si falta) o `"GET"`
+(PayPal). Con **`"GET"`** el cliente solo abre `urlPago` (URL de aprobación de
+PayPal; en la app, `launchUrl`) y no envía nada más; `token` es el id de la
+orden de PayPal. PayPal vuelve a `GET /pagos/paypal/retorno` (público), que
+hace lo mismo que el retorno de Webpay y redirige igual. Con `"POST"`, el
+cliente envía `token_ws=<token>` a `urlPago` con un **formulario POST**
 (así lo pide Transbank). Webpay devuelve al comprador a
 `GET|POST /pagos/webpay/retorno` en el backend (público), que confirma la
 transacción, deja la orden `estado = pagada`, `estadoPago = pagado`,
@@ -425,10 +435,10 @@ También `busqueda` (`termino`, `resultados`) y `click_oferta` (`producto_id`,
 `oferta_id`, `convirtio: false`) al agregar una oferta al carro. Si falla, la
 app lo ignora.
 
-## ⏳ `GET /calificaciones/recibidas` — KAN-135
+## ✅ `GET /calificaciones/recibidas` — KAN-135 (API en KAN-200)
 
-Token proveedor. Usa `resumenPorProveedor` y `listarPorProveedor` (KAN-142)
-más el `entregas_a_tiempo_pct` de la organización.
+Token proveedor (otro rol: `403`; sin token: `401`). Query opcional
+`pagina` (default 1) y `tamano` (default 20, máx. 100).
 
 ```json
 {
@@ -437,11 +447,13 @@ más el `entregas_a_tiempo_pct` de la organización.
   "items": [{
     "id": 15, "ordenEnvioId": 17, "ordenCodigo": "CM-10009", "cliente": "El Fogón",
     "puntaje": 5, "comentario": null, "creadaEn": "2026-10-15T15:45:00.000Z"
-  }]
+  }],
+  "total": 6, "pagina": 1, "tamano": 20
 }
 ```
 
-`items` de la más nueva a la más antigua; `cliente` = nombre de la
+`total`, `pagina` y `tamano` (aditivos) permiten paginar `items`, de la más
+nueva a la más antigua; `cliente` = nombre de la
 organización compradora (no el usuario); `promedio` y `entregasATiempoPct`
 en `null` si no hay datos.
 
