@@ -1,29 +1,44 @@
 .cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.cabecera h2 { font-size: 34px; margin: 0; }
+.cabecera h2 { margin: 0; }
 .filtros { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 .filtros .field { min-width: 160px; }
 .filtros .grow { flex: 1 1 240px; }
-.tabla-wrap { overflow-x: auto; }
+.tabla-wrap { overflow-x: auto; background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); }
 .tabla-wrap.cargando { opacity: .6; }
 .tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
-.tabla th, .tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--color-divider); vertical-align: top; }
-.tabla th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 2px solid var(--color-text); }
-.badge { display: inline-block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; }
-.badge.activo { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tabla th, .tabla td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--color-divider); vertical-align: top; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla th { font-size: 12px; font-weight: 600; color: var(--color-text-soft); background: var(--color-surface); border-bottom: 1px solid var(--color-divider); }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); }
+.badge.activo { background: var(--color-ok-100); color: var(--color-ok-800); }
 .badge.invitado { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .badge.suspendido { background: var(--color-surface); color: var(--color-text); }
 .acciones { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .acciones .btn { padding: 4px 10px; font-size: 13px; }
 .confirma { font-size: 13px; }
 .estado { padding: 24px 0; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
-.mensaje { padding: 10px 12px; font-size: 14px; margin: 0 0 14px; border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.mensaje { padding: 10px 12px; font-size: 14px; margin: 0 0 14px; border: 1px solid color-mix(in srgb, var(--color-accent-2) 35%, transparent); border-radius: var(--radius-md); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .paginacion { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; font-size: 13px; }
 .paginacion span { margin-right: auto; }
-.panel { border: 1px solid var(--color-divider); background: var(--color-surface); padding: 16px; margin-bottom: 20px; }
-.panel h3 { font-size: 22px; }
+.panel { border: 1px solid var(--color-divider); background: var(--color-card); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 20px; }
+.panel h3 { font-size: 18px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
 .panel .botones { display: flex; gap: 8px; margin-top: 8px; }
-.clave-box { border: 2px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); padding: 14px; margin-bottom: 20px; }
+.clave-box { border-radius: var(--radius-lg); border: 2px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); padding: 14px; margin-bottom: 20px; }
 .clave-box code { display: inline-block; font-size: 18px; letter-spacing: .04em; padding: 4px 8px; background: var(--color-bg); color: var(--color-text); user-select: all; }
 .clave-box .botones { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .opciones-modo { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.filtros .org { min-width: 240px; flex: 1 1 240px; }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 16px; }
+.chip { font: inherit; font-size: 13px; padding: 4px 10px; border-radius: var(--radius-pill); cursor: pointer; border: 1px solid var(--color-divider); background: var(--color-primary-100); color: var(--color-text); }
+.chip:hover { border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); }
+.enlace { font: inherit; font-size: 13px; padding: 4px 6px; border: 0; background: none; color: var(--color-primary); text-decoration: underline; cursor: pointer; }
+.orden { font: inherit; font-weight: inherit; color: inherit; padding: 0; border: 0; background: none; cursor: pointer; }
+.orden:hover { color: var(--color-text); text-decoration: underline; }
+/* Con muchas filas la cabecera queda fija y solo scrollea la tabla */
+.tabla-wrap { max-height: calc(100vh - 360px); min-height: 200px; overflow: auto; }
+.tabla th { position: sticky; top: 0; z-index: 1; }
+.paginacion { flex-wrap: wrap; }
+.paginacion .tam { display: inline-flex; align-items: center; gap: 6px; }
+.paginacion .tam .input { width: auto; padding: 4px 8px; min-height: 0; }
+.paginacion .pag { margin: 0 4px; font-weight: 600; }

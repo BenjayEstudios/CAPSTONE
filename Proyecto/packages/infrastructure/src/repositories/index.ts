@@ -3,9 +3,12 @@
 // ejemplo de referencia; el resto (DrizzleOrdenRepository...) se agrega
 // siguiendo el mismo patron.
 export * from "./categoria.repository.js";
+export * from "./catalogo.repository.js";
+export * from "./oferta.repository.js";
 export * from "./calificacion.repository.js";
 export * from "./analitica.repository.js";
 export * from "./usuario.repository.js";
+export * from "./cuenta.repository.js";
 export * from "./producto.repository.js";
 export * from "./proveedor.repository.js";
 export * from "./rol.repository.js";
@@ -18,3 +21,4 @@ export * from "./orden.repository.js";
 export * from "./liquidacion.repository.js";
 export * from "./dashboard.repository.js";
 export * from "./documento-tributario.repository.js";
+export * from "./comuna.repository.js";

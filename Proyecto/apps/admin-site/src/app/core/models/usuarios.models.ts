@@ -1,5 +1,6 @@
 export type EstadoUsuario = "invitado" | "activo" | "suspendido";
 export type MfaEstado = "inactivo" | "opcional" | "pendiente" | "activo";
+export type OrdenUsuarios = "reciente" | "antiguo" | "nombre_asc" | "nombre_desc";
 
 export interface UsuarioItem {
   id: number;
@@ -18,8 +19,12 @@ export interface UsuariosRespuesta {
   items: UsuarioItem[];
   pagina: number;
   tamano: number;
+  orden: OrdenUsuarios;
+  /** Conteo acotado: si `totalExacto` es false, el total real es mayor que `total`. */
   total: number;
+  totalExacto: boolean;
   totalPaginas: number;
+  hayMas: boolean;
 }
 
 export interface FiltrosUsuarios {
@@ -27,13 +32,22 @@ export interface FiltrosUsuarios {
   organizacionId?: string;
   estado?: EstadoUsuario | "";
   q?: string;
+  orden?: OrdenUsuarios;
   pagina?: number;
   tamano?: number;
 }
 
+/** Solo catalogos acotados: las organizaciones se buscan con `buscarOrganizaciones`. */
 export interface OpcionesUsuario {
   roles: Array<{ id: number; codigo: string; nombre: string }>;
-  organizaciones: Array<{ id: number; razonSocial: string; tipo: string; estado: string }>;
+}
+
+export interface OrganizacionOpcion {
+  id: number;
+  razonSocial: string;
+  rut: string;
+  tipo: string;
+  estado: string;
 }
 
 export interface CrearUsuarioBody {

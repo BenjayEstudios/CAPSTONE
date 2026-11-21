@@ -29,7 +29,13 @@ export function errorHandler(error: FastifyError, request: FastifyRequest, reply
     return reply.status(409).send({ error: { code: "DUPLICADO", message: "Ya existe un registro con ese valor unico" } });
   }
   logger.error(error.message, { method: request.method, url: request.url, err: error });
-  return reply.status(error.statusCode ?? 500).send({
+  // Error no previsto (sin statusCode: ej. una query que fallo): el detalle
+  // queda en el log y al cliente sale un mensaje generico. Antes se devolvia
+  // error.message, que con Drizzle incluye la query SQL completa.
+  if (error.statusCode === undefined) {
+    return reply.status(500).send({ error: { code: "INTERNAL_ERROR", message: "Error interno del servidor" } });
+  }
+  return reply.status(error.statusCode).send({
     error: {
       code: error.code ?? "INTERNAL_ERROR",
       message: error.message,

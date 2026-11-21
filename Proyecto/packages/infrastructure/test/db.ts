@@ -31,22 +31,46 @@ afterAll(async () => {
   await conexion?.end();
 });
 
+// Se lanza para que Drizzle revierta la transaccion del test.
+class Revertir extends Error {}
+
 // describe() que se salta si no hay base (solo pasa en CI). Entrega un
-// getter porque la instancia se arma en beforeAll.
+// getter porque la transaccion de cada test se abre en beforeEach.
+//
+// Cada test corre dentro de una transaccion de Drizzle que siempre se
+// revierte. Cuando un repositorio abre la suya (db.transaction), Drizzle la
+// vuelve un SAVEPOINT dentro de la del test, y tambien se revierte. Antes era
+// un START TRANSACTION crudo: el BEGIN del repositorio hacia commit implicito
+// de la transaccion del test y esas escrituras quedaban en la base (KAN-104).
 export function describeDb(nombre: string, fn: (db: () => DbClient) => void) {
   describe.skipIf(!conexion)(nombre, () => {
-    let db: DbClient;
+    let raiz: DbClient;
+    let tx: DbClient;
+    let terminar: () => void = () => {};
+    let enCurso: Promise<unknown> = Promise.resolve();
     beforeAll(async () => {
-      db = drizzle(conexion!, { schema, mode: "default" });
-      const [fila] = await consultar<{ n: number }>(db, sql`SELECT COUNT(*) AS n FROM orden WHERE codigo = 'CM-10011'`);
+      raiz = drizzle(conexion!, { schema, mode: "default" });
+      const [fila] = await consultar<{ n: number }>(raiz, sql`SELECT COUNT(*) AS n FROM orden WHERE codigo = 'CM-10011'`);
       if (fila!.n !== 1) throw new Error("La base no tiene el seed actual: corre pnpm --filter @cotizapp/infrastructure db:seed");
     });
     beforeEach(async () => {
-      await db.execute(sql`START TRANSACTION`);
+      await new Promise<void>((listo, fallo) => {
+        enCurso = raiz
+          .transaction(async (t) => {
+            tx = t as unknown as DbClient;
+            listo();
+            await new Promise<void>((r) => (terminar = r));
+            throw new Revertir();
+          })
+          .catch((e: unknown) => {
+            if (!(e instanceof Revertir)) fallo(e);
+          });
+      });
     });
     afterEach(async () => {
-      await db.execute(sql`ROLLBACK`);
+      terminar();
+      await enCurso;
     });
-    fn(() => db);
+    fn(() => tx);
   });
 }

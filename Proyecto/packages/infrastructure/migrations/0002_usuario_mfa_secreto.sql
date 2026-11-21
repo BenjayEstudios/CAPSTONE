@@ -1,0 +1,1 @@
+ALTER TABLE `usuario` ADD `mfa_secreto` varchar(255);

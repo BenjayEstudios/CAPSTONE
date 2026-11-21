@@ -21,22 +21,22 @@ y `packages/application`) · ⏳ falta (especificado acá; la app usa el fake).
 |---|---|---|
 | `GET /health-check` | ✅ | Conexión |
 | `GET /categorias` | ✅ | Catálogo (KAN-127) |
-| `POST /auth/login` | ⏳ | Login (KAN-126) |
-| `GET /catalogo/productos` | ⏳ | Inicio, listado y búsqueda (KAN-127, 128) |
-| `GET /catalogo/productos/:id` | ⏳ | Ficha con comparador (KAN-129) |
+| `POST /auth/login` | ✅ | Login (KAN-126) |
+| `GET /catalogo/productos` | ✅ | Inicio, listado y búsqueda (KAN-127, 128) |
+| `GET /catalogo/productos/:id` | ✅ | Ficha con comparador (KAN-129) |
 | `GET /carro` · `PUT /carro` | ✅ | Carro (KAN-130) |
-| `GET /carro/opciones-entrega` | ⏳ | Checkout (KAN-131) |
-| `GET /comunas` | ⏳ | Checkout (KAN-131) |
+| `GET /carro/opciones-entrega` | ✅ | Checkout (KAN-131, KAN-95) |
+| `GET /comunas` | ✅ | Checkout (KAN-131, KAN-95) |
 | `POST /carro/confirmar` | ✅ | Checkout (KAN-131) |
-| `POST /ordenes/:id/pago` | ⏳ | Checkout y pago (KAN-131, KAN-148) |
+| `POST /ordenes/:id/pago` | ✅ Webpay | Checkout y pago (KAN-131, KAN-95, KAN-148) |
 | `GET /ordenes` · `GET /ordenes/:id` | ✅ + campos ⏳ | Mis pedidos (KAN-132), órdenes vigentes (KAN-136) |
 | `PATCH /ordenes/envios/:id/estado` | ✅ | Órdenes vigentes (KAN-136) |
-| `POST /ordenes/envios/:id/calificacion` | ⏳ | Mis pedidos (KAN-132) |
-| `GET /estadisticas/proveedor/ventas` | ⏳ | Estadísticas de venta (KAN-133) |
+| `POST /ordenes/envios/:id/calificacion` | ✅ | Mis pedidos (KAN-132, KAN-99) |
+| `GET /estadisticas/proveedor/ventas` | ✅ | Estadísticas de venta (KAN-133, KAN-101) |
 | `GET /estadisticas/proveedor` | ✅ + campo ⏳ | Visitas y conversión (KAN-134) |
 | `POST /eventos/lote` | ✅ | Vistas, búsquedas y clicks del comprador (KAN-134) |
 | `GET /calificaciones/recibidas` | ⏳ | Calificaciones recibidas (KAN-135) |
-| `GET /alertas/proveedor` | ⏳ | Alertas (KAN-137) |
+| `GET /alertas/proveedor` | ✅ | Alertas (KAN-137, KAN-101) |
 
 ## Convenciones
 
@@ -75,11 +75,11 @@ Público. Lista plana del árbol de 2 niveles; la app descarta las `oculta`.
 [{ "id": 8, "padreId": 1, "nombre": "Aceites", "slug": "aceites", "orden": 1, "estado": "activa" }]
 ```
 
-## ⏳ `POST /auth/login` — KAN-126
+## ✅ `POST /auth/login` — KAN-126 (implementado en KAN-144)
 
 Login de comprador y distribuidor. Mismas reglas que `loginAdmin`
 (`packages/application/src/use-cases/login-admin.use-case.ts`: bcrypt,
-mensaje genérico, MFA si `mfa_estado = activo`) **sin** exigir organización
+mensaje genérico, 2FA TOTP solo para internos) **sin** exigir organización
 interna: acepta organizaciones `cliente` y `proveedor`. La app rechaza por su
 cuenta los roles internos.
 
@@ -107,9 +107,9 @@ cuenta:
 - `organizacion.nombre` = `nombre_fantasia` (o `razon_social` si es NULL).
 - Errores: `401 CREDENCIALES_INVALIDAS` (email o clave), `403 USUARIO_NO_ACTIVO`
   (usuario no `activo` u organización no `activa`, ej. `contacto@laspalmas.test`),
-  `400 VALIDACION`. Sin `POST /auth/logout`: el JWT no guarda estado.
+  `400 VALIDACION`; `403` si el usuario no es de una organización cliente. Sin `POST /auth/logout`: el JWT no guarda estado.
 
-## ⏳ `GET /catalogo/productos` — KAN-127, KAN-128
+## ✅ `GET /catalogo/productos` — KAN-127, KAN-128 (implementado en KAN-145)
 
 Público. **No es** `GET /productos`, que ya existe como listado de
 administración (exige `crear_producto` y devuelve fichas sin precios). Este es
@@ -125,6 +125,8 @@ ofertas visibles. **Oferta visible** = `oferta.estado = 'publicada'` y
 | `maxUnidadesPorCaja` | Solo cuentan ofertas con `unidades_por_caja <= N` ("caja chica", la app manda 6) |
 | `orden` | `relevancia` (default), `precio` (precioDesde asc), `diferencia` (precioHasta − precioDesde desc, solo productos con 2+ ofertas), `nombre` |
 | `pagina` / `porPagina` | Default `1` / `20` |
+
+Agregados en KAN-90/91 (opcionales, la app puede ignorarlos): `maxMinimoCompra`, `conRetiro=true`, `marca`; cada item trae `proveedorMasBarato: { id, nombre }` y la respuesta `marcas: [{ marca, productos }]`.
 
 Los filtros de plazo y caja se aplican **por oferta**: el producto aparece si
 al menos una cumple, y los campos de precio se calculan solo con esas.
@@ -143,11 +145,12 @@ al menos una cumple, y los campos de precio se calculan solo con esas.
 `contenido` como number (`decimal` llega como string desde mysql2: convertir).
 El inicio pide `?orden=diferencia&porPagina=5`.
 
-## ⏳ `GET /catalogo/productos/:id` — KAN-129
+## ✅ `GET /catalogo/productos/:id` — KAN-129 (implementado en KAN-145)
 
 Público. Ficha con todas las ofertas visibles ordenadas por `precioUnitario`
-asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
-`vista_producto` (la app también lo manda por `/eventos/lote`).
+asc. `?origen=catalogo|busqueda|directo` se acepta, pero el `vista_producto`
+**no** se registra acá: lo manda la app por `/eventos/lote` (registrarlo en
+los dos lados lo contaría doble).
 
 ```json
 {
@@ -158,17 +161,24 @@ asc. `?origen=catalogo|busqueda|directo`: sugerencia, registrar acá el
   "ofertas": [{
     "id": 1, "precioUnitario": 12490, "unidadesPorCaja": 4, "cajasDisponibles": 40, "minimoCompra": 1,
     "plazoHoras": 24, "modalidadEntrega": "ambos", "notasCliente": null,
+    "precioNormalizado": { "valor": 2498, "por": "L" },
     "proveedor": {
       "id": 2, "nombre": "Los Andes Food Service", "entregasATiempoPct": 96.5,
       "despachoGratisDesde": 150000, "costoDespacho": 4990,
+      "zona": { "comuna": "Quilicura", "region": "Metropolitana de Santiago" },
       "calificacion": { "promedio": 4.67, "cantidad": 6 }
     }
   }]
 }
 ```
 
-- `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la región
-  del comprador (RM si no se conoce).
+- `precioNormalizado` (agregado en KAN-145): `precioUnitario / contenido`, por
+  kg, L o unidad; `null` si el producto no declara contenido.
+- `proveedor.costoDespacho`: tarifa de `proveedor_cobertura` para la comuna
+  del comprador (con token de comprador; si no, la de su región, y sin sesión
+  la RM). `null` si el proveedor no despacha a esa región.
+- `proveedor.zona` (agregado en KAN-92): comuna y región de la dirección del
+  distribuidor; `null` si no tiene dirección.
 - `proveedor.calificacion` = `CalificacionRepository.resumenPorProveedor`.
 - `404 PRODUCTO_NO_ENCONTRADO`.
 
@@ -200,7 +210,7 @@ con la ficha del catálogo (nombre del proveedor, plazo, mínimo, despacho,
 ahorro). **Ojo con el seed**: el carro de El Fogón pide 24 cajas de leche y
 la oferta tiene 20; la app lo marca y no deja pagar hasta ajustar.
 
-## ⏳ `GET /carro/opciones-entrega` — KAN-131
+## ✅ `GET /carro/opciones-entrega` — KAN-131, KAN-95
 
 Token cliente. Direcciones guardadas de la organización y puntos de retiro
 de los proveedores (los ids que piden `direccionId` y `retiros` de
@@ -211,20 +221,33 @@ de los proveedores (los ids que piden `direccionId` y `retiros` de
   "direcciones": [{
     "id": 6, "calle": "Av. Irarrázaval", "numero": "3450", "complemento": "Local 2",
     "referencia": "Entrada de proveedores por calle lateral", "comunaId": 20, "comuna": "Ñuñoa",
-    "region": "Metropolitana de Santiago"
+    "region": "Metropolitana de Santiago", "regionCodigo": "13"
   }],
   "puntosRetiro": [{
     "id": 1, "proveedorId": 2, "nombre": "Bodega Quilicura",
     "horario": "Lun a Vie 08:00-17:00, Sáb 09:00-13:00",
     "direccion": "Av. Presidente Eduardo Frei Montalva 9650, Bodega 12, Quilicura"
-  }]
+  }],
+  "coberturas": [
+    { "proveedorId": 2, "comunaId": null, "regionCodigo": "13", "costoDespacho": 4990, "plazoHoras": 24 },
+    { "proveedorId": 3, "comunaId": 23, "regionCodigo": "13", "costoDespacho": 2990, "plazoHoras": 48 }
+  ]
 }
 ```
 
-Direcciones: las de la organización del token (incluidas las creadas con
-`direccion` en un checkout anterior). Puntos de retiro: los activos.
+Direcciones: las de la organización del token (la de su ficha y las usadas
+en sus órdenes, incluidas las creadas con `direccion` en un checkout
+anterior). Puntos de retiro: los activos de los proveedores del carro abierto.
 
-## ⏳ `GET /comunas` — KAN-131
+`coberturas` y `regionCodigo` son aditivos (KAN-109): las zonas de despacho
+de los proveedores del carro. Un proveedor despacha a una dirección si tiene
+una zona con su `comunaId` o, si no, una con `comunaId: null` y su
+`regionCodigo`; vale el costo de esa zona (gratis desde el
+`despachoGratisDesde` del proveedor). Es la misma regla con la que
+`POST /carro/confirmar` responde `409 SIN_COBERTURA`: sirve para no
+ofrecer despacho a una comuna no cubierta.
+
+## ✅ `GET /comunas` — KAN-131, KAN-95
 
 Público. Para escribir una dirección nueva:
 `[{ "id": 20, "nombre": "Ñuñoa", "regionCodigo": "13", "regionNombre": "Metropolitana de Santiago" }]`
@@ -260,22 +283,31 @@ Errores `409` en este orden (`planificarOrden`): `CARRO_VACIO`,
 checkout **no** van en el body (el schema no los acepta): la factura sale de
 los datos de la organización.
 
-## ⏳ `POST /ordenes/:id/pago` — KAN-131 / KAN-148
+## ✅ `POST /ordenes/:id/pago` — KAN-95 (Webpay Plus; KAN-148)
 
-Token cliente dueño de la orden. Inicia el pago en la pasarela y devuelve
-adónde mandar al usuario.
+Token cliente dueño de la orden. Crea la transacción en Webpay Plus por el
+total de la orden y guarda el token en `orden.referencia_pasarela`.
 
-Request: `{ "medioPago": "tarjeta", "urlRetorno": "cotizapp://pago" }`
-(`tarjeta | transferencia | linea_credito`).
+Request: `{ "medioPago": "tarjeta" }` (default `tarjeta`; `transferencia` y
+`linea_credito` responden `409 MEDIO_PAGO_NO_DISPONIBLE`, ver decisión abierta
+16). Un `urlRetorno` en el body se ignora.
 
-Response `201`: `{ "ordenId": 12, "urlPago": "https://webpay3gint.transbank.cl/...", "expiraEn": "2026-11-18T15:15:00.000Z" }`
+Response `201`:
+`{ "ordenId": 12, "codigo": "CM-90012", "total": 80150, "pasarela": "webpay", "urlPago": "https://webpay3gint.transbank.cl/webpayserver/initTransaction", "token": "01ab…" }`
 
-La app abre `urlPago` en el navegador y, al volver, relee
-`GET /ordenes/:id`: el backend debe dejar `estado = pagada`,
-`estadoPago = pagado`, `pagadoEn` y `medioPago` al confirmar la pasarela, o
-`estadoPago = fallido` (la orden sigue `pendiente_pago` y se puede
-reintentar). Errores: `409 ORDEN_YA_PAGADA`, `404 ORDEN_NO_ENCONTRADA`. La
-app todavía no registra el esquema `cotizapp://` (el usuario vuelve a mano).
+El cliente envía `token_ws=<token>` a `urlPago` con un **formulario POST**
+(así lo pide Transbank). Webpay devuelve al comprador a
+`GET|POST /pagos/webpay/retorno` en el backend (público), que confirma la
+transacción, deja la orden `estado = pagada`, `estadoPago = pagado`,
+`medioPago = tarjeta` y `pagadoEn` (o `estadoPago = fallido` si se rechazó o
+anuló; la orden sigue `pendiente_pago` y se puede reintentar), emite los
+documentos tributarios y redirige (303) a
+`ECOMMERCE_URL/checkout/resultado?orden=12&pago=aprobado|rechazado|anulado|error`.
+Cada reintento crea otra transacción (la orden de compra lleva un sufijo).
+Errores: `409 ORDEN_YA_PAGADA`, `404 ORDEN_NO_ENCONTRADA`.
+
+**Pendiente para la app:** el retorno va al ecommerce, no a la app. Hay que
+registrar `cotizapp://` y que el retorno sepa a qué app volver (KAN-148).
 
 ## ✅ `GET /ordenes` · `GET /ordenes/:id` — KAN-132, KAN-136
 
@@ -309,9 +341,9 @@ comisiones (`comisionPct`, `comisionMonto`, `montoALiquidar` y
 **⏳ Campos aditivos que pide la app en `GET /ordenes/:id`** (no rompen a
 nadie; mientras no estén, la app los trata como desconocidos):
 
-- `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
-  o `null` (hoy solo viene `puntoRetiroId`).
-- `envios[].calificacion` (solo para el cliente): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
+- ✅ `envios[].puntoRetiro`: `{ "id": 1, "nombre": "Bodega Quilicura", "horario": "...", "direccion": "..." }`
+  o `null` (despacho). Solo en el detalle, desde KAN-96.
+- ✅ `envios[].calificacion` (solo para el cliente, desde KAN-99): `{ "puntaje": 4, "comentario": "...", "creadaEn": "..." }`
   o `null`. Sin el campo, la app ofrece calificar y espera un `409 YA_CALIFICADO`.
 
 ## ✅ `PATCH /ordenes/envios/:id/estado` — KAN-136
@@ -324,18 +356,18 @@ Errores: `404 ENVIO_NO_ENCONTRADO` (también si es de otro proveedor),
 `409 ORDEN_NO_PAGADA`, `409 ORDEN_REEMBOLSADA`, `409 TRANSICION_INVALIDA`
 (`detalle.permitidas`).
 
-## ⏳ `POST /ordenes/envios/:id/calificacion` — KAN-132
+## ✅ `POST /ordenes/envios/:id/calificacion` — KAN-132, KAN-99
 
-Token cliente. `CalificacionRepository.registrar` ya existe (KAN-142); falta
-la ruta. Body (`registrarCalificacionSchema` sin `usuarioId`, que sale del
-token): `{ "puntaje": 4, "comentario": "Buena cadena de frío" }`.
+Token cliente. Body (`calificarEnvioSchema`; el usuario sale del token):
+`{ "puntaje": 4, "comentario": "Buena cadena de frío" }` (comentario opcional,
+vacío = null).
 
 Response `201`:
 `{ "id": 17, "ordenEnvioId": 19, "usuarioId": 9, "puntaje": 4, "comentario": "Buena cadena de frío", "creadaEn": "..." }`.
 Errores (`CalificacionError`): `409 ENVIO_NO_CALIFICABLE`, `409 YA_CALIFICADO`,
 `400 VALIDACION`.
 
-## ⏳ `GET /estadisticas/proveedor/ventas` — KAN-133
+## ✅ `GET /estadisticas/proveedor/ventas` — KAN-133 (hecho en KAN-101)
 
 Token proveedor (`ver_ordenes_propias`). `?desde=AAAA-MM-DD&hasta=AAAA-MM-DD`
 (inclusivos; mismo `resolverRango` que `/estadisticas/proveedor`). Solo hay
@@ -413,7 +445,7 @@ más el `entregas_a_tiempo_pct` de la organización.
 organización compradora (no el usuario); `promedio` y `entregasATiempoPct`
 en `null` si no hay datos.
 
-## ⏳ `GET /alertas/proveedor` — KAN-137
+## ✅ `GET /alertas/proveedor` — KAN-137 (hecho en KAN-101)
 
 Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
 
@@ -441,13 +473,14 @@ Token proveedor. Todo lo que la pestaña Alertas necesita en una llamada:
   `monto_neto` de liquidaciones `pendiente` (`/liquidaciones/mias` ya las
   lista); `proximaLiquidacion`: el próximo martes.
 - `enviosPorDespachar`: envíos `por_despachar` de órdenes pagadas.
+- Aditivos (KAN-101): `documentos[].revision` (`pendiente | aprobado |
+  rechazado | null`), `estado: "falta"` para un documento obligatorio no
+  subido, y `ofertas: { publicadas, borradores }`.
 - Los umbrales (20 cajas, 45 días) son una decisión abierta: ver
   `docs/decisiones/DECISIONES-ABIERTAS.md`.
 
 ## Notas para backend
 
-- `POST /categorias` usa `requireRol("administrador")`, pero el código del
-  rol en el seed es `admin_general`.
 - `cantidad` del carro está en **cajas** y `planificarOrden` multiplica
   `precio_unitario × cantidad`, mientras el mockup del proveedor define
   "precio por unidad" y "unidades por caja". Ver decisión abierta en

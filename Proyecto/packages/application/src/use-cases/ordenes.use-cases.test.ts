@@ -16,9 +16,14 @@ import { confirmarCarro, planificarOrden, reemplazarCarro } from "./carro.use-ca
 import {
   cambiarEstadoEnvio,
   estadoOrdenDesdeEnvios,
+  frecuenciaRecompra,
+  listarClientes,
   listarOrdenes,
+  listarVentas,
   obtenerOrden,
   porcentajeATiempo,
+  siguienteEstadoEnvio,
+  tipoCliente,
   transicionesPermitidas
 } from "./ordenes.use-cases.js";
 
@@ -177,7 +182,7 @@ const ordenBase = (extra: Partial<Orden> = {}): Orden => ({
 });
 
 function setupOrdenes(ordenExtra: Partial<Orden> = {}, envios = [envio(1, 2, "por_despachar"), envio(2, 3, "por_despachar")]) {
-  const st = { orden: ordenBase(ordenExtra), envios, auditoria: [] as unknown[], pct: undefined as number | null | undefined, entregados: [] as never[] };
+  const st = { filtrosVentas: [] as unknown[], orden: ordenBase(ordenExtra), envios, auditoria: [] as unknown[], pct: undefined as number | null | undefined, entregados: [] as never[] };
   const completa = (alcance: any) => ({
     orden: st.orden,
     envios: st.envios.filter((e) => alcance.tipo !== "proveedor" || e.proveedorId === alcance.proveedorId).map((e) => ({ ...e, proveedorNombre: `P${e.proveedorId}`, lineas: [] })),
@@ -191,6 +196,27 @@ function setupOrdenes(ordenExtra: Partial<Orden> = {}, envios = [envio(1, 2, "po
       return c;
     },
     buscarEnvio: async (id) => st.envios.find((e) => e.id === id) ?? null,
+    clientesDeProveedor: async (pid) => ({
+      items: pid === 2
+        ? [
+            { organizacionId: 4, nombreFantasia: "El Fogón", razonSocial: "Restaurante El Fogón Ltda.", rut: "76111222-8", giro: "Restaurante", email: "compras@elfogon.test", telefono: "+56 2 2274 5566",
+              comuna: "Ñuñoa", ordenes: 3, pendientes: 0, monto: 250000, primeraCompra: new Date("2026-09-01T12:00:00Z"), ultimaCompra: new Date("2026-10-01T12:00:00Z") },
+            { organizacionId: 9, nombreFantasia: null, razonSocial: "María Paz Contreras", rut: "12884019-8", giro: null, email: "mp@correo.test", telefono: "+56 9 1111 2222",
+              comuna: "Santiago", ordenes: 0, pendientes: 1, monto: 0, primeraCompra: null, ultimaCompra: null }
+          ]
+        : [],
+      total: pid === 2 ? 2 : 0
+    }),
+    ventasDeProveedor: async (f) => {
+      st.filtrosVentas.push(f);
+      const items = st.envios
+        .filter((e) => e.proveedorId === f.proveedorId && (!f.estado || e.estado === f.estado))
+        .map((e) => ({
+          envioId: e.id, ordenId: st.orden.id, folio: st.orden.codigo, cliente: "OrgCli", modalidad: e.modalidad, comuna: "Santiago",
+          fecha: st.orden.creadaEn, lineas: 1, cajas: 2, monto: e.subtotal + (e.costoDespacho ?? 0), estado: e.estado, ordenEstado: st.orden.estado
+        }));
+      return { items, total: items.length, conteo: { [items[0]?.estado ?? "por_despachar"]: items.length } };
+    },
     cambiarEstadoEnvio: async (id, planificar) => {
       const e = st.envios.find((x) => x.id === id)!;
       const plan: PlanCambioEnvio = await planificar({ envio: e, orden: st.orden, hermanos: st.envios, entregadosProveedor: async () => st.entregados });
@@ -287,5 +313,67 @@ describe("maquina de estados del envio", () => {
     expect(porcentajeATiempo([d(10, 48), d(10, null)])).toBe(100);
     expect(porcentajeATiempo([d(10, null)])).toBeNull();
     expect(porcentajeATiempo([d(10, 48), d(50, 48), d(60, 48)])).toBe(33.33);
+  });
+});
+
+describe("ordenes de venta del proveedor (KAN-105)", () => {
+  it("el proveedor ve solo sus envios, con el siguiente paso; el filtro pasa al repositorio", async () => {
+    const { deps, st } = setupOrdenes({ estado: "pagada" });
+    const r = await listarVentas(deps)(3, { estado: "por_despachar", pagina: "1", tamano: "10" });
+    expect(st.filtrosVentas).toEqual([{ proveedorId: 2, estado: "por_despachar", pagina: 1, tamano: 10 }]);
+    expect(r.items.map((v) => v.envioId)).toEqual([1]);
+    expect(r.items[0]).toMatchObject({ monto: 6000, siguiente: "en_preparacion" });
+    expect(r).toMatchObject({ total: 1, totalPaginas: 1, conteo: { por_despachar: 1 } });
+  });
+  it("un cliente o un admin no tienen ordenes de venta; un estado desconocido -> 400", async () => {
+    const { deps } = setupOrdenes();
+    expect(await falla(listarVentas(deps)(5, {}))).toMatchObject({ statusCode: 403, code: "SOLO_PROVEEDORES" });
+    expect(await falla(listarVentas(deps)(1, {}))).toMatchObject({ statusCode: 403 });
+    expect(await falla(listarVentas(deps)(3, { estado: "pagada" }))).toMatchObject({ statusCode: 400 });
+  });
+  it("siguiente paso: preparar, despachar o dejar listo para retiro, entregar; nada al final o si se reembolso", () => {
+    expect(siguienteEstadoEnvio("despacho", "por_despachar", "pagada")).toBe("en_preparacion");
+    expect(siguienteEstadoEnvio("despacho", "en_preparacion", "en_preparacion")).toBe("despachado");
+    expect(siguienteEstadoEnvio("retiro", "en_preparacion", "en_preparacion")).toBe("listo_retiro");
+    expect(siguienteEstadoEnvio("retiro", "listo_retiro", "despachada")).toBe("entregado");
+    expect(siguienteEstadoEnvio("despacho", "entregado", "entregada")).toBeNull();
+    expect(siguienteEstadoEnvio("despacho", "cancelado", "pagada")).toBeNull();
+    expect(siguienteEstadoEnvio("despacho", "por_despachar", "reembolsada")).toBeNull();
+  });
+});
+
+describe("tus clientes (KAN-106)", () => {
+  it("el contacto se entrega solo desde la primera orden pagada", async () => {
+    const { deps } = setupOrdenes();
+    const r = await listarClientes(deps)(3, {});
+    expect(r.items[0]).toMatchObject({
+      nombre: "El Fogón", tipo: "Empresa", ordenes: 3, monto: 250000, recompra: "Quincenal",
+      contacto: { razonSocial: "Restaurante El Fogón Ltda.", rut: "76111222-8", email: "compras@elfogon.test", telefono: "+56 2 2274 5566" }
+    });
+    expect(r.items[1]).toMatchObject({ nombre: "María Paz Contreras", tipo: "Persona", ordenes: 0, pendientes: 1, recompra: "Por pagar", contacto: null });
+    expect(JSON.stringify(r.items[1])).not.toContain("mp@correo.test");
+    expect(JSON.stringify(r.items[1])).not.toContain("12884019");
+    expect(r).toMatchObject({ total: 2, pagina: 1, tamano: 50 });
+  });
+  it("solo un proveedor tiene clientes", async () => {
+    const { deps } = setupOrdenes();
+    expect(await falla(listarClientes(deps)(5, {}))).toMatchObject({ statusCode: 403, code: "SOLO_PROVEEDORES" });
+    expect(await falla(listarClientes(deps)(1, {}))).toMatchObject({ statusCode: 403 });
+  });
+  it("tipo de cliente segun RUT y giro", () => {
+    expect(tipoCliente("76111222-8", "Restaurante")).toBe("Empresa");
+    expect(tipoCliente("65.412.880-9", null)).toBe("Institución");
+    expect(tipoCliente("61.002.000-3", "Municipalidad")).toBe("Institución");
+    expect(tipoCliente("12.884.019-8", null)).toBe("Persona");
+    expect(tipoCliente("12.884.019-8", "Minimarket")).toBe("Empresa");
+  });
+  it("frecuencia de recompra por el intervalo promedio entre compras", () => {
+    const d = (dia: number) => new Date(Date.UTC(2026, 8, dia));
+    expect(frecuenciaRecompra(0, null, null)).toBe("Por pagar");
+    expect(frecuenciaRecompra(1, d(1), d(1))).toBe("Primera vez");
+    expect(frecuenciaRecompra(4, d(1), d(22))).toBe("Semanal");
+    expect(frecuenciaRecompra(3, d(1), d(29))).toBe("Quincenal");
+    expect(frecuenciaRecompra(2, d(1), d(30))).toBe("Mensual");
+    expect(frecuenciaRecompra(2, d(1), new Date(Date.UTC(2026, 10, 30)))).toBe("Esporádica");
   });
 });

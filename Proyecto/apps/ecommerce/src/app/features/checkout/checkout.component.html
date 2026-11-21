@@ -1,0 +1,181 @@
+<div class="contenedor checkout">
+  <h1>Pago</h1>
+
+  @if (!session.esComprador()) {
+    <div class="vacio">
+      <h2>El pago es para cuentas de comprador</h2>
+      <a routerLink="/catalogo" class="btn btn-secondary">Ver el catálogo</a>
+    </div>
+  } @else if (!carro.cargado() || !opciones()) {
+    <p class="cargando">Preparando tu pago…</p>
+  } @else if (!resumen().productos && !enviando()) {
+    <div class="vacio">
+      <h2>Tu carro está vacío</h2>
+      <p>Agrega productos para pagar. Si acabas de pagar, revisa tu correo o el resultado del pago.</p>
+      <a routerLink="/catalogo" class="btn btn-primary">Ir al catálogo</a>
+    </div>
+  } @else {
+    <p class="intro">Paga una vez. Cotizapp reparte el pedido entre {{ grupos().length === 1 ? "el distribuidor" : "los " + grupos().length + " distribuidores" }} del carro.</p>
+
+    <div class="columnas">
+      <form class="pasos" (ngSubmit)="pagar()" novalidate>
+        <!-- 1 · Quien compra -->
+        <section class="paso" aria-labelledby="paso-1">
+          <h2 id="paso-1">1 · Quién compra</h2>
+          <div class="segmento" role="radiogroup" aria-label="Documento tributario">
+            <label class="seg-opcion"><input type="radio" name="documento" value="boleta" [checked]="documento() === 'boleta'" (change)="documento.set('boleta')" /><span>Persona (boleta)</span></label>
+            <label class="seg-opcion"><input type="radio" name="documento" value="factura" [checked]="documento() === 'factura'" (change)="documento.set('factura')" /><span>Empresa (factura)</span></label>
+          </div>
+          <dl class="datos-cuenta">
+            <div><dt>Nombre</dt><dd>{{ session.usuario()?.nombre }}</dd></div>
+            <div><dt>Correo</dt><dd>{{ session.usuario()?.email }}</dd></div>
+            <div><dt>Organización</dt><dd>{{ session.usuario()?.organizacion?.nombre }}</dd></div>
+          </dl>
+          <p class="ayuda">La {{ documento() === "factura" ? "factura" : "boleta" }} se emite con el RUT y la razón social de tu cuenta. El comprobante llega a tu correo.</p>
+        </section>
+
+        <!-- 2 · Entrega -->
+        <section class="paso" aria-labelledby="paso-2">
+          <h2 id="paso-2">2 · Entrega</h2>
+          <p class="ayuda">Cada distribuidor entrega su parte. Elige despacho a tu dirección o retiro en su bodega, si lo ofrece.</p>
+          <div class="entregas">
+            @for (g of grupos(); track g.proveedorId) {
+              <fieldset class="entrega">
+                <legend>{{ g.nombre }} <small>· {{ productos(g) }}</small></legend>
+                @if (despachaPorModalidad(g)) {
+                  <label class="radio" [class.deshabilitado]="!cubre(g)">
+                    <input type="radio" [name]="'entrega-' + g.proveedorId" [disabled]="!cubre(g)" [checked]="entregaDe(g)?.tipo === 'despacho'" (change)="elegirEntrega(g, { tipo: 'despacho' })" />
+                    <span>Despacho a domicilio
+                      @if (!cubre(g)) {
+                        <small class="sin-cobertura">no despacha a {{ destino()?.nombre }}</small>
+                      } @else if (coberturaDe(g)) {
+                        <small>@if (despachoDe(g) === 0 && entregaDe(g)?.tipo === "despacho") { gratis } @else { {{ clp(coberturaDe(g)!.costoDespacho) }} } · entrega {{ plazo(g.plazoHoras) }}</small>
+                      } @else {
+                        <small>@if (g.despacho.tipo === "gratis") { gratis } @else if (g.despacho.tipo === "sin-cobertura") { no despacha a la comuna de tu cuenta } @else { {{ clp(g.despacho.costo) }} } · entrega {{ plazo(g.plazoHoras) }}</small>
+                      }
+                    </span>
+                  </label>
+                }
+                @for (p of puntosDe(g); track p.id) {
+                  <label class="radio">
+                    <input type="radio" [name]="'entrega-' + g.proveedorId" [checked]="esRetiro(g, p.id)" (change)="elegirEntrega(g, { tipo: 'retiro', puntoRetiroId: p.id })" />
+                    <span>Retiro en {{ p.nombre }}, sin costo
+                      <small>{{ p.direccion }}@if (p.horario) { · {{ p.horario }} }</small>
+                    </span>
+                  </label>
+                }
+                @if (!puedeDespachar(g) && !puntosDe(g).length) {
+                  @if (despachaPorModalidad(g)) {
+                    <p class="mensaje error">{{ g.nombre }} no despacha a {{ destino()?.nombre }} y no tiene retiro para este pedido. Elige otra dirección o quítalo del carro.</p>
+                  } @else {
+                    <p class="mensaje error">Este distribuidor no tiene una forma de entrega disponible para este pedido.</p>
+                  }
+                }
+              </fieldset>
+            }
+          </div>
+
+          @if (hayDespachoPosible()) {
+            <h3>Dirección de despacho</h3>
+            <div class="direcciones">
+              @for (d of opciones()!.direcciones; track d.id) {
+                <label class="radio">
+                  <input type="radio" name="direccion" [checked]="direccionElegida() === d.id" (change)="elegirDireccion(d.id)" />
+                  <span>{{ textoDireccion(d) }}
+                    <small>{{ d.comuna }}, {{ d.region }}@if (d.referencia) { · {{ d.referencia }} }</small>
+                  </span>
+                </label>
+              }
+              <label class="radio">
+                <input type="radio" name="direccion" [checked]="direccionElegida() === 'nueva'" (change)="elegirDireccion('nueva')" />
+                <span>Otra dirección</span>
+              </label>
+            </div>
+            @if (direccionElegida() === "nueva") {
+              <div class="nueva">
+                <div class="field calle">
+                  <label for="calle">Calle</label>
+                  <input id="calle" name="calle" class="input" [(ngModel)]="nueva.calle" maxlength="160" autocomplete="address-line1"
+                    [class.invalido]="intentado() && !nueva.calle.trim()" />
+                </div>
+                <div class="field">
+                  <label for="numero">Número</label>
+                  <input id="numero" name="numero" class="input" [(ngModel)]="nueva.numero" maxlength="20" />
+                </div>
+                <div class="field">
+                  <label for="complemento">Depto, local u oficina</label>
+                  <input id="complemento" name="complemento" class="input" [(ngModel)]="nueva.complemento" maxlength="80" autocomplete="address-line2" />
+                </div>
+                <div class="field">
+                  <label for="comuna">Comuna</label>
+                  <select id="comuna" name="comuna" class="input" [(ngModel)]="nueva.comunaId" [class.invalido]="intentado() && !nueva.comunaId">
+                    <option [ngValue]="null" disabled>Elige tu comuna</option>
+                    @for (c of comunas(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }} ({{ c.regionNombre }})</option> }
+                  </select>
+                </div>
+                <div class="field ancho">
+                  <label for="referencia">Indicaciones para el repartidor</label>
+                  <input id="referencia" name="referencia" class="input" [(ngModel)]="nueva.referencia" maxlength="240" placeholder="Ej.: conserjería recibe hasta las 20:00" />
+                </div>
+              </div>
+            }
+          }
+        </section>
+
+        <!-- 3 · Pago -->
+        <section class="paso" aria-labelledby="paso-3">
+          <h2 id="paso-3">3 · Pago</h2>
+          <div class="medios">
+            <label class="radio">
+              <input type="radio" name="medio" [checked]="medioPago() === 'tarjeta'" (change)="medioPago.set('tarjeta')" />
+              <span>Tarjeta de crédito, débito o prepago <small>Pagas en Webpay de Transbank. Cotizapp no ve los datos de tu tarjeta.</small></span>
+            </label>
+            <label class="radio deshabilitado">
+              <input type="radio" name="medio" disabled />
+              <span>Transferencia bancaria <small>Pronto disponible.</small></span>
+            </label>
+            <label class="radio deshabilitado">
+              <input type="radio" name="medio" disabled />
+              <span>Línea de crédito Cotizapp (empresas, 30 días) <small>Requiere evaluación comercial; pronto disponible.</small></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Asi llega tu pedido -->
+        <section class="paso" aria-labelledby="como-llega">
+          <h2 id="como-llega">Así llega tu pedido</h2>
+          @for (g of grupos(); track g.proveedorId) {
+            <div class="llegada">
+              <div><strong>{{ g.nombre }}</strong> <span class="suave">· {{ productos(g) }}</span></div>
+              <div class="suave">
+                @if (entregaDe(g); as e) {
+                  @if (e.tipo === "retiro") { Retiro en {{ nombrePunto(e.puntoRetiroId) }} } @else { Despacho · {{ plazo(g.plazoHoras) }} }
+                }
+              </div>
+              <div class="monto">{{ clp(g.subtotal + despachoDe(g)) }}</div>
+            </div>
+          }
+        </section>
+
+        <button type="submit" class="visualmente-oculto" tabindex="-1">Pagar</button>
+      </form>
+
+      <aside class="resumen" aria-label="Total a pagar">
+        <h2>Total a pagar</h2>
+        <dl>
+          <div><dt>Productos ({{ resumen().productos }})</dt><dd>{{ clp(resumen().subtotal) }}</dd></div>
+          <div><dt>Despachos ({{ grupos().length }})</dt><dd>{{ despachos() ? clp(despachos()) : "Sin costo" }}</dd></div>
+        </dl>
+        <div class="total"><span>Total</span><strong>{{ clp(total()) }}</strong></div>
+        @if (error(); as e) {
+          <p class="mensaje error" role="alert">{{ e.texto }} @if (e.alCarro) { <a routerLink="/carro">Volver al carro</a> }</p>
+        }
+        <button type="button" class="btn btn-primary btn-block pagar" [disabled]="enviando()" (click)="pagar()">
+          {{ enviando() ? "Te llevamos a Webpay…" : "Pagar " + clp(total()) }}
+        </button>
+        <a routerLink="/carro" class="btn btn-secondary btn-block">Volver al carro</a>
+        <p class="letra-chica">El despacho se calcula para la comuna de destino; si cambia, Webpay muestra el monto final antes de pagar. Al pagar aceptas las condiciones de cada distribuidor. Si un producto no está disponible, se devuelve ese monto.</p>
+      </aside>
+    </div>
+  }
+</div>

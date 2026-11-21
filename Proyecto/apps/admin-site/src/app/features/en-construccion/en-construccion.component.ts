@@ -13,8 +13,8 @@ import { ActivatedRoute } from "@angular/router";
   `,
   styles: [
     `
-      h2 { font-size: 34px; margin: 0 0 6px; }
-      .aviso { display: inline-block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; background: var(--color-accent-100); color: var(--color-accent-800); }
+      h2 { font-size: 26px; margin: 0 0 6px; }
+      .aviso { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: var(--radius-pill); background: var(--color-primary-100); color: var(--color-primary); }
       .detalle { font-size: 14px; max-width: 64ch; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
     `
   ]

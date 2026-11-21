@@ -80,9 +80,65 @@ export function geometriaGrafico(semanas: SemanaDashboard[], ancho = 640, alto =
   return { ancho, alto, base, maximo, ticks, barras };
 }
 
+/** Rango yyyy-mm-dd (inclusivo) de un mes "yyyy-mm"; si es el mes en curso, `hasta` llega solo hasta hoy. */
+export function rangoDelMes(mes: string, hoy: Date = new Date()): { desde: string; hasta: string } {
+  const [a, m] = mes.split("-").map(Number);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ultimo = new Date(a, m, 0).getDate();
+  const esActual = hoy.getFullYear() === a && hoy.getMonth() + 1 === m;
+  const dia = esActual ? Math.min(hoy.getDate(), ultimo) : ultimo;
+  return { desde: `${a}-${pad(m)}-01`, hasta: `${a}-${pad(m)}-${pad(dia)}` };
+}
+
+/** 0.1234 -> "12,3 %". */
+export function formatoConversion(c: number): string {
+  return `${(c * 100).toLocaleString("es-CL", { maximumFractionDigits: 1 })} %`;
+}
+
+export interface BarraDia {
+  x: number;
+  y: number;
+  ancho: number;
+  alto: number;
+  fecha: string;
+  valor: number;
+}
+export interface GeometriaDias {
+  ancho: number;
+  alto: number;
+  base: number;
+  maximo: number;
+  ticks: Array<{ valor: number; y: number }>;
+  barras: BarraDia[];
+}
+
+/** Barras de una serie diaria (p. ej. vistas por dia) en un viewBox fijo (puro, sin DOM). */
+export function geometriaDias(dias: Array<{ fecha: string; valor: number }>, ancho = 640, alto = 200): GeometriaDias {
+  const m = { izq: 44, der: 12, sup: 12, inf: 24 };
+  const base = alto - m.inf;
+  const util = base - m.sup;
+  const maximo = maximoEscala(Math.max(0, ...dias.map((d) => d.valor)));
+  const ticks = [0, 1, 2].map((i) => ({ valor: (maximo * i) / 2, y: base - (util * i) / 2 }));
+  const slot = dias.length ? (ancho - m.izq - m.der) / dias.length : 0;
+  const barras = dias.map((d, i) => {
+    const h = (d.valor / maximo) * util;
+    const a = slot * 0.7;
+    return { x: m.izq + slot * i + (slot - a) / 2, y: base - h, ancho: a, alto: h, fecha: d.fecha, valor: d.valor };
+  });
+  return { ancho, alto, base, maximo, ticks, barras };
+}
+
 /** Valor del <input type="month"> para el mes actual (hora local del navegador). */
 export function mesLocalActual(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function mensajeErrorTrafico(err: unknown): string {
+  const e = err as HttpErrorResponse;
+  const msg = e?.error?.error?.message as string | undefined;
+  if (e?.status === 403) return "No tienes permiso para ver las estadísticas de tráfico.";
+  if (e?.status === 0) return "No hay conexión con el servidor.";
+  return msg ?? "No se pudieron cargar las estadísticas de tráfico.";
 }
 
 export function mensajeErrorDashboard(err: unknown): string {

@@ -1,7 +1,7 @@
 import type { FastifyRequest, RouteOptions } from "fastify";
 import { idParamSchema } from "@cotizapp/domain";
-import { cambiarEstadoEnvio, listarOrdenes, obtenerOrden } from "@cotizapp/application";
-import { DrizzleOrdenRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import { calificarEnvio, cambiarEstadoEnvio, listarOrdenes, obtenerOrden } from "@cotizapp/application";
+import { DrizzleCalificacionRepository, DrizzleOrdenRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 const deps = (request: FastifyRequest) => ({
@@ -35,4 +35,18 @@ export const patchEstadoEnvioRoute: RouteOptions = {
     cambiarEstadoEnvio(deps(request))(uid(request), idParamSchema.parse(request.params).id, request.body)
 };
 
-export const ordenRoutes: RouteOptions[] = [listOrdenesRoute, getOrdenRoute, patchEstadoEnvioRoute];
+// El comprador califica al proveedor de un envio entregado, una vez (KAN-99).
+export const calificarEnvioRoute: RouteOptions = {
+  method: "POST",
+  url: "/ordenes/envios/:id/calificacion",
+  preHandler: [requireAuth, requirePermiso("ver_ordenes_propias")],
+  handler: async (request, reply) => {
+    const r = await calificarEnvio({
+      calificacionRepository: new DrizzleCalificacionRepository(request.server.db),
+      usuarioRepository: new DrizzleUsuarioRepository(request.server.db)
+    })(uid(request), idParamSchema.parse(request.params).id, request.body);
+    return reply.status(201).send(r);
+  }
+};
+
+export const ordenRoutes: RouteOptions[] = [listOrdenesRoute, getOrdenRoute, patchEstadoEnvioRoute, calificarEnvioRoute];

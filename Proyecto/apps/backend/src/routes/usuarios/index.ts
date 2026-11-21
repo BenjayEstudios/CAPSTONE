@@ -2,6 +2,7 @@ import type { RouteOptions } from "fastify";
 import { idParamSchema } from "@cotizapp/domain";
 import {
   actualizarUsuario,
+  buscarOrganizaciones,
   crearUsuario,
   listarUsuarios,
   obtenerUsuario,
@@ -37,6 +38,12 @@ export const usuarioRoutes: RouteOptions[] = [
     url: "/usuarios/opciones",
     preHandler: LECTURA,
     handler: async (request) => opcionesUsuarios(repos(request.server))()
+  },
+  {
+    method: "GET",
+    url: "/usuarios/organizaciones",
+    preHandler: LECTURA,
+    handler: async (request) => buscarOrganizaciones(repos(request.server))(request.query)
   },
   {
     method: "GET",

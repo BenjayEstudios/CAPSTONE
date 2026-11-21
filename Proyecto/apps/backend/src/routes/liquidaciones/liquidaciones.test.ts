@@ -32,7 +32,9 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     }
     listar = listarSpy;
     async buscarPorId(id: number) {
-      return id === 5 ? { liquidacion: { id: 5, estado: "pendiente" }, envios: [] } : null;
+      if (id === 5) return { liquidacion: { id: 5, proveedorId: 9, estado: "pendiente" }, envios: [{ envioId: 1, ordenCodigo: "CM-1" }] };
+      if (id === 8) return { liquidacion: { id: 8, proveedorId: 8, estado: "pagada" }, envios: [] };
+      return null;
     }
     async marcarPagada(id: number) {
       return id === 5 ? { resultado: "ok", liquidacion: { id: 5, estado: "pagada" } } : { resultado: "ya_pagada" };
@@ -77,5 +79,17 @@ describe("rutas de liquidaciones", () => {
     expect(r.statusCode).toBe(200);
     expect(listarSpy).toHaveBeenLastCalledWith(expect.objectContaining({ proveedorId: 9 }));
     expect((await app.inject({ method: "GET", url: "/liquidaciones/mias", headers: bearer("1") })).statusCode).toBe(403);
+  });
+});
+
+describe("detalle de una liquidacion propia (KAN-111)", () => {
+  it("el proveedor ve la suya con sus envios; la de otro o una inexistente 404; sin ser proveedor 403", async () => {
+    const r = await app.inject({ method: "GET", url: "/liquidaciones/mias/5", headers: bearer("3") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ id: 5, proveedorId: 9, envios: [{ envioId: 1, ordenCodigo: "CM-1" }] });
+    expect((await app.inject({ method: "GET", url: "/liquidaciones/mias/8", headers: bearer("3") })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/liquidaciones/mias/7", headers: bearer("3") })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/liquidaciones/mias/5", headers: bearer("1") })).statusCode).toBe(403);
+    expect((await app.inject({ method: "GET", url: "/liquidaciones/mias/5" })).statusCode).toBe(401);
   });
 });

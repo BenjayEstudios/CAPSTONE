@@ -26,6 +26,7 @@ export class CategoriasComponent {
   private slugManual = false;
 
   readonly raices = computed(() => ordenarHermanos(this.arbol()));
+  readonly totalSub = computed(() => this.arbol().reduce((n, c) => n + (c.hijos?.length ?? 0), 0));
   // Posibles padres: solo categorias de nivel 1 (y no la propia).
   readonly padresPosibles = computed(() => this.raices().filter((c) => c.id !== this.editando()?.id));
 

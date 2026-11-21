@@ -144,14 +144,31 @@ export function pagarLiquidacion(deps: Deps) {
   };
 }
 
+/** Organizacion proveedora del usuario (permiso ver_ordenes_propias); si no, 401/403. */
+async function proveedorDelUsuario(deps: { usuarioRepository: UsuarioRepository }, usuarioId: number): Promise<number> {
+  const ctx = await deps.usuarioRepository.buscarPorId(usuarioId);
+  if (!ctx || ctx.usuario.estado !== "activo") throw new ErrorAplicacion(401, "UNAUTHORIZED", "Sesion invalida");
+  if (ctx.organizacion.tipo !== "proveedor" || !cumpleRequisito(ctx.rol.permisos, { codigo: "ver_ordenes_propias" })) {
+    throw new ErrorAplicacion(403, "FORBIDDEN", "No tienes permiso para esto");
+  }
+  return ctx.organizacion.id;
+}
+
 /** Liquidaciones del proveedor autenticado (permiso ver_ordenes_propias, organizacion tipo proveedor). */
 export function listarMisLiquidaciones(deps: Deps & { usuarioRepository: UsuarioRepository }) {
-  return async (usuarioId: number, input: unknown) => {
-    const ctx = await deps.usuarioRepository.buscarPorId(usuarioId);
-    if (!ctx || ctx.usuario.estado !== "activo") throw new ErrorAplicacion(401, "UNAUTHORIZED", "Sesion invalida");
-    if (ctx.organizacion.tipo !== "proveedor" || !cumpleRequisito(ctx.rol.permisos, { codigo: "ver_ordenes_propias" })) {
-      throw new ErrorAplicacion(403, "FORBIDDEN", "No tienes permiso para esto");
-    }
-    return listarLiquidaciones(deps)(input, ctx.organizacion.id);
+  return async (usuarioId: number, input: unknown) => listarLiquidaciones(deps)(input, await proveedorDelUsuario(deps, usuarioId));
+}
+
+/**
+ * GET /liquidaciones/mias/:id (KAN-111): el detalle con los envios incluidos,
+ * solo si es del proveedor de la sesion (una ajena responde 404, igual que
+ * una que no existe).
+ */
+export function obtenerMiLiquidacion(deps: Deps & { usuarioRepository: UsuarioRepository }) {
+  return async (usuarioId: number, id: number) => {
+    const proveedorId = await proveedorDelUsuario(deps, usuarioId);
+    const r = await deps.liquidacionRepository.buscarPorId(id);
+    if (!r || r.liquidacion.proveedorId !== proveedorId) throw new ErrorAplicacion(404, "LIQUIDACION_NO_ENCONTRADA", "Liquidacion no encontrada");
+    return { ...r.liquidacion, envios: r.envios };
   };
 }

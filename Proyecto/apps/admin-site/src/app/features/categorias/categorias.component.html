@@ -1,55 +1,72 @@
-<header class="cab">
-  <h2>Categorías</h2>
+<header class="cabecera">
+  <div>
+    <h2>Categorías</h2>
+    @if (!cargando() && !errorCarga() && raices().length > 0) {
+      <p class="resumen">{{ raices().length }} de nivel 1 · {{ totalSub() }} subcategorías</p>
+    }
+  </div>
   <button type="button" class="btn btn-primary" (click)="nueva()">Nueva categoría</button>
 </header>
 
 @if (formAbierto()) {
-  <form class="panel" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
-    <h3>{{ editando() ? "Editar categoría" : "Nueva categoría" }}</h3>
-    @if (errorForm()) { <p class="mensaje error" role="alert">{{ errorForm() }}</p> }
-    <label>Nombre
-      <input formControlName="nombre" (input)="onNombre()" />
-      @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="ayuda">El nombre es obligatorio.</span> }
-    </label>
-    <label>Slug
-      <input formControlName="slug" (input)="onSlug()" />
-      @if (form.controls.slug.touched && form.controls.slug.invalid) { <span class="ayuda">Solo minúsculas, números y guiones.</span> }
-    </label>
-    <label>Categoría padre (opcional)
-      <select formControlName="padreId">
-        <option value="">Ninguna (nivel 1)</option>
-        @for (p of padresPosibles(); track p.id) { <option [value]="p.id">{{ p.nombre }}</option> }
-      </select>
-    </label>
-    <label>Orden
-      <input type="number" min="0" formControlName="orden" />
-    </label>
-    <div class="acciones">
+  <form class="panel" [formGroup]="form" (ngSubmit)="guardar()" novalidate aria-labelledby="t-form">
+    <h3 id="t-form">{{ editando() ? "Editar categoría" : "Nueva categoría" }}</h3>
+    @if (errorForm()) { <p class="mensaje" role="alert">{{ errorForm() }}</p> }
+    <div class="grid">
+      <div class="field">
+        <label for="c-nombre">Nombre</label>
+        <input id="c-nombre" class="input" formControlName="nombre" maxlength="120" (input)="onNombre()" />
+        @if (form.controls.nombre.touched && form.controls.nombre.invalid) { <span class="ayuda">El nombre es obligatorio.</span> }
+      </div>
+      <div class="field">
+        <label for="c-slug">Slug</label>
+        <input id="c-slug" class="input" formControlName="slug" (input)="onSlug()" />
+        @if (form.controls.slug.touched && form.controls.slug.invalid) { <span class="ayuda">Solo minúsculas, números y guiones.</span> }
+      </div>
+      <div class="field">
+        <label for="c-padre">Categoría padre (opcional)</label>
+        <select id="c-padre" class="input" formControlName="padreId">
+          <option value="">Ninguna (nivel 1)</option>
+          @for (p of padresPosibles(); track p.id) { <option [value]="p.id">{{ p.nombre }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label for="c-orden">Orden</label>
+        <input id="c-orden" class="input" type="number" min="0" formControlName="orden" />
+      </div>
+    </div>
+    <div class="botones">
       <button type="submit" class="btn btn-primary" [disabled]="guardando()">{{ guardando() ? "Guardando…" : "Guardar" }}</button>
-      <button type="button" class="btn btn-secondary" (click)="cancelar()">Cancelar</button>
+      <button type="button" class="btn btn-secondary" [disabled]="guardando()" (click)="cancelar()">Cancelar</button>
     </div>
   </form>
 }
 
-@if (errorAccion()) { <p class="mensaje error" role="alert">{{ errorAccion() }}</p> }
+@if (errorAccion()) { <p class="mensaje" role="alert">{{ errorAccion() }}</p> }
 
 @if (cargando()) {
-  <p class="estado">Cargando categorías…</p>
+  <p class="estado" role="status">Cargando categorías…</p>
 } @else if (errorCarga()) {
-  <p class="mensaje error" role="alert">{{ errorCarga() }}</p>
-  <button type="button" class="btn btn-secondary" (click)="cargar()">Reintentar</button>
+  <p class="mensaje" role="alert">
+    {{ errorCarga() }} <button type="button" class="btn btn-secondary" (click)="cargar()">Reintentar</button>
+  </p>
 } @else if (raices().length === 0) {
   <p class="estado">Aún no hay categorías. Crea la primera con “Nueva categoría”.</p>
 } @else {
   <ul class="arbol">
     @for (c of raices(); track c.id; let i = $index; let ultimo = $last) {
-      <li>
-        <div class="fila" [class.oculta]="c.estado === 'oculta'">
-          <span class="nombre">{{ c.nombre }} <small>/{{ c.slug }}</small></span>
-          <span class="etiqueta">{{ c.estado === "activa" ? "Activa" : "Oculta" }}</span>
-          <span class="botones">
-            <button type="button" class="btn btn-secondary" [disabled]="i === 0" (click)="mover(c, 'subir')" aria-label="Subir">↑</button>
-            <button type="button" class="btn btn-secondary" [disabled]="ultimo" (click)="mover(c, 'bajar')" aria-label="Bajar">↓</button>
+      <li class="grupo">
+        <div class="fila raiz" [class.oculta]="c.estado === 'oculta'">
+          <span class="nombre">
+            <strong>{{ c.nombre }}</strong>
+            <small>/{{ c.slug }}</small>
+          </span>
+          <span [class]="'badge ' + c.estado">{{ c.estado === "activa" ? "Activa" : "Oculta" }}</span>
+          <span class="acciones">
+            <span class="orden" role="group" aria-label="Cambiar orden">
+              <button type="button" class="btn btn-secondary icono" [disabled]="i === 0" (click)="mover(c, 'subir')" aria-label="Subir" title="Subir">↑</button>
+              <button type="button" class="btn btn-secondary icono" [disabled]="ultimo" (click)="mover(c, 'bajar')" aria-label="Bajar" title="Bajar">↓</button>
+            </span>
             <button type="button" class="btn btn-secondary" (click)="nueva(c.id)">Agregar sub</button>
             <button type="button" class="btn btn-secondary" (click)="editar(c)">Editar</button>
             <button type="button" class="btn btn-secondary" (click)="alternarEstado(c)">{{ c.estado === "activa" ? "Ocultar" : "Mostrar" }}</button>
@@ -59,11 +76,16 @@
           <ul class="sub">
             @for (h of hijos(c); track h.id; let j = $index; let ult = $last) {
               <li class="fila" [class.oculta]="h.estado === 'oculta'">
-                <span class="nombre">{{ h.nombre }} <small>/{{ h.slug }}</small></span>
-                <span class="etiqueta">{{ h.estado === "activa" ? "Activa" : "Oculta" }}</span>
-                <span class="botones">
-                  <button type="button" class="btn btn-secondary" [disabled]="j === 0" (click)="mover(h, 'subir')" aria-label="Subir">↑</button>
-                  <button type="button" class="btn btn-secondary" [disabled]="ult" (click)="mover(h, 'bajar')" aria-label="Bajar">↓</button>
+                <span class="nombre">
+                  <span>{{ h.nombre }}</span>
+                  <small>/{{ h.slug }}</small>
+                </span>
+                <span [class]="'badge ' + h.estado">{{ h.estado === "activa" ? "Activa" : "Oculta" }}</span>
+                <span class="acciones">
+                  <span class="orden" role="group" aria-label="Cambiar orden">
+                    <button type="button" class="btn btn-secondary icono" [disabled]="j === 0" (click)="mover(h, 'subir')" aria-label="Subir" title="Subir">↑</button>
+                    <button type="button" class="btn btn-secondary icono" [disabled]="ult" (click)="mover(h, 'bajar')" aria-label="Bajar" title="Bajar">↓</button>
+                  </span>
                   <button type="button" class="btn btn-secondary" (click)="editar(h)">Editar</button>
                   <button type="button" class="btn btn-secondary" (click)="alternarEstado(h)">{{ h.estado === "activa" ? "Ocultar" : "Mostrar" }}</button>
                 </span>

@@ -76,6 +76,43 @@ describe("CatalogoService", () => {
   });
 });
 
+describe("CatalogoService - importacion masiva", () => {
+  let svc: CatalogoService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    svc = TestBed.inject(CatalogoService);
+    http = TestBed.inject(HttpTestingController);
+  });
+  afterEach(() => http.verify());
+
+  it("descarga la plantilla como blob", () => {
+    svc.plantillaImportacion().subscribe();
+    const req = http.expectOne(`${environment.apiUrl}/productos/plantilla-importacion`);
+    expect(req.request.method).toBe("GET");
+    expect(req.request.responseType).toBe("blob");
+    req.flush(new Blob(["x"]));
+  });
+
+  it("descarga el catalogo actual con conProductos=true", () => {
+    svc.plantillaImportacion(true).subscribe();
+    http.expectOne(`${environment.apiUrl}/productos/plantilla-importacion?conProductos=true`).flush(new Blob(["x"]));
+  });
+
+  it("envia la planilla como multipart y respeta simular", () => {
+    const archivo = new File(["x"], "p.xlsx");
+    svc.importar(archivo, true).subscribe();
+    const sim = http.expectOne(`${environment.apiUrl}/productos/importar?simular=true`);
+    expect(sim.request.method).toBe("POST");
+    expect(sim.request.body instanceof FormData).toBeTrue();
+    sim.flush({ simulacion: true, totalFilas: 0, resumen: { crear: 0, actualizar: 0, sinCambios: 0, errores: 0 }, filas: [] });
+
+    svc.importar(archivo, false).subscribe();
+    http.expectOne(`${environment.apiUrl}/productos/importar?simular=false`).flush({});
+  });
+});
+
 describe("formatearPrecio", () => {
   it("devuelve guion largo sin precio", () => {
     expect(formatearPrecio(null)).toBe("—");

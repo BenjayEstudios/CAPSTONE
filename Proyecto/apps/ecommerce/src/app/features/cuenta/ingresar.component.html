@@ -1,0 +1,41 @@
+<div class="contenedor pagina">
+  <app-panel-cuenta />
+
+  <section class="tarjeta" aria-labelledby="titulo-ingresar">
+    <h2 id="titulo-ingresar">Ingresar</h2>
+    <p class="sub">Con el correo y la contraseña de tu cuenta.</p>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      @if (aviso()) {
+        <p class="mensaje aviso" role="status">{{ aviso() }}</p>
+      }
+      @if (error()) {
+        <p class="mensaje error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="field">
+        <label for="email">Correo electrónico</label>
+        <input id="email" class="input" type="email" formControlName="email" autocomplete="username" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="ayuda error">Escribe un correo válido.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="clave">Contraseña</label>
+        <input id="clave" class="input" type="password" formControlName="clave" autocomplete="current-password" />
+        @if (form.controls.clave.touched && form.controls.clave.invalid) {
+          <span class="ayuda error">Escribe tu contraseña.</span>
+        }
+      </div>
+      <a routerLink="/recuperar-clave" class="enlace-derecha">¿Olvidaste tu contraseña?</a>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
+        {{ cargando() ? "Ingresando..." : "Ingresar" }}
+      </button>
+
+      <p class="pie-form">¿Primera vez? <a routerLink="/registro" [queryParams]="returnUrl !== '/' ? { returnUrl } : {}">Crea tu cuenta de comprador</a></p>
+      <p class="pie-form">¿Eres distribuidor? <a routerLink="/vender">Vende en Cotizapp</a></p>
+    </form>
+  </section>
+</div>

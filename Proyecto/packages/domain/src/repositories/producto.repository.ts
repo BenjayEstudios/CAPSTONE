@@ -25,6 +25,8 @@ export type CambiosProducto = ActualizarProductoDto & { imagenes?: ProductoImage
 // Puerto de persistencia de productos. Implementacion en @cotizapp/infrastructure.
 export interface ProductoRepository {
   listar(filtros: FiltrosProductos): Promise<PaginaProductos>;
+  /** Todo el catalogo con todos sus campos (para exportar a Excel), por id ascendente. */
+  listarTodos(): Promise<Producto[]>;
   buscarPorId(id: number): Promise<Producto | null>;
   buscarPorSku(sku: string): Promise<Producto | null>;
   buscarPorEan(ean: string): Promise<Producto | null>;

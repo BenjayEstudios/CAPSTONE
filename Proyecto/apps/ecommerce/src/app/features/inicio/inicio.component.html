@@ -1,0 +1,75 @@
+<div class="contenedor portada">
+  <section class="propuesta" aria-labelledby="titulo-portada">
+    <h1 id="titulo-portada">Compara el mismo producto en todos sus distribuidores antes de comprarlo.</h1>
+    <p class="bajada">
+      Abarrotes, lácteos, carnes y desechables de distribuidores mayoristas. Elige el distribuidor que te
+      conviene en cada producto y paga todo en un solo carro.
+    </p>
+    <div class="botones">
+      <a routerLink="/catalogo" class="btn btn-catalogo">Ver catálogo completo</a>
+      <button type="button" class="btn btn-secondary" (click)="buscarEjemplo()">Ejemplo: {{ ejemplo }}</button>
+    </div>
+
+    @if (resumen(); as r) {
+      <dl class="contadores">
+        <div>
+          <dt>Proveedores</dt>
+          <dd><span class="tinta-desfasada" [attr.data-valor]="contador(r.proveedoresActivos)">{{ contador(r.proveedoresActivos) }}</span></dd>
+        </div>
+        <div>
+          <dt>Productos comparados</dt>
+          <dd><span class="tinta-desfasada" [attr.data-valor]="contador(r.productosComparados)">{{ contador(r.productosComparados) }}</span></dd>
+        </div>
+      </dl>
+    } @else {
+      <p class="cargando contadores-vacios">Cargando el catálogo…</p>
+    }
+  </section>
+
+  <aside class="lateral">
+    <section aria-labelledby="titulo-categorias">
+      <h2 id="titulo-categorias" class="etiqueta">Categorías</h2>
+      @if (resumen()) {
+        @for (c of categorias(); track c.id) {
+          <div class="categoria">
+            <a class="raiz" routerLink="/catalogo" [queryParams]="{ categoria: c.id }">{{ c.nombre }} <span class="n">{{ c.productos }}</span></a>
+            @if (c.hijos.length) {
+              <ul>
+                @for (h of c.hijos; track h.id) {
+                  <li><a routerLink="/catalogo" [queryParams]="{ categoria: h.id }">{{ h.nombre }}</a> <span class="n">{{ h.productos }}</span></li>
+                }
+              </ul>
+            }
+          </div>
+        } @empty {
+          <p class="cargando">Todavía no hay productos publicados.</p>
+        }
+      } @else {
+        <p class="cargando">Cargando…</p>
+      }
+    </section>
+
+    <section aria-labelledby="titulo-diferencia">
+      <h2 id="titulo-diferencia" class="etiqueta">Mayor diferencia de precio hoy</h2>
+      @if (diferencias(); as lista) {
+        <ol class="diferencias">
+          @for (p of lista; track p.id) {
+            <li>
+              <a [routerLink]="['/producto', p.id]">
+                <span class="nombre">{{ p.nombre }}</span>
+                <span class="rango">{{ clp(p.precioDesde) }} a {{ clp(p.precioHasta) }} · {{ p.ofertas }} distribuidores</span>
+              </a>
+              <span class="monto" [attr.aria-label]="'Diferencia de ' + clp(p.precioHasta - p.precioDesde)">{{ clp(p.precioHasta - p.precioDesde) }}</span>
+            </li>
+          } @empty {
+            <li class="cargando">Hoy ningún producto tiene más de un distribuidor.</li>
+          }
+        </ol>
+      } @else if (errorDiferencias()) {
+        <p class="cargando">No pudimos cargar las diferencias. <button type="button" class="btn-link" (click)="cargarDiferencias()">Reintentar</button></p>
+      } @else {
+        <p class="cargando">Cargando…</p>
+      }
+    </section>
+  </aside>
+</div>

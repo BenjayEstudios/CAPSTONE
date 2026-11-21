@@ -1,21 +1,33 @@
-import { and, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import type {
+  BuscarOrganizacionesQueryDto,
   CambiosUsuario,
   ListarUsuariosQueryDto,
+  ListadoUsuarios,
   NuevoUsuario,
   OpcionesUsuario,
+  OrganizacionOpcion,
   RegistroAuditoria,
   UsuarioAdmin,
   UsuarioAdminRepository,
-  UsuarioEstado
+  UsuarioEstado,
+  UsuarioOrden
 } from "@cotizapp/domain";
+import { TOPE_CONTEO } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
 import { rol } from "../db/schema/rol.schema.js";
 import { usuario } from "../db/schema/usuario.schema.js";
+import { escaparLike, pareceRut, planBusqueda } from "./busqueda-texto.js";
 
-const escaparLike = (s: string) => s.replace(/[\%_]/g, (c) => `\${c}`);
+// Todos los ordenes salen de un indice (PK o usuario_nombre_idx) y desempatan por id.
+const ORDENES: Record<UsuarioOrden, SQL[]> = {
+  reciente: [desc(usuario.id)],
+  antiguo: [asc(usuario.id)],
+  nombre_asc: [asc(usuario.nombre), asc(usuario.id)],
+  nombre_desc: [desc(usuario.nombre), desc(usuario.id)]
+};
 
 // Seleccion explicita: hash_clave NUNCA se lee en este repositorio.
 const seleccion = {
@@ -60,20 +72,36 @@ export class DrizzleUsuarioAdminRepository implements UsuarioAdminRepository {
       .innerJoin(organizacion, eq(usuario.organizacionId, organizacion.id));
   }
 
-  async listar(f: ListarUsuariosQueryDto) {
+  async listar(f: ListarUsuariosQueryDto): Promise<ListadoUsuarios> {
     const cond: SQL[] = [];
     if (f.rolId) cond.push(eq(usuario.rolId, f.rolId));
     if (f.organizacionId) cond.push(eq(usuario.organizacionId, f.organizacionId));
     if (f.estado) cond.push(eq(usuario.estado, f.estado));
     if (f.q) {
-      const p = `%${escaparLike(f.q)}%`;
-      const b = or(like(usuario.nombre, p), like(usuario.email, p));
-      if (b) cond.push(b);
+      const plan = planBusqueda(f.q);
+      if (plan.modo === "fulltext") {
+        cond.push(sql`MATCH(${usuario.nombre}, ${usuario.email}) AGAINST (${plan.expresion} IN BOOLEAN MODE)`);
+      } else {
+        const b = or(like(usuario.nombre, plan.patron), like(usuario.email, plan.patron));
+        if (b) cond.push(b);
+      }
     }
     const where = cond.length ? and(...cond) : undefined;
-    const [{ total }] = await this.db.select({ total: count() }).from(usuario).where(where);
-    const filas = await this.base().where(where).orderBy(desc(usuario.id)).limit(f.tamano).offset((f.pagina - 1) * f.tamano);
-    return { items: filas.map(aUsuarioAdmin), total };
+
+    // Pagina: se lee una fila de mas para saber si hay siguiente sin depender del conteo.
+    // Conteo: acotado a TOPE_CONTEO + 1 filas, asi su costo no crece con la tabla.
+    const acotado = this.db.select({ id: usuario.id }).from(usuario).where(where).limit(TOPE_CONTEO + 1).as("acotado");
+    const [filas, [conteo]] = await Promise.all([
+      this.base().where(where).orderBy(...ORDENES[f.orden]).limit(f.tamano + 1).offset((f.pagina - 1) * f.tamano),
+      this.db.select({ n: count() }).from(acotado)
+    ]);
+    const n = Number(conteo?.n ?? 0);
+    return {
+      items: filas.slice(0, f.tamano).map(aUsuarioAdmin),
+      total: Math.min(n, TOPE_CONTEO),
+      totalExacto: n <= TOPE_CONTEO,
+      hayMas: filas.length > f.tamano
+    };
   }
 
   async obtener(id: number) {
@@ -83,12 +111,36 @@ export class DrizzleUsuarioAdminRepository implements UsuarioAdminRepository {
 
   async opciones(): Promise<OpcionesUsuario> {
     const roles = await this.db.select({ id: rol.id, codigo: rol.codigo, nombre: rol.nombre }).from(rol).orderBy(rol.id);
-    const organizaciones = await this.db
-      .select({ id: organizacion.id, razonSocial: organizacion.razonSocial, tipo: organizacion.tipo, estado: organizacion.estado })
+    return { roles };
+  }
+
+  // Typeahead de organizaciones: por id exacto (para mostrar la ya elegida), por RUT (prefijo
+  // sobre el indice unico) o por nombre (FULLTEXT / prefijo). Siempre acotado por `limite`.
+  async buscarOrganizaciones(f: BuscarOrganizacionesQueryDto): Promise<OrganizacionOpcion[]> {
+    let where: SQL | undefined;
+    if (f.id) {
+      where = eq(organizacion.id, f.id);
+    } else if (f.q && pareceRut(f.q)) {
+      where = like(organizacion.rut, `${escaparLike(f.q.trim())}%`);
+    } else if (f.q) {
+      const plan = planBusqueda(f.q);
+      where =
+        plan.modo === "fulltext"
+          ? sql`MATCH(${organizacion.razonSocial}, ${organizacion.nombreFantasia}) AGAINST (${plan.expresion} IN BOOLEAN MODE)`
+          : like(organizacion.razonSocial, plan.patron);
+    }
+    return this.db
+      .select({
+        id: organizacion.id,
+        razonSocial: organizacion.razonSocial,
+        rut: organizacion.rut,
+        tipo: organizacion.tipo,
+        estado: organizacion.estado
+      })
       .from(organizacion)
-      .orderBy(organizacion.tipo, organizacion.razonSocial)
-      .limit(1000);
-    return { roles, organizaciones };
+      .where(where)
+      .orderBy(organizacion.razonSocial, organizacion.id)
+      .limit(f.limite);
   }
 
   async existeRol(id: number) {
@@ -121,7 +173,11 @@ export class DrizzleUsuarioAdminRepository implements UsuarioAdminRepository {
 
   async actualizar(id: number, cambios: CambiosUsuario, auditoria: RegistroAuditoria) {
     await this.db.transaction(async (tx) => {
-      await tx.update(usuario).set(cambios).where(eq(usuario.id, id));
+      // Cualquier cambio de mfa_estado que no sea "activo" descarta el secreto
+      // TOTP: asi un admin reinicia el 2FA (ej. telefono perdido) poniendo
+      // "pendiente", y el usuario se enrola de nuevo en su proximo ingreso.
+      const reiniciaMfa = cambios.mfaEstado !== undefined && cambios.mfaEstado !== "activo";
+      await tx.update(usuario).set(reiniciaMfa ? { ...cambios, mfaSecreto: null } : cambios).where(eq(usuario.id, id));
       await tx.insert(auditoriaLog).values(auditoria);
     });
   }

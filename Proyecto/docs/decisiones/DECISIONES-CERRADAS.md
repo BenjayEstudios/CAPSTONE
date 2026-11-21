@@ -73,6 +73,60 @@ explícito, así que no depende del default del código.
 `CORS_ORIGINS` separada por coma, porque hay dos frontends locales (4200 y
 4300). Una sola variable; la singular se eliminó.
 
+### Permisos por matriz, no por código de rol
+
+Las rutas usan `requirePermiso`, que lee `rol.permisos` desde la base en
+cada request (por ejemplo, `POST /categorias` pide `crear_producto`).
+`requireRol` queda disponible, pero ninguna ruta lo usa. Esto cierra la
+duda de que `POST /categorias` pedía `requireRol("administrador")`
+cuando el código del seed es `admin_general` (KAN-144).
+
+### Login único en `POST /auth/login`
+
+Para compradores, proveedores e internos; cada app decide qué roles acepta.
+`POST /auth/admin/login` se mantiene para admin-site (KAN-144,
+[entrada](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md)).
+
+## Catálogo
+
+### Catálogo público en `/catalogo/productos`
+
+`GET /productos` sigue siendo el listado de administración. El comprador usa
+`GET /catalogo/productos` y `GET /catalogo/productos/:id`, públicos, tal como
+los especificó mobile; el ecommerce usa los mismos (KAN-145,
+[entrada](../cambios/2026-11-20-catalogo-publico-y-comparador.md)).
+
+### Búsqueda con prefijo y plural simple
+
+FULLTEXT en modo booleano con comodín de prefijo y una regla de plural del
+español ("quesos" → `queso*`, "aceites" → `aceit*`), más `LIKE` en nombre y
+marca para palabras de menos de 3 letras. Sin tildes ni mayúsculas gracias a
+la collation. Descartado: un motor de búsqueda aparte (Elasticsearch,
+Meilisearch) para un catálogo de este tamaño.
+
+### `vista_producto` lo registran las apps, no la ficha
+
+El contrato sugería registrar la visita en `GET /catalogo/productos/:id`, pero
+las apps ya la mandan por `POST /eventos/lote`: registrarla en los dos lados
+la contaría doble en la analítica del proveedor.
+
+### Precio sobre el tope: no se publica; como borrador, con caso de moderación
+
+Una oferta **publicada** no puede tener precio sobre
+`precio_referencia × (1 + tope_sobre_referencia_pct)`: `409 PRECIO_SOBRE_TOPE`
+con el máximo. Como borrador (o pausada) sí se guarda, y abre un caso
+`precio_fuera_rango` para que un administrador lo revise; para publicarla hay
+que bajar el precio. Decidido el 2026-11-20 en KAN-102, cuyo criterio pide
+rechazar el precio sobre el tope. Reemplaza la regla de KAN-146 ("publica y
+abre caso, sin bloquear"), que se había tomado porque moderación no tiene un
+"aprobar precio": con el borrador el caso sigue existiendo sin que el precio
+llegue al comprador ([entrada](../cambios/2026-11-20-asignarme-un-producto.md)).
+
+### Una oferta publicada no se borra, se pausa
+
+Puede estar en órdenes y `oferta_precio_historial` es de solo inserción. Solo
+un borrador (nunca mostrado y sin ventas) se elimina, con su historial.
+
 ## Base de datos
 
 ### El DBML es la fuente de verdad del modelo
@@ -132,9 +186,28 @@ registra en `liquidacion`, con cortes semanales. No se depende del split
 nativo de ninguna pasarela, así el reparto funciona igual sea cual sea la
 elegida. Los datos de tarjeta nunca tocan el backend.
 
+### Webpay Plus de Transbank como pasarela
+
+Era la decisión abierta 3 (Webpay o MercadoPago). Se eligió Webpay Plus
+(API REST v1.2) el 2026-11-20 en KAN-95: es el medio de pago que usa la
+mayoría de los compradores en Chile, cobra crédito, débito y prepago con un
+solo flujo, y su ambiente de integración trae credenciales públicas de prueba,
+así que se puede probar sin cuenta comercial. Queda detrás del puerto
+`PasarelaPago` (`packages/domain/src/services/pasarela-pago.ts`): cambiar a
+MercadoPago sería otro adaptador, sin tocar casos de uso ni apps. El pago se
+inicia con la orden ya creada (`POST /carro/confirmar` y luego
+`POST /ordenes/:id/pago`), el retorno lo recibe el backend y confirma (commit)
+antes de redirigir al ecommerce, y solo se da por pagada si el monto
+autorizado es el total de la orden.
+
 ### 2FA solo con TOTP y solo para usuarios internos
 
 Lo fija KAN-144. Compradores y proveedores entran con correo y clave.
+Implementado el 2026-11-18: reemplaza el código por correo de KAN-112, que se
+había hecho antes de que existiera la columna para el secreto. TOTP no
+depende del correo (si roban el correo, el segundo factor sigue a salvo) y
+funciona sin conexión. El secreto se guarda cifrado en `usuario.mfa_secreto`
+([entrada](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md)).
 
 ## Infraestructura
 
