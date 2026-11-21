@@ -56,6 +56,45 @@ export interface OrdenesRespuesta {
   totalPaginas: number;
 }
 
+export type TipoDte = 33 | 39 | 52 | 61;
+export type EstadoSii = "pendiente" | "enviado" | "aceptado" | "rechazado";
+
+// Documentos tributarios SIMULADOS de la orden (KAN-153).
+export interface DocumentoOrden {
+  id: number;
+  tipoDte: TipoDte;
+  tipoNombre: string;
+  folio: number;
+  ordenId: number | null;
+  ordenCodigo?: string;
+  ordenEnvioId: number | null;
+  emisorRut: string;
+  receptorRut: string | null;
+  neto: number | null;
+  iva: number | null;
+  total: number;
+  estadoSii: EstadoSii;
+  trackIdSii: string | null;
+  simulado: boolean;
+  emitidoEn: string;
+  pdfUrl: string;
+}
+
+export interface DocumentosRespuesta {
+  items: DocumentoOrden[];
+  pagina: number;
+  tamano: number;
+  total: number;
+  totalPaginas: number;
+}
+
+export interface EmisionDocumentosRespuesta {
+  ordenId: number;
+  ordenCodigo: string;
+  nuevos: number;
+  documentos: DocumentoOrden[];
+}
+
 export interface FiltrosOrdenes {
   estado?: string;
   pagina?: number;

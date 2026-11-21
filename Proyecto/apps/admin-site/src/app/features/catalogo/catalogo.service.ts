@@ -8,7 +8,8 @@ import {
   ImagenSubida,
   ProductoFicha,
   ProductoListadoRespuesta,
-  ProductoPayload
+  ProductoPayload,
+  ResultadoImportacion
 } from "../../core/models/catalogo.models";
 
 const fmtCLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
@@ -67,6 +68,18 @@ export class CatalogoService {
     const fd = new FormData();
     fd.append("archivo", archivo);
     return this.api.post<ImagenSubida>(`/productos/${id}/imagenes/archivo`, fd);
+  }
+
+  // conProductos=true: la hoja viene con todo el catalogo actual, lista para editar y volver a subir.
+  plantillaImportacion(conProductos = false) {
+    return this.api.getBlob(`/productos/plantilla-importacion${conProductos ? "?conProductos=true" : ""}`);
+  }
+
+  // simular=true solo valida; false aplica (SKU existente -> actualiza, nuevo -> crea).
+  importar(archivo: File, simular: boolean) {
+    const fd = new FormData();
+    fd.append("archivo", archivo);
+    return this.api.post<ResultadoImportacion>(`/productos/importar?simular=${simular}`, fd);
   }
 
   guardarImagenes(id: string | number, imagenes: ImagenProducto[]) {

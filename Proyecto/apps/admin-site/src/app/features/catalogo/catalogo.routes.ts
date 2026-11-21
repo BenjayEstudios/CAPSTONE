@@ -9,5 +9,10 @@ export const CATALOGO_ROUTES: Routes = [
     loadComponent: () => import("./catalogo-list.component").then((c) => c.CatalogoListComponent)
   },
   { path: "nuevo", data: { titulo: "Nuevo producto" }, loadComponent: ficha },
+  {
+    path: "importar",
+    data: { titulo: "Importar catálogo" },
+    loadComponent: () => import("./catalogo-importar.component").then((c) => c.CatalogoImportarComponent)
+  },
   { path: ":id", data: { titulo: "Ficha de producto" }, loadComponent: ficha }
 ];
