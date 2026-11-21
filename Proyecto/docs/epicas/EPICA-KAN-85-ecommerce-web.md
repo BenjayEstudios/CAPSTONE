@@ -1,6 +1,6 @@
 # KAN-85 — Ecommerce web (cliente y proveedor)
 
-**Estado:** 🔄 En curso · **Responsable:** Benjamín González ·
+**Estado:** ✅ Todos sus tickets listos (KAN-89 a KAN-111) · **Responsable:** Benjamín González ·
 **App:** `apps/ecommerce`
 
 Aplicación web Angular con dos perfiles en una sola app: el sitio de compra
@@ -72,6 +72,9 @@ documentos, liquidaciones).
 - Proveedor: "Documentos" (`/proveedor/documentos`), subida de carpeta tributaria,
   resolución sanitaria y certificado de vigencia con su estado y revisión (KAN-110)
   ([entrada](../cambios/2026-11-20-documentos-del-proveedor.md)).
+- Proveedor: "Liquidaciones" (`/proveedor/liquidaciones`), por cobrar, cortes
+  semanales y los envíos de cada uno (KAN-111)
+  ([entrada](../cambios/2026-11-20-liquidaciones-del-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -108,7 +111,7 @@ documentos, liquidaciones).
 | KAN-108 | Perfil de empresa | ✅ [entrada](../cambios/2026-11-20-perfil-de-empresa-del-proveedor.md) |
 | KAN-109 | Cobertura de despacho y puntos de retiro | ✅ [entrada](../cambios/2026-11-20-cobertura-y-puntos-de-retiro.md) |
 | KAN-110 | Documentos del proveedor | ✅ [entrada](../cambios/2026-11-20-documentos-del-proveedor.md) |
-| KAN-111 | Liquidaciones | ⏳ |
+| KAN-111 | Liquidaciones | ✅ [entrada](../cambios/2026-11-20-liquidaciones-del-proveedor.md) |
 
 ## Dependencias
 

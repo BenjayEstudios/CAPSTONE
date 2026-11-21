@@ -106,6 +106,11 @@ export const routes: Routes = [
         title: "Documentos · Cotizapp para distribuidores"
       },
       {
+        path: "liquidaciones",
+        loadComponent: () => import("./features/proveedor/liquidaciones.component").then((m) => m.LiquidacionesProveedorComponent),
+        title: "Liquidaciones · Cotizapp para distribuidores"
+      },
+      {
         path: "asignar",
         loadComponent: () => import("./features/proveedor/asignar.component").then((m) => m.AsignarProductoComponent),
         title: "Asignarme un producto · Cotizapp para distribuidores"

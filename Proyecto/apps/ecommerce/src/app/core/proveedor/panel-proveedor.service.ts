@@ -169,6 +169,24 @@ export interface DocumentoExigido {
   anteriores: number;
 }
 
+/** Una liquidacion semanal (GET /liquidaciones/mias, KAN-111). */
+export interface Liquidacion {
+  id: number;
+  proveedorId: number;
+  periodoDesde: string;
+  periodoHasta: string;
+  montoBruto: number;
+  comision: number;
+  montoNeto: number;
+  estado: "pendiente" | "pagada";
+  pagadaEn: string | null;
+}
+
+/** GET /liquidaciones/mias/:id: con los envios incluidos. */
+export interface LiquidacionDetalle extends Liquidacion {
+  envios: Array<{ envioId: number; ordenId: number; ordenCodigo: string; entregadoEn: string; montoBruto: number; comision: number; montoNeto: number }>;
+}
+
 @Injectable({ providedIn: "root" })
 export class PanelProveedorService {
   private readonly api = inject(ApiClient);
@@ -231,6 +249,15 @@ export class PanelProveedorService {
     const q = new URLSearchParams({ tipo });
     if (venceEn) q.set("venceEn", venceEn);
     return firstValueFrom(this.api.post(`/proveedor/documentos?${q}`, datos));
+  }
+
+  // ---- Liquidaciones (KAN-111)
+  liquidaciones(pagina = 1, tamano = 20): Promise<{ items: Liquidacion[]; total: number; pagina: number; totalPaginas: number }> {
+    return firstValueFrom(this.api.get(`/liquidaciones/mias?pagina=${pagina}&tamano=${tamano}`));
+  }
+
+  liquidacion(id: number): Promise<LiquidacionDetalle> {
+    return firstValueFrom(this.api.get<LiquidacionDetalle>(`/liquidaciones/mias/${id}`));
   }
 
   perfil(): Promise<PerfilProveedor> {

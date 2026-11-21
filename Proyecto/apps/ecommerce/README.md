@@ -127,6 +127,13 @@ En el checkout, `checkout.component.ts` usa `coberturas` de `GET /carro/opciones
 - **Subida:** el formulario envía el archivo en `FormData` (`POST /proveedor/documentos?tipo=&venceEn=`). Antes de enviar revisa que haya archivo, el tamaño y el vencimiento.
 - **Al subir:** avisa que el documento queda pendiente de revisión.
 
+## Liquidaciones (KAN-111)
+
+`features/proveedor/liquidaciones.component.ts`: pestaña "Liquidaciones" (`/proveedor/liquidaciones`).
+- **Por cobrar:** viene de `porCobrar` de `GET /alertas/proveedor`, desglosado y con la próxima liquidación.
+- **Lista:** liquidaciones semanales (`GET /liquidaciones/mias`) con período, bruto, comisión, neto, estado y fecha de pago, de a 20.
+- **Detalle:** "Ver envíos" abre los envíos de cada una (`GET /liquidaciones/mias/:id`).
+
 El dashboard, Demanda y Documentos toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
 
 ## Tests

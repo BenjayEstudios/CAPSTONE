@@ -250,7 +250,7 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
 - Montos por envio: bruto = `subtotal + costo_despacho`; comision = `comision_monto` del envio (NULL = 0, la comision aun no esta decidida por el negocio); neto = bruto - comision.
 - Idempotente: un envio con `liquidacion_id` no se vuelve a liquidar; re-ejecutar el mismo periodo no crea nada.
 - Ejecucion manual: `pnpm job:liquidaciones` (semana anterior) o `pnpm job:liquidaciones 2026-10-12 [2026-10-18]`. Sale con codigo 1 si algun proveedor falla.
-- API: `POST /liquidaciones/generar {desde?,hasta?}`, `GET /liquidaciones`, `GET /liquidaciones/:id`, `POST /liquidaciones/:id/pagar {fechaPago}`, `GET /liquidaciones/mias` (proveedor). Permiso `liquidar_proveedor` (lectura cualquier nivel, escritura total).
+- API: `POST /liquidaciones/generar {desde?,hasta?}`, `GET /liquidaciones`, `GET /liquidaciones/:id`, `POST /liquidaciones/:id/pagar {fechaPago}`, `GET /liquidaciones/mias` y `GET /liquidaciones/mias/:id` (proveedor: solo las de su organizacion, con los envios en el detalle; una ajena = 404, KAN-111). Permiso `liquidar_proveedor` (lectura cualquier nivel, escritura total).
 - **Programarlo en produccion** (no se instala scheduler; el repo no lo incluye). Se liquida los martes sobre la semana anterior. Cron del host/contenedor, hora de Chile:
   `0 6 * * 2  cd /app/apps/backend && TZ=America/Santiago node dist/jobs/liquidaciones.js >> /var/log/liquidaciones.log 2>&1`
   (tras `pnpm build`; en dev `pnpm job:liquidaciones` usa tsx). Alternativas: Cron Job de DigitalOcean App Platform o GitHub Actions `schedule` ejecutando el mismo comando. Al ser idempotente, es seguro reintentar.

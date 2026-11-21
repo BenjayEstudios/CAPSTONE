@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CalculoLiquidacion, Liquidacion, LiquidacionRepository, OrdenEnvio, RangoLiquidacion } from "@cotizapp/domain";
+import type { CalculoLiquidacion, Liquidacion, LiquidacionRepository, OrdenEnvio, RangoLiquidacion, UsuarioRepository } from "@cotizapp/domain";
 import {
   calcularLiquidacion,
   fechaChile,
@@ -7,6 +7,7 @@ import {
   inicioDiaChile,
   listarLiquidaciones,
   obtenerLiquidacion,
+  obtenerMiLiquidacion,
   pagarLiquidacion,
   semanaAnterior
 } from "./liquidaciones.use-cases.js";
@@ -144,5 +145,28 @@ describe("pagar y consultar", () => {
     const r = await listarLiquidaciones({ liquidacionRepository: repo })({ proveedorId: "2" });
     expect(r).toMatchObject({ total: 1, pagina: 1, totalPaginas: 1 });
     expect((await falla(obtenerLiquidacion({ liquidacionRepository: repo })(99)))?.code).toBe("LIQUIDACION_NO_ENCONTRADA");
+  });
+});
+
+describe("detalle de una liquidacion propia (KAN-111)", () => {
+  const usuarioRepository = {
+    buscarPorId: async (id: number) =>
+      ({
+        3: { usuario: { id: 3, estado: "activo" }, rol: { permisos: { ver_ordenes_propias: "total" } }, organizacion: { id: 1, tipo: "proveedor" } },
+        5: { usuario: { id: 5, estado: "activo" }, rol: { permisos: { ver_ordenes_propias: "total" } }, organizacion: { id: 4, tipo: "cliente" } }
+      })[id] ?? null
+  } as unknown as UsuarioRepository;
+
+  it("el proveedor ve la suya con sus envios; la de otro proveedor 404; un cliente 403", async () => {
+    const { repo } = repoMem([envio(1, 1, "2026-10-14T12:00:00Z"), envio(2, 2, "2026-10-14T12:00:00Z")]);
+    await generarLiquidaciones({ liquidacionRepository: repo })(PERIODO, 7);
+    const uc = obtenerMiLiquidacion({ liquidacionRepository: repo, usuarioRepository });
+    const propia = (await listarLiquidaciones({ liquidacionRepository: repo })({ proveedorId: "1" })).items[0]!;
+    const ajena = (await listarLiquidaciones({ liquidacionRepository: repo })({ proveedorId: "2" })).items[0]!;
+    expect(await uc(3, propia.id)).toMatchObject({ id: propia.id, proveedorId: 1, envios: [] });
+    expect((await falla(uc(3, ajena.id)))?.code).toBe("LIQUIDACION_NO_ENCONTRADA");
+    expect((await falla(uc(3, 99)))?.statusCode).toBe(404);
+    expect((await falla(uc(5, propia.id)))?.statusCode).toBe(403);
+    expect((await falla(uc(9, propia.id)))?.statusCode).toBe(401);
   });
 });
