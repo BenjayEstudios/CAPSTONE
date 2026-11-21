@@ -1,11 +1,59 @@
-.login { max-width: 440px; margin: 0 auto; padding: 8vh 16px 40px; }
-.regla { height: 4px; background: var(--color-text); }
-.regla.fina { height: 1px; }
-.meta { margin: 0; padding: 7px 0; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
-.marca { font-size: 36px; margin: 22px 0 4px; letter-spacing: -.02em; }
-.sub { margin: 0 0 24px; font-size: 14px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
-.form { display: flex; flex-direction: column; gap: 16px; }
-.mensaje { margin: 0; padding: 10px 12px; font-size: 14px; border-left: 3px solid; }
-.mensaje.aviso { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-800); }
-.mensaje.error { background: var(--color-accent-2-100); border-color: var(--color-accent-2); color: var(--color-accent-2-800); }
+/* Login "Laguna": panel azul marino con ondas y sol crema + tarjeta clara. */
+.pagina { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; background: var(--color-bg); }
+
+.hero { position: relative; overflow: hidden; color: #fff; background: linear-gradient(180deg, var(--tinta) 0%, #0d4a6b 100%); min-height: 100vh; }
+.hero-contenido { position: relative; z-index: 2; max-width: 520px; padding: 40px 56px 0; }
+.hero-marca { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.producto { font-size: 12px; font-weight: 700; color: var(--color-menta); padding: 4px 14px; border-radius: var(--radius-pill); border: 1px solid rgba(153, 230, 218, 0.5); background: rgba(153, 230, 218, 0.12); }
+.kicker { margin: 72px 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: var(--color-menta); }
+.lema { margin: 0 0 18px; font-size: clamp(32px, 4.2vw, 50px); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; color: #fff; }
+.lema-sub { margin: 0 0 24px; max-width: 34ch; font-size: 16px; line-height: 1.45; color: rgba(255, 255, 255, 0.85); }
+.chips { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; }
+.chips li { font-size: 14px; font-weight: 700; padding: 9px 16px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); }
+.sol { position: absolute; z-index: 1; left: 52%; bottom: 120px; width: 190px; height: 190px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fbf1df, var(--color-crema) 70%); opacity: 0.95; }
+.ondas { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; }
+.aro { position: absolute; border-radius: 50%; }
+.aro-grande { top: -150px; left: 46%; width: 340px; height: 340px; border: 1px solid rgba(255, 255, 255, 0.25); }
+.aro-lleno { top: 40px; left: 78%; width: 100px; height: 100px; background: rgba(255, 255, 255, 0.12); }
+.aro-chico { top: 140px; left: 69%; width: 20px; height: 20px; border: 1px solid rgba(255, 255, 255, 0.4); }
+
+.lado-form { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.circulo { position: absolute; border-radius: 50%; }
+.circulo-a { top: -110px; right: -90px; width: 300px; height: 300px; background: var(--color-surface); opacity: 0.8; }
+.circulo-b { bottom: -90px; left: -60px; width: 200px; height: 200px; background: var(--color-menta); opacity: 0.45; }
+.login {
+  position: relative; width: 100%; max-width: 400px; padding: 28px 32px 32px;
+  background: var(--color-card); border: 1px solid var(--color-divider); border-radius: 28px;
+  box-shadow: 0 20px 50px rgba(11, 61, 92, 0.12);
+}
+.paso { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--color-primary-600); background: var(--color-surface); padding: 6px 14px; border-radius: var(--radius-pill); }
+.paso-punto { width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); }
+.titulo { font-size: 28px; margin: 18px 0 4px; }
+.sub { margin: 0 0 20px; font-size: 14px; line-height: 1.4; color: var(--color-text-soft); }
+.form { display: flex; flex-direction: column; gap: 14px; }
+.field > label { color: var(--color-text); font-weight: 700; }
+.input { min-height: 50px; padding: 12px 18px; border-radius: var(--radius-md); background: #fff; }
+.btn-block { min-height: 50px; }
+.btn-primary { box-shadow: 0 8px 18px rgba(19, 138, 128, 0.3); }
+.mensaje { margin: 0; padding: 12px 14px; font-size: 14px; border-radius: var(--radius-md); display: block; }
+.mensaje.aviso { background: var(--color-accent-100); color: var(--color-accent-800); border: 1px solid rgba(31, 167, 157, 0.4); }
+.mensaje.error { background: var(--color-accent-2-100); color: var(--color-accent-2-800); border: 1px solid rgba(200, 72, 58, 0.4); }
 .ayuda { display: block; margin-top: 4px; font-size: 12px; color: var(--color-accent-2-700); }
+.nota-2fa { margin: 4px 0 0; padding: 12px 14px; font-size: 14px; line-height: 1.4; border-radius: var(--radius-md); background: var(--color-crema); color: var(--tinta); }
+
+/* Primer enrolamiento 2FA: instrucciones, QR y clave manual dentro de la tarjeta. */
+.enrolamiento { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: var(--radius-md); background: var(--color-surface); }
+.instrucciones { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.4; color: var(--color-text); }
+/* El QR va sobre blanco en ambos temas: los lectores necesitan contraste oscuro sobre claro. */
+.qr { align-self: center; max-width: 100%; height: auto; padding: 10px; background: #fff; border: 1px solid var(--color-divider); border-radius: var(--radius-md); box-shadow: 0 8px 18px rgba(11, 61, 92, 0.08); }
+.secreto-ayuda { margin: 0; font-size: 13px; color: var(--color-text-soft); }
+.secreto { display: block; padding: 10px 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; word-break: break-all; text-align: center; border-radius: var(--radius-md); background: var(--color-card); border: 1px dashed var(--color-divider); color: var(--tinta); }
+
+@media (max-width: 860px) {
+  .pagina { grid-template-columns: 1fr; }
+  .hero { min-height: 0; padding-bottom: 150px; }
+  .hero-contenido { padding: 28px 24px 0; }
+  .kicker { margin-top: 28px; }
+  .sol { left: auto; right: 24px; bottom: 90px; width: 110px; height: 110px; }
+  .lado-form { padding: 24px 16px 40px; }
+}

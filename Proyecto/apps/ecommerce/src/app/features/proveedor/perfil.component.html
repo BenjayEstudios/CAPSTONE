@@ -1,0 +1,136 @@
+<section aria-labelledby="titulo-perfil">
+  <h2 id="titulo-perfil">Perfil de empresa</h2>
+  <p class="bajada">Estos datos aparecen en tu ficha pública y en los documentos tributarios de cada venta.</p>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tu perfil…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tu perfil. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (perfil(); as p) {
+        @if (f; as f) {
+          <div class="columnas">
+            <form class="formulario" (ngSubmit)="guardar()" novalidate>
+              <fieldset>
+                <legend>Datos legales</legend>
+                <div class="grilla">
+                  <label class="field"><span>Razón social</span><input class="input" [value]="p.razonSocial" readonly /></label>
+                  <label class="field"><span>RUT empresa</span><input class="input" [value]="rut(p.rut)" readonly /></label>
+                  <label class="field"><span>Nombre de fantasía</span><input class="input" name="nombreFantasia" maxlength="180" [(ngModel)]="f.nombreFantasia" [class.invalido]="intentado() && !f.nombreFantasia.trim()" /></label>
+                  <label class="field"><span>Giro</span><input class="input" name="giro" maxlength="180" [(ngModel)]="f.giro" /></label>
+                </div>
+                <p class="ayuda">La razón social y el RUT salen en tus boletas y facturas. Para cambiarlos escribe a soporte.</p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Contacto</legend>
+                <div class="grilla">
+                  <label class="field"><span>Correo comercial</span><input class="input" type="email" name="emailContacto" maxlength="160" [(ngModel)]="f.emailContacto" /></label>
+                  <label class="field"><span>Teléfono</span><input class="input" type="tel" name="telefono" maxlength="24" [(ngModel)]="f.telefono" /></label>
+                </div>
+                <p class="sub">Contacto de operaciones</p>
+                <ul class="equipo">
+                  @for (u of p.equipo; track u.email) {
+                    <li><strong>{{ u.nombre }}</strong> · {{ u.email }}@if (u.telefono) { · {{ u.telefono }} }</li>
+                  } @empty {
+                    <li class="suave">Sin usuarios activos.</li>
+                  }
+                </ul>
+                <p class="ayuda">Son las personas con cuenta en tu empresa: reciben los avisos de órdenes y despachos.</p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Dirección y bodega</legend>
+                <div class="grilla direccion">
+                  <label class="field"><span>Dirección comercial</span><input class="input" name="dirCalle" maxlength="160" placeholder="Calle" [(ngModel)]="f.direccion.calle" /></label>
+                  <label class="field"><span>Número</span><input class="input" name="dirNumero" maxlength="20" [(ngModel)]="f.direccion.numero" /></label>
+                  <label class="field"><span>Oficina o local</span><input class="input" name="dirComplemento" maxlength="80" [(ngModel)]="f.direccion.complemento" /></label>
+                  <label class="field"><span>Comuna</span>
+                    <select class="input" name="dirComuna" [(ngModel)]="f.direccion.comunaId">
+                      <option [ngValue]="null">Elige una comuna</option>
+                      @for (r of regionesComunas(); track r.region) {
+                        <optgroup [label]="r.region">@for (c of r.comunas; track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }</optgroup>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <div class="grilla bodega">
+                  <label class="field"><span>Bodega</span><input class="input" name="bodegaNombre" maxlength="120" placeholder="Ej.: Bodega Quilicura" [(ngModel)]="f.bodega.nombre" /></label>
+                  <label class="field"><span>Horario de retiro</span><input class="input" name="horario" maxlength="180" placeholder="Ej.: Lunes a viernes, 8:30 a 17:30 · sábado hasta 13:00" [(ngModel)]="f.bodega.horario" /></label>
+                </div>
+                <div class="grilla direccion">
+                  <label class="field"><span>Dirección de bodega</span><input class="input" name="bodegaCalle" maxlength="160" placeholder="Calle" [(ngModel)]="f.bodega.calle" /></label>
+                  <label class="field"><span>Número</span><input class="input" name="bodegaNumero" maxlength="20" [(ngModel)]="f.bodega.numero" /></label>
+                  <label class="field"><span>Complemento</span><input class="input" name="bodegaComplemento" maxlength="80" [(ngModel)]="f.bodega.complemento" /></label>
+                  <label class="field"><span>Comuna</span>
+                    <select class="input" name="bodegaComuna" [(ngModel)]="f.bodega.comunaId">
+                      <option [ngValue]="null">Elige una comuna</option>
+                      @for (r of regionesComunas(); track r.region) {
+                        <optgroup [label]="r.region">@for (c of r.comunas; track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }</optgroup>
+                      }
+                    </select>
+                  </label>
+                </div>
+                <p class="ayuda">La bodega es tu punto de retiro principal. Los demás puntos y las zonas de despacho se administran en Cobertura.</p>
+              </fieldset>
+
+              <fieldset>
+                <legend>Tiempos de despacho</legend>
+                <div class="grilla cuatro">
+                  <label class="field"><span>Plazo estándar (horas)</span><input class="input" type="number" min="1" max="720" step="1" name="plazoEstandar" [(ngModel)]="f.plazoEstandarHoras" /></label>
+                  <label class="field"><span>Plazo fuera de la región (horas)</span><input class="input" type="number" min="1" max="720" step="1" name="plazoFuera" [(ngModel)]="f.plazoFueraRegionHoras" /></label>
+                  <label class="field"><span>Corte de pedidos del día</span><input class="input" type="time" name="horaCorte" [(ngModel)]="f.horaCorte" /></label>
+                  <label class="field"><span>Despacho gratis desde (CLP)</span><input class="input" type="number" min="0" step="1000" name="gratis" [(ngModel)]="f.despachoGratisDesde" /></label>
+                </div>
+                <p class="sub">Regiones que despachas</p>
+                <p class="regiones">
+                  @for (r of p.regiones; track r) { <span class="tag">{{ r }}</span> } @empty { <span class="suave">Todavía no defines zonas de despacho.</span> }
+                </p>
+                <div class="modalidad" role="radiogroup" aria-label="Cómo entregas">
+                  <label><input type="radio" name="modalidad" value="ambos" [(ngModel)]="f.modalidad" /> Despacho y retiro en bodega</label>
+                  <label><input type="radio" name="modalidad" value="despacho" [(ngModel)]="f.modalidad" /> Solo despacho a domicilio</label>
+                  <label><input type="radio" name="modalidad" value="retiro" [(ngModel)]="f.modalidad" /> Solo retiro en bodega</label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>Cuenta de liquidación</legend>
+                <div class="grilla">
+                  <label class="field"><span>Banco</span><input class="input" name="banco" maxlength="60" [(ngModel)]="f.banco" /></label>
+                  <label class="field"><span>Número de cuenta</span><input class="input" name="cuenta" maxlength="40" inputmode="numeric" [(ngModel)]="f.cuentaBancaria" /></label>
+                </div>
+                <p class="ayuda">Cotizapp deposita aquí tus liquidaciones de cada martes.</p>
+              </fieldset>
+
+              @if (intentado() && problemas().length) {
+                <ul class="mensaje error" role="alert">@for (x of problemas(); track x) { <li>{{ x }}</li> }</ul>
+              }
+              @if (error(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+              @if (aviso(); as a) { <p class="mensaje ok" role="status">{{ a }}</p> }
+              <div class="botones">
+                <button type="submit" class="btn btn-primary" [disabled]="guardando() || !hayCambios()">{{ guardando() ? "Guardando…" : "Guardar cambios" }}</button>
+                <button type="button" class="btn btn-secondary" [disabled]="guardando() || !hayCambios()" (click)="descartar()">Descartar</button>
+              </div>
+            </form>
+
+            <aside class="cuenta" aria-labelledby="titulo-cuenta">
+              <h3 id="titulo-cuenta">Estado de la cuenta</h3>
+              <p>
+                @switch (p.estado) {
+                  @case ("activa") { <span class="tag" data-tono="ok">Verificada</span> }
+                  @case ("en_revision") { <span class="tag" data-tono="aviso">En revisión</span> }
+                  @default { <span class="tag" data-tono="aviso">Suspendida</span> }
+                }
+              </p>
+              <dl>
+                <div><dt>Proveedor desde</dt><dd>{{ desde() }}</dd></div>
+                <div><dt>Entregas a tiempo</dt><dd>{{ p.entregasATiempoPct !== null ? (p.entregasATiempoPct.toLocaleString("es-CL") + " %") : "—" }}</dd></div>
+                <div><dt>Comisión vigente</dt><dd>{{ p.comisionPct !== null ? (p.comisionPct.toLocaleString("es-CL") + " %") : "—" }}</dd></div>
+                <div><dt>Banco de liquidación</dt><dd>{{ cuenta() }}</dd></div>
+              </dl>
+            </aside>
+          </div>
+        }
+      }
+    }
+  }
+</section>

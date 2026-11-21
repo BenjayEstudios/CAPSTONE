@@ -1,6 +1,8 @@
 import {
   cambiarEstadoEnvioSchema,
+  listarClientesQuerySchema,
   listarOrdenesQuerySchema,
+  listarVentasQuerySchema,
   ORDEN_ENVIO_ESTADOS,
   ORDEN_ESTADOS,
   type AlcanceOrdenes,
@@ -61,7 +63,10 @@ function presentar(a: AlcanceOrdenes, oc: OrdenCompleta, conLineas: boolean) {
     montoALiquidar: a.tipo === "cliente" ? null : e.subtotal + (e.costoDespacho ?? 0) - e.comisionMonto,
     estado: e.estado,
     actualizadoEn: e.actualizadoEn,
-    ...(conLineas ? { lineas: e.lineas } : {})
+    // Aditivo (KAN-96): en el detalle, el punto de retiro de los envios con retiro (null en despacho).
+    ...(conLineas ? { lineas: e.lineas, puntoRetiro: e.puntoRetiro ?? null } : {}),
+    // Aditivo (KAN-99): la calificacion del comprador, solo para el cliente y en el detalle.
+    ...(conLineas && a.tipo === "cliente" ? { calificacion: e.calificacion ?? null } : {})
   }));
   const propio = a.tipo === "proveedor" ? oc.envios[0] : undefined;
   return {
@@ -135,6 +140,95 @@ export function transicionesPermitidas(modalidad: OrdenEnvio["modalidad"], desde
     default:
       return [];
   }
+}
+
+// Siguiente paso hacia la entrega (sin cancelar): el boton de la fila en las
+// ordenes de venta del proveedor. null si el envio ya termino o la orden se
+// reembolso.
+export function siguienteEstadoEnvio(
+  modalidad: OrdenEnvio["modalidad"],
+  estado: OrdenEnvioEstado,
+  ordenEstado: OrdenEstado
+): OrdenEnvioEstado | null {
+  if (ordenEstado === "reembolsada" || ordenEstado === "pendiente_pago") return null;
+  return transicionesPermitidas(modalidad, estado).find((e) => e !== "cancelado") ?? null;
+}
+
+// GET /proveedor/ventas (KAN-105): los envios del proveedor de la sesion
+// (su tramo de cada orden pagada), con el conteo por estado para los filtros
+// y el siguiente estado que puede marcar. Solo para organizaciones proveedor.
+export function listarVentas(deps: Deps) {
+  return async (usuarioId: number, input: unknown) => {
+    const alcance = resolverAlcance(await contexto(deps, usuarioId));
+    if (alcance.tipo !== "proveedor") throw new ErrorAplicacion(403, "SOLO_PROVEEDORES", "Solo un proveedor tiene ordenes de venta");
+    const f = validar(listarVentasQuerySchema, input);
+    const { items, total, conteo } = await deps.ordenRepository.ventasDeProveedor({ proveedorId: alcance.proveedorId, ...f });
+    return {
+      items: items.map((v) => ({ ...v, siguiente: siguienteEstadoEnvio(v.modalidad, v.estado, v.ordenEstado) })),
+      conteo,
+      pagina: f.pagina,
+      tamano: f.tamano,
+      total,
+      totalPaginas: Math.max(1, Math.ceil(total / f.tamano))
+    };
+  };
+}
+
+export type TipoCliente = "Empresa" | "Persona" | "Institución";
+
+// No hay columna de tipo de cliente: se deduce del RUT y del giro (supuesto
+// del equipo, KAN-106). En Chile los RUT 60.000.000-69.999.999 son de
+// organismos publicos, corporaciones y fundaciones; bajo 50.000.000 son de
+// personas naturales, que cuentan como empresa si declaran giro.
+export function tipoCliente(rut: string, giro: string | null): TipoCliente {
+  const numero = Number(rut.split("-")[0]!.replace(/\D/g, ""));
+  if (numero >= 60_000_000 && numero < 70_000_000) return "Institución";
+  if (numero < 50_000_000 && !giro?.trim()) return "Persona";
+  return "Empresa";
+}
+
+export type Recompra = "Por pagar" | "Primera vez" | "Semanal" | "Quincenal" | "Mensual" | "Esporádica";
+
+// Cada cuanto vuelve a comprar: el intervalo promedio entre su primera y su
+// ultima compra pagada. Sin compras pagadas, "Por pagar".
+export function frecuenciaRecompra(ordenes: number, primera: Date | null, ultima: Date | null): Recompra {
+  if (ordenes === 0 || !primera || !ultima) return "Por pagar";
+  if (ordenes === 1) return "Primera vez";
+  const dias = (ultima.getTime() - primera.getTime()) / 86_400_000 / (ordenes - 1);
+  if (dias <= 10) return "Semanal";
+  if (dias <= 20) return "Quincenal";
+  if (dias <= 45) return "Mensual";
+  return "Esporádica";
+}
+
+// GET /proveedor/clientes (KAN-106): quien le compro al proveedor de la
+// sesion. El contacto (email, telefono, razon social y RUT) solo se entrega
+// desde la primera orden pagada; antes, contacto = null.
+export function listarClientes(deps: Deps) {
+  return async (usuarioId: number, input: unknown) => {
+    const alcance = resolverAlcance(await contexto(deps, usuarioId));
+    if (alcance.tipo !== "proveedor") throw new ErrorAplicacion(403, "SOLO_PROVEEDORES", "Solo un proveedor tiene clientes");
+    const f = validar(listarClientesQuerySchema, input);
+    const { items, total } = await deps.ordenRepository.clientesDeProveedor(alcance.proveedorId, f);
+    return {
+      items: items.map((c) => ({
+        organizacionId: c.organizacionId,
+        nombre: c.nombreFantasia ?? c.razonSocial,
+        tipo: tipoCliente(c.rut, c.giro),
+        comuna: c.comuna,
+        ordenes: c.ordenes,
+        pendientes: c.pendientes,
+        monto: c.monto,
+        ultimaCompra: c.ultimaCompra,
+        recompra: frecuenciaRecompra(c.ordenes, c.primeraCompra, c.ultimaCompra),
+        contacto: c.ordenes > 0 ? { razonSocial: c.razonSocial, rut: c.rut, email: c.email, telefono: c.telefono } : null
+      })),
+      pagina: f.pagina,
+      tamano: f.tamano,
+      total,
+      totalPaginas: Math.max(1, Math.ceil(total / f.tamano))
+    };
+  };
 }
 
 // Estado de la orden derivado de sus envios no cancelados. null = sin envios activos (no se toca).

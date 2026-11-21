@@ -1,0 +1,118 @@
+<div class="contenedor pagina">
+  <aside class="panel">
+    <p class="etiqueta">Para distribuidores de alimentos</p>
+    <h1>Vende en Cotizapp</h1>
+    <p class="bajada">Publica tus precios donde los restaurantes y pymes comparan antes de comprar. Ellos pagan una vez; tú recibes tu parte en la liquidación semanal.</p>
+    <ul class="razones">
+      <li><div><strong>1 · Envías la solicitud</strong><span>Datos legales de la empresa, de quien la representa y de contacto.</span></div></li>
+      <li><div><strong>2 · La revisamos</strong><span>El equipo de Cotizapp valida la empresa. Te avisamos por correo cuando esté aprobada.</span></div></li>
+      <li><div><strong>3 · Publicas tus ofertas</strong><span>Con la cuenta activa ingresas, eliges productos del catálogo y fijas precio, stock y entrega.</span></div></li>
+    </ul>
+  </aside>
+
+  <section class="tarjeta" aria-labelledby="titulo-vender">
+    @if (enviada(); as e) {
+      <div class="solicitud-enviada" role="status">
+        <p class="etiqueta">Solicitud enviada</p>
+        <h2 id="titulo-vender">Recibimos la solicitud de {{ e.empresa }}</h2>
+        <p>Quedó <strong>en revisión</strong>. Te escribiremos a <strong>{{ e.email }}</strong> cuando el equipo de Cotizapp la apruebe; mientras tanto no podrás ingresar ni publicar ofertas.</p>
+        <p class="sub">Si te falta algún dato o documento, te lo pediremos por correo.</p>
+        <a routerLink="/catalogo" class="btn btn-secondary">Ver el catálogo</a>
+      </div>
+    } @else {
+      <h2 id="titulo-vender">Solicitar el alta de mi empresa</h2>
+      <p class="sub">Todos los campos son obligatorios salvo los marcados como opcionales.</p>
+
+      <form class="form" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+        @if (error()) {
+          <p class="mensaje error" role="alert">{{ error() }}</p>
+        }
+
+        <fieldset class="grupo primero">
+          <legend>Datos legales de la empresa</legend>
+          <div class="field">
+            <label for="razonSocial">Razón social</label>
+            <input id="razonSocial" class="input" formControlName="razonSocial" autocomplete="organization" placeholder="Distribuidora Los Andes Ltda." />
+            @if (invalido("razonSocial")) { <span class="ayuda error">Escribe la razón social.</span> }
+          </div>
+          <div class="fila-campos">
+            <div class="field">
+              <label for="rutEmpresa">RUT de la empresa</label>
+              <input id="rutEmpresa" class="input" formControlName="rutEmpresa" placeholder="76.086.428-5" (blur)="formatear('rutEmpresa')" />
+              @if (invalido("rutEmpresa")) { <span class="ayuda error">{{ form.controls.rutEmpresa.value ? "Revisa el RUT de la empresa: el dígito verificador no calza." : "Escribe el RUT de la empresa." }}</span> }
+            </div>
+            <div class="field">
+              <label for="nombreFantasia">Nombre de fantasía <span class="ayuda">(opcional)</span></label>
+              <input id="nombreFantasia" class="input" formControlName="nombreFantasia" placeholder="Los Andes Food Service" />
+            </div>
+          </div>
+          <div class="fila-campos">
+            <div class="field">
+              <label for="giro">Giro</label>
+              <input id="giro" class="input" formControlName="giro" placeholder="Distribución de alimentos" />
+              @if (invalido("giro")) { <span class="ayuda error">Escribe el giro de la empresa.</span> }
+            </div>
+            <div class="field">
+              <label for="telefonoEmpresa">Teléfono de la empresa <span class="ayuda">(opcional)</span></label>
+              <input id="telefonoEmpresa" class="input" type="tel" formControlName="telefonoEmpresa" placeholder="+56 2 2345 6789" />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>Representante</legend>
+          <div class="field">
+            <label for="nombre">Nombre y apellido</label>
+            <input id="nombre" class="input" formControlName="nombre" autocomplete="name" />
+            @if (invalido("nombre")) { <span class="ayuda error">Escribe el nombre del representante.</span> }
+          </div>
+          <div class="fila-campos">
+            <div class="field">
+              <label for="rut">RUT del representante</label>
+              <input id="rut" class="input" formControlName="rut" placeholder="12.345.678-5" (blur)="formatear('rut')" />
+              @if (invalido("rut")) { <span class="ayuda error">{{ form.controls.rut.value ? "Revisa el RUT: el dígito verificador no calza." : "Escribe el RUT del representante." }}</span> }
+            </div>
+            <div class="field">
+              <label for="telefono">Teléfono <span class="ayuda">(opcional)</span></label>
+              <input id="telefono" class="input" type="tel" formControlName="telefono" autocomplete="tel" placeholder="+56 9 1234 5678" />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="grupo">
+          <legend>Acceso y contacto</legend>
+          <div class="field">
+            <label for="email">Correo electrónico</label>
+            <input id="email" class="input" type="email" formControlName="email" autocomplete="email" aria-describedby="ayuda-email" />
+            @if (invalido("email")) { <span class="ayuda error">Escribe un correo válido.</span> }
+            @else { <span id="ayuda-email" class="ayuda">Con este correo ingresarás y te avisaremos de la revisión.</span> }
+          </div>
+          <div class="fila-campos">
+            <div class="field">
+              <label for="clave">Contraseña</label>
+              <input id="clave" class="input" type="password" formControlName="clave" autocomplete="new-password" aria-describedby="ayuda-clave" />
+              @if (invalido("clave") && form.controls.clave.errors?.["clave"]) {
+                <span class="ayuda error">{{ form.controls.clave.errors?.["clave"] }}</span>
+              } @else {
+                <span id="ayuda-clave" class="ayuda">Al menos 8 caracteres, con letras y números.</span>
+              }
+            </div>
+            <div class="field">
+              <label for="confirmar">Repite la contraseña</label>
+              <input id="confirmar" class="input" type="password" formControlName="confirmar" autocomplete="new-password" />
+              @if (form.controls.confirmar.touched && form.errors?.["clavesDistintas"]) {
+                <span class="ayuda error">Las contraseñas no coinciden.</span>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
+          {{ cargando() ? "Enviando la solicitud..." : "Enviar solicitud" }}
+        </button>
+
+        <p class="pie-form">¿Tu empresa ya fue aprobada? <a routerLink="/ingresar">Ingresa</a></p>
+      </form>
+    }
+  </section>
+</div>

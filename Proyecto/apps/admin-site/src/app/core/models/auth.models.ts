@@ -20,9 +20,19 @@ export interface LoginResponse {
   usuario: UsuarioSesion;
 }
 
-// Paso 1 con 2FA activo: no hay token, solo un desafio firmado de 5 min.
+// Paso 1 con 2FA (TOTP): no hay token, solo un desafio firmado.
+// enrolar = true si el usuario todavia no configuro su app autenticadora.
 export interface MfaRequeridoResponse {
   mfaRequerido: true;
+  enrolar: boolean;
+  desafio: string;
+}
+
+// POST /auth/admin/mfa/enrolar: QR para la app y desafio para confirmar.
+export interface EnrolamientoMfaResponse {
+  secreto: string;
+  otpauthUrl: string;
+  qrDataUrl: string;
   desafio: string;
 }
 

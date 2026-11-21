@@ -1,0 +1,149 @@
+<section aria-labelledby="titulo-cobertura">
+  <h2 id="titulo-cobertura">Cobertura de despacho y puntos de retiro</h2>
+  <p class="bajada">Dónde despachas, a qué costo y en qué plazo, y dónde te pueden retirar los pedidos. El comprador solo ve despacho si su comuna está en tu cobertura.</p>
+
+  @if (error(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+  @if (aviso(); as a) { <p class="mensaje ok" role="status">{{ a }}</p> }
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tu cobertura…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tu cobertura. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (cobertura(); as c) {
+        <div class="bloque">
+          <div class="titulo-bloque">
+            <h3>Zonas de despacho</h3>
+            @if (!c.ofreceDespacho) { <span class="tag" data-tono="aviso">No ofreces despacho</span> }
+          </div>
+          <p class="nota">Una zona es una comuna o toda una región. Si una comuna tiene su propia zona, vale esa; si no, la de su región.
+            @if (!c.ofreceDespacho) { Hoy ofreces solo retiro: actívalo en tu <a routerLink="/proveedor/perfil">perfil de empresa</a>. }</p>
+
+          @if (!c.zonas.length) {
+            <p class="mensaje aviso">Todavía no tienes zonas: nadie puede pedirte despacho. Agrega la primera abajo.</p>
+          } @else {
+            <div class="tabla-contenedor">
+              <table class="tabla">
+                <thead><tr><th scope="col">Zona</th><th scope="col" class="num">Costo de despacho</th><th scope="col">Plazo</th><th scope="col"><span class="visualmente-oculto">Acciones</span></th></tr></thead>
+                @for (g of porRegion(); track g.region) {
+                  <tbody>
+                    <tr class="region"><th scope="rowgroup" colspan="4">{{ g.region }}</th></tr>
+                    @for (z of g.zonas; track z.id) {
+                      @if (editandoZona() === z.id) {
+                        <tr class="editando">
+                          <th scope="row">{{ nombreZona(z) }}</th>
+                          <td class="num"><label class="visualmente-oculto" [for]="'costo-' + z.id">Costo</label><input class="input corto" [id]="'costo-' + z.id" type="number" min="0" step="10" [(ngModel)]="costoEdit" /></td>
+                          <td><label class="visualmente-oculto" [for]="'plazo-' + z.id">Plazo en horas</label><input class="input corto" [id]="'plazo-' + z.id" type="number" min="1" max="720" placeholder="horas" [(ngModel)]="plazoEdit" /></td>
+                          <td class="acciones">
+                            <button type="button" class="btn-link" [disabled]="ocupado()" (click)="guardarZona(z)">Guardar</button>
+                            <button type="button" class="btn-link" (click)="editandoZona.set(null)">Cancelar</button>
+                          </td>
+                        </tr>
+                      } @else {
+                        <tr>
+                          <th scope="row">{{ nombreZona(z) }}</th>
+                          <td class="num fuerte">{{ z.costoDespacho === 0 ? "Gratis" : clp(z.costoDespacho) }}</td>
+                          <td class="suave">{{ z.plazoHoras !== null ? plazo(z.plazoHoras) : "el de la oferta" }}</td>
+                          <td class="acciones">
+                            <button type="button" class="btn-link" [disabled]="ocupado()" (click)="editarZona(z)">Editar</button>
+                            <button type="button" class="btn-link peligro" [disabled]="ocupado()" (click)="borrarZona(z)">Quitar</button>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                }
+              </table>
+            </div>
+          }
+
+          <form class="agregar" (ngSubmit)="agregarZona()" novalidate>
+            <p class="sub">Agregar zona</p>
+            <div class="campos">
+              <label class="field"><span>Región</span>
+                <select class="input" name="region" [(ngModel)]="nuevaRegion" (ngModelChange)="nuevaComuna = null">
+                  <option value="">Elige una región</option>
+                  @for (r of regiones(); track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
+                </select>
+              </label>
+              <label class="field"><span>Comuna</span>
+                <select class="input" name="comuna" [(ngModel)]="nuevaComuna" [disabled]="!nuevaRegion">
+                  <option [ngValue]="null">Toda la región</option>
+                  @for (c of comunasDe(nuevaRegion); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+                </select>
+              </label>
+              <label class="field"><span>Costo (CLP)</span><input class="input" name="costo" type="number" min="0" step="10" [(ngModel)]="nuevoCosto" /></label>
+              <label class="field"><span>Plazo (horas, opcional)</span><input class="input" name="plazo" type="number" min="1" max="720" [(ngModel)]="nuevoPlazo" /></label>
+              <button type="submit" class="btn btn-primary" [disabled]="!puedeAgregarZona()">Agregar</button>
+            </div>
+            <p class="ayuda">Sin plazo, el envío toma el plazo de tus ofertas. Un costo 0 es despacho gratis en esa zona.</p>
+          </form>
+        </div>
+
+        <div class="bloque">
+          <div class="titulo-bloque">
+            <h3>Puntos de retiro</h3>
+            @if (!c.ofreceRetiro) { <span class="tag" data-tono="aviso">No ofreces retiro</span> }
+            <button type="button" class="btn btn-secondary" [disabled]="ocupado() || editandoPunto() !== null" (click)="nuevoPunto()">Agregar punto</button>
+          </div>
+          <p class="nota">Donde el comprador puede ir a buscar su pedido sin costo. Uno con retiros pasados no se borra: se desactiva.
+            @if (!c.ofreceRetiro) { Hoy ofreces solo despacho: actívalo en tu <a routerLink="/proveedor/perfil">perfil de empresa</a>. }</p>
+
+          @if (editandoPunto() === "nuevo") {
+            <ng-container *ngTemplateOutlet="formulario" />
+          }
+          <ul class="puntos">
+            @for (p of puntos(); track p.id) {
+              <li [class.inactivo]="!p.activo">
+                @if (editandoPunto() === p.id) {
+                  <ng-container *ngTemplateOutlet="formulario" />
+                } @else {
+                  <div class="punto">
+                    <div>
+                      <span class="nombre">{{ p.nombre }}</span>
+                      <span class="tag" [attr.data-tono]="p.activo ? 'ok' : null">{{ p.activo ? "Activo" : "Inactivo" }}</span>
+                      <p class="detalle">{{ textoDireccion(p.direccion) }} · {{ p.direccion.region }}</p>
+                      <p class="detalle">{{ p.horario ?? "Sin horario indicado" }}</p>
+                    </div>
+                    <div class="acciones">
+                      <button type="button" class="btn-link" [disabled]="ocupado() || editandoPunto() !== null" (click)="editarPunto(p)">Editar</button>
+                      <button type="button" class="btn-link" [disabled]="ocupado()" (click)="cambiarActivo(p)">{{ p.activo ? "Desactivar" : "Activar" }}</button>
+                      @if (!p.usado) { <button type="button" class="btn-link peligro" [disabled]="ocupado()" (click)="borrarPunto(p)">Borrar</button> }
+                    </div>
+                  </div>
+                }
+              </li>
+            } @empty {
+              @if (editandoPunto() !== "nuevo") { <li class="vacio">No tienes puntos de retiro.</li> }
+            }
+          </ul>
+        </div>
+
+        <ng-template #formulario>
+          <form class="form-punto" (ngSubmit)="guardarPunto()" novalidate>
+            <div class="campos punto-1">
+              <label class="field"><span>Nombre</span><input class="input" name="pNombre" maxlength="120" placeholder="Ej.: Bodega Quilicura" [(ngModel)]="formPunto.nombre" /></label>
+              <label class="field"><span>Horario</span><input class="input" name="pHorario" maxlength="180" placeholder="Ej.: Lun a Vie 08:00-17:00" [(ngModel)]="formPunto.horario" /></label>
+            </div>
+            <div class="campos punto-2">
+              <label class="field"><span>Dirección</span><input class="input" name="pCalle" maxlength="160" placeholder="Calle" [(ngModel)]="formPunto.calle" /></label>
+              <label class="field"><span>Número</span><input class="input" name="pNumero" maxlength="20" [(ngModel)]="formPunto.numero" /></label>
+              <label class="field"><span>Complemento</span><input class="input" name="pComplemento" maxlength="80" [(ngModel)]="formPunto.complemento" /></label>
+              <label class="field"><span>Comuna</span>
+                <select class="input" name="pComuna" [(ngModel)]="formPunto.comunaId">
+                  <option [ngValue]="null">Elige una comuna</option>
+                  @for (r of regiones(); track r.codigo) {
+                    <optgroup [label]="r.nombre">@for (cm of r.comunas; track cm.id) { <option [ngValue]="cm.id">{{ cm.nombre }}</option> }</optgroup>
+                  }
+                </select>
+              </label>
+            </div>
+            <div class="botones">
+              <button type="submit" class="btn btn-primary" [disabled]="ocupado() || !puntoCompleto()">{{ editandoPunto() === "nuevo" ? "Agregar punto" : "Guardar" }}</button>
+              <button type="button" class="btn btn-secondary" (click)="editandoPunto.set(null)">Cancelar</button>
+            </div>
+          </form>
+        </ng-template>
+      }
+    }
+  }
+</section>

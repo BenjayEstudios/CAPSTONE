@@ -15,14 +15,14 @@ export function resumenProducto(p: Producto) {
   return r;
 }
 
-export function auditoriaCrearProducto(usuarioId: number | null) {
+export function auditoriaCrearProducto(usuarioId: number | null, operacion = "crear_producto") {
   return (p: Producto): RegistroAuditoria => ({
     usuarioId,
     entidad: "producto",
     entidadId: p.id,
     accion: "crear",
     datosAntes: null,
-    datosDespues: { operacion: "crear_producto", ...resumenProducto(p) }
+    datosDespues: { operacion, ...resumenProducto(p) }
   });
 }
 

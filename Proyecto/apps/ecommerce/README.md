@@ -26,10 +26,119 @@ usar `pnpm dlx ng` como alternativa.
 
 ```bash
 pnpm install
-pnpm dev     # ng serve, puerto 4200 por defecto, apunta a apps/backend en :3000
+pnpm dev     # ng serve en :4200, apunta a apps/backend en :8000 (environment.development.ts)
 pnpm build
 pnpm test
 ```
+
+## Cuenta y sesión (KAN-97)
+
+- Rutas: `/ingresar`, `/registro` (persona o empresa), `/recuperar-clave`, `/restablecer-clave?token=` (`features/cuenta/`).
+- `core/state/session.state.ts` guarda JWT y usuario en `localStorage` (`cotizapp.ecommerce.sesion`).
+- `core/auth/guards.ts`: `sesionGuard` para lo que exige cuenta (checkout, pedidos); el catálogo **no** lo usa. `invitadoGuard` para ingresar/registro.
+- `core/auth/auth.interceptor.ts`: Bearer en cada llamada; 401 fuera de las rutas públicas de `/auth` -> `/ingresar?motivo=expirada`.
+- Las cuentas internas no entran al ecommerce (usan admin-site).
+- En desarrollo el correo de recuperación no se envía: con `MAIL_OUT_DIR` en el backend se escribe en esa carpeta y de ahí se copia el enlace.
+
+## Inicio (KAN-89)
+
+`features/inicio/`: buscador (en la cabecera), contadores, categorías con conteo y "Mayor diferencia de precio hoy". Datos de `GET /catalogo/resumen` y `GET /catalogo/productos?orden=diferencia` (`core/catalogo/catalogo.service.ts`). El carro de la cabecera sale de `core/state/carro.state.ts` (`GET /carro`, solo compradores).
+
+## Catálogo y búsqueda (KAN-90, KAN-91)
+
+`features/catalogo/`: `/catalogo` (filtros por categoría, plazo y mínimo; tarjetas o tabla; orden por precio) y `/buscar?q=` (refinar por 24 h, sin mínimo, retiro y marca; más barato y diferencia con el más caro). Los filtros viven en la URL. Cada término nuevo se registra con `core/analitica/analitica.service.ts` (`POST /eventos/lote`, evento `busqueda` con `resultados`).
+
+## Ficha de producto y comparador (KAN-92, KAN-93)
+
+`features/producto/`: `/producto/:id` con el precio más bajo hoy, la diferencia entre el más barato y el más caro, y el comparador en **tabla** (todos los distribuidores por precio unitario) o **lado a lado** (`?vista=lado`, los 3 más baratos). Comprar agrega la oferta al carro con `CarroState.agregar` (`PUT /carro` con lo que ya había más la oferta; las cajas cumplen el mínimo de compra). Registra `vista_producto` (con `?origen=catalogo|busqueda`, si no `directo`) y `click_oferta`.
+
+## Carro (KAN-94)
+
+`features/carro/`: `/carro` agrupado por distribuidor con plazo, subtotal y despacho; cantidades en cajas con +/– (respeta el mínimo y el stock), quitar, aviso de precios cambiados ("Aceptar los precios nuevos"), ofertas no disponibles, y resumen con despachos, ahorro vs. el más caro y total. `GET /carro` no trae distribuidor, plazo, mínimo ni despacho: salen de la ficha de cada producto. Los montos los calcula `carro.calculo.ts` (`armarCarro`, pura) con las mismas reglas que el checkout del backend. Los cambios pasan por `CarroState` (`PUT /carro` con el carro completo). `shared/compra.ts` tiene `cajasMinimas`, que usan la ficha y el carro.
+
+## Checkout y pago (KAN-95)
+
+`features/checkout/`: `/checkout` en tres pasos (boleta o factura; entrega por distribuidor, despacho o retiro en su bodega, con dirección guardada o nueva; tarjeta por Webpay) con "Así llega tu pedido" y el total. Pagar llama `POST /carro/confirmar` y `POST /ordenes/:id/pago` (`core/checkout/checkout.service.ts`) y `NavegadorPasarela` envía `token_ws` a Webpay con un formulario POST. Webpay vuelve al backend, que redirige a `/checkout/resultado?orden=&pago=`: lee la orden (no confía solo en `?pago=`) y, si sigue pendiente, ofrece "Reintentar el pago". `FichasDelCarro` (en `features/carro/`) carga las fichas que usan el carro y el checkout.
+
+Para probar el pago en local usar `http://localhost:4200`: el ambiente de integración de Transbank rechaza (403) un formulario con origen `http://[::1]:4200`. Tarjeta de prueba de Transbank: 4051 8856 0044 6623, CVV 123; en el banco simulado, RUT 11.111.111-1 y clave 123. La vista de status está en `/estado`.
+
+## Confirmación y detalle de la compra (KAN-96)
+
+`features/pedidos/detalle-orden.component.ts`: detalle consolidado de una orden (folio, medio de pago, total, documentos; por distribuidor estado, despacho con dirección o retiro con el punto, plazo y fecha estimada, líneas y montos). Lo usa `/checkout/resultado` y sirve para "Mis pedidos" (KAN-98). Los PDF de `GET /documentos-tributarios/:id/pdf` piden el token: se descargan como blob (`ApiClient.getBlob`) y se abren en otra pestaña.
+
+## Mis pedidos (KAN-98)
+
+`features/pedidos/`: `/pedidos` (historial de `GET /ordenes` con filtros por estado y páginas en la URL) y `/pedidos/:id` (el detalle de KAN-96 con el seguimiento de cada envío y "Pagar ahora" si sigue pendiente). Los textos de estados y los pasos del seguimiento están en `estados.ts`, alineados con `transicionesPermitidas` del backend. "Mis pedidos" va en la cabecera solo para compradores.
+
+## Calificar al distribuidor (KAN-99)
+
+`features/pedidos/calificar-envio.component.ts`: en cada envío entregado del detalle, cinco estrellas y comentario opcional (`POST /ordenes/envios/:id/calificacion`), una vez; si ya calificó muestra su calificación (`envios[].calificacion` del detalle). El promedio se ve en la ficha de producto.
+
+## Vender en Cotizapp (KAN-100)
+
+`features/cuenta/vender.component.ts`: `/vender` (solo sin sesión) para que una distribuidora pida su alta: datos legales de la empresa, representante y acceso (`POST /auth/registro/proveedor`). Queda en revisión con su caso de moderación; no inicia sesión. Enlazado en el pie y en "Ingresar".
+
+## Panel del proveedor (KAN-101)
+
+`features/proveedor/`: `/proveedor` (guard `proveedorGuard`) con el marco del panel (`panel-proveedor.component.ts`: franja de la empresa y pestañas en `PESTANAS_PROVEEDOR`; cada historia del proveedor agrega su ruta hija y su pestaña) y el dashboard (`dashboard.component.ts`): KPIs del mes vs. el mismo tramo del anterior, venta semanal de 12 semanas (barras con tooltip y tabla accesible), más vendidos y "Requiere atención". Datos de `core/proveedor/panel-proveedor.service.ts`; fechas y cifras en `dashboard.calculo.ts`. Un proveedor que ingresa sin destino llega al panel y ve "Mi panel" en la cabecera.
+
+## Asignarme un producto (KAN-102)
+
+`features/proveedor/asignar.component.ts`: `/proveedor/asignar` (botón en el marco del panel). Busca en `GET /ofertas/productos-disponibles`, calcula stock total, valor del stock, precio por kg/L y posición frente a los precios de la ficha, muestra el tope de publicación y las condiciones de despacho del proveedor (`GET /proveedor/cobertura`), y crea la oferta (`POST /ofertas`) publicada o como borrador. Sobre el tope solo deja guardar borrador. Servicio: `core/proveedor/ofertas-proveedor.service.ts`.
+
+## Mis productos (KAN-103)
+
+`features/proveedor/productos.component.ts`: pestaña "Mis productos" (`/proveedor/productos`). Tabla de las ofertas (`GET /ofertas`) con filtros; "Editar" abre la fila con precio, cajas y motivo (`PATCH /ofertas/:id`) y el historial de precio y stock (`GET /ofertas/:id/historial`); pausar, reactivar, publicar un borrador o borrarlo. Una publicada no se guarda sobre el tope.
+
+Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publicada, posición entre las del mismo producto ("2.º de 5"), diferencia con el más bajo y el precio más bajo (`GET /ofertas/comparacion`). Se recalcula al cambiar precio o estado.
+
+## Órdenes de venta (KAN-105)
+
+`features/proveedor/ventas.component.ts`: pestaña "Órdenes" (`/proveedor/ventas`). Tabla de los envíos del proveedor (`GET /proveedor/ventas`): folio, cliente, comuna, fecha, líneas, cajas, monto y estado, con filtros por estado y su conteo, y "Ver más" de a 50. Cada fila tiene el botón del siguiente paso (Preparar → Marcar despachado o listo para retiro → Marcar entregado), que llama a `PATCH /ordenes/envios/:id/estado` y recarga. Servicio: `core/proveedor/ventas-proveedor.service.ts`.
+
+## Tus clientes (KAN-106)
+
+`features/proveedor/clientes.component.ts`: pestaña "Clientes" (`/proveedor/clientes`). Tabla de `GET /proveedor/clientes`: cliente con su contacto (o "Contacto disponible con su primera orden pagada"), tipo, comuna, órdenes (y las por pagar), comprado, última compra y recompra. "Ver más" de a 50.
+
+## Demanda y cobertura (KAN-107)
+
+`features/proveedor/demanda.component.ts`: pestaña "Demanda" (`/proveedor/demanda`). Muestra lo más visto y clickeado (vistas, clicks, conversión y cajas vendidas), los productos restantes frente al inicio del mes y los clientes potenciales por comuna, con "Despachas" o "Sin cobertura" (`GET /proveedor/demanda`). Muestra los últimos 30 días, con un botón para ver los últimos 90.
+
+## Perfil de empresa (KAN-108)
+
+`features/proveedor/perfil.component.ts`: `/proveedor/perfil`, desde el boton "Perfil de empresa" del marco del panel. Formulario con datos legales (razon social y RUT de solo lectura), contacto, direccion comercial y bodega (comunas agrupadas por region), tiempos de despacho y modalidad, y cuenta de liquidacion. Al lado va el estado de la cuenta. `cambiosPerfil` arma el PATCH con lo que cambio y `problemasPerfil` dice que falta antes de guardar.
+
+## Cobertura de despacho y puntos de retiro (KAN-109)
+
+`features/proveedor/cobertura.component.ts`: pestaña "Cobertura" (`/proveedor/cobertura`).
+- **Zonas:** agrupadas por region, con su costo y plazo. Se editan en la misma fila, se quitan, y se agregan eligiendo una region y una comuna (o toda la region).
+- **Puntos de retiro:** se crean, se editan, se activan o desactivan, y se borran solo los que no tienen retiros.
+- **Errores:** los 409 del backend se muestran con su motivo.
+
+En el checkout, `checkout.component.ts` usa `coberturas` de `GET /carro/opciones-entrega`.
+- **Comuna sin zona:** el despacho de ese distribuidor aparece deshabilitado ("no despacha a Ñuñoa") y se propone el retiro.
+- **Dirección:** se sigue pidiendo mientras algún distribuidor pueda despachar, para que el comprador elija una comuna cubierta.
+- **Costo:** sale de la zona que cubre la comuna elegida.
+
+## Documentos del proveedor (KAN-110)
+
+`features/proveedor/documentos.component.ts`: pestaña "Documentos" (`/proveedor/documentos`).
+- **Tarjetas:** una por documento exigido, con "Al día", "Vence en N días", "Vencido" o "Falta", la fecha de vencimiento, el enlace al archivo y la revisión del admin.
+- **Subida:** el formulario envía el archivo en `FormData` (`POST /proveedor/documentos?tipo=&venceEn=`). Antes de enviar revisa que haya archivo, el tamaño y el vencimiento.
+- **Al subir:** avisa que el documento queda pendiente de revisión.
+
+## Liquidaciones (KAN-111)
+
+`features/proveedor/liquidaciones.component.ts`: pestaña "Liquidaciones" (`/proveedor/liquidaciones`).
+- **Por cobrar:** viene de `porCobrar` de `GET /alertas/proveedor`, desglosado y con la próxima liquidación.
+- **Lista:** liquidaciones semanales (`GET /liquidaciones/mias`) con período, bruto, comisión, neto, estado y fecha de pago, de a 20.
+- **Detalle:** "Ver envíos" abre los envíos de cada una (`GET /liquidaciones/mias/:id`).
+
+El dashboard, Demanda y Documentos toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
+
+## Tests
+
+`pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.
 
 ## Dónde va cada cosa
 

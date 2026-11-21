@@ -1,12 +1,12 @@
 import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { RouterLink } from "@angular/router";
-import { KpiDashboard, ResumenDashboard } from "../../core/models/dashboard.models";
+import { EstadisticasPlataforma, KpiDashboard, ResumenDashboard } from "../../core/models/dashboard.models";
 import { SessionState } from "../../core/state/session.state";
 import { DashboardService } from "./dashboard.service";
 import {
-  ETIQUETA_PROBLEMA, claseVariacion, etiquetaMes, etiquetaSemana, formatoClp, geometriaGrafico, mensajeErrorDashboard,
-  mesLocalActual, textoVariacion
+  ETIQUETA_PROBLEMA, claseVariacion, etiquetaDia, etiquetaMes, etiquetaSemana, formatoClp, formatoConversion, geometriaDias,
+  geometriaGrafico, mensajeErrorDashboard, mensajeErrorTrafico, mesLocalActual, rangoDelMes, textoVariacion
 } from "./dashboard.util";
 
 @Component({
@@ -21,7 +21,10 @@ export class DashboardComponent {
   private readonly session = inject(SessionState);
   private readonly destroyRef = inject(DestroyRef);
   private solicitud = 0;
+  private solicitudTrafico = 0;
 
+  readonly conversion = formatoConversion;
+  readonly dia = etiquetaDia;
   readonly clp = formatoClp;
   readonly variacion = textoVariacion;
   readonly claseVar = claseVariacion;
@@ -36,6 +39,20 @@ export class DashboardComponent {
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
   readonly mes = signal<string | undefined>(undefined);
+
+  // Trafico y demanda (KAN-154): se carga aparte; un fallo aqui no tumba el resto del dashboard.
+  readonly trafico = signal<EstadisticasPlataforma | null>(null);
+  readonly cargandoTrafico = signal(false);
+  readonly errorTrafico = signal<string | null>(null);
+  readonly graficoTrafico = computed(() =>
+    geometriaDias((this.trafico()?.porDia ?? []).map((d) => ({ fecha: d.fecha, valor: d.vistas })))
+  );
+  readonly sinTrafico = computed(() => {
+    const t = this.trafico()?.totales;
+    return !!t && t.vistas === 0 && t.clicks === 0 && t.busquedas === 0;
+  });
+  readonly maxVistasProducto = computed(() => Math.max(1, ...(this.trafico()?.productosMasVistos ?? []).map((p) => p.vistas)));
+  readonly maxBusquedasTermino = computed(() => Math.max(1, ...(this.trafico()?.terminosMasBuscados ?? []).map((t) => t.busquedas)));
 
   readonly grafico = computed(() => geometriaGrafico(this.resumen()?.semanas ?? []));
   readonly sinActividad = computed(() => {
@@ -71,11 +88,32 @@ export class DashboardComponent {
         if (id !== this.solicitud) return;
         this.resumen.set(r);
         this.cargando.set(false);
+        this.cargarTrafico(r.mes);
       },
       error: (e) => {
         if (id !== this.solicitud) return;
         this.error.set(mensajeErrorDashboard(e));
         this.cargando.set(false);
+      }
+    });
+  }
+
+  cargarTrafico(mes: string = this.resumen()?.mes ?? this.mes() ?? mesLocalActual()) {
+    const id = ++this.solicitudTrafico;
+    const { desde, hasta } = rangoDelMes(mes);
+    this.cargandoTrafico.set(true);
+    this.errorTrafico.set(null);
+    this.svc.trafico(desde, hasta).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (t) => {
+        if (id !== this.solicitudTrafico) return;
+        this.trafico.set(t);
+        this.cargandoTrafico.set(false);
+      },
+      error: (e) => {
+        if (id !== this.solicitudTrafico) return;
+        this.trafico.set(null);
+        this.errorTrafico.set(mensajeErrorTrafico(e));
+        this.cargandoTrafico.set(false);
       }
     });
   }

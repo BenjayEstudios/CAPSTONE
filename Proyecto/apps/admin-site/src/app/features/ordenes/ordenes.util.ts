@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from "@angular/common/http";
-import { EnvioEstado, EnvioOrden, MedioPago, OrdenEstado } from "../../core/models/ordenes.models";
+import { EnvioEstado, EnvioOrden, EstadoSii, MedioPago, OrdenEstado } from "../../core/models/ordenes.models";
 
 const fmtCLP = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
 
@@ -24,6 +24,26 @@ export const ETIQUETA_MEDIO_PAGO: Record<MedioPago, string> = {
   transferencia: "Transferencia",
   linea_credito: "Línea de crédito"
 };
+
+export const ETIQUETA_ESTADO_SII: Record<EstadoSii, string> = {
+  pendiente: "Pendiente",
+  enviado: "Enviado",
+  aceptado: "Aceptado",
+  rechazado: "Rechazado"
+};
+
+/** Mensaje para fallos al cargar/emitir/abrir documentos tributarios. */
+export function mensajeErrorDocumentos(err: unknown): string {
+  const e = err as HttpErrorResponse;
+  const status = e?.status;
+  const codigo = e?.error?.error?.code as string | undefined;
+  const msg = e?.error?.error?.message as string | undefined;
+  if (codigo === "ORDEN_NO_PAGADA") return "La orden no está pagada: aún no se pueden emitir documentos.";
+  if (status === 403) return "No tienes permiso para esta acción sobre documentos (emitir requiere nivel total en órdenes).";
+  if (status === 404) return "El documento o la orden no existe.";
+  if (status === 0) return "No hay conexión con el servidor.";
+  return msg ?? "Ocurrió un error inesperado. Inténtalo nuevamente.";
+}
 
 /** CLP sin decimales; "—" si no hay valor (p. ej. montos ocultos). */
 export function formatoClp(v: number | null | undefined): string {

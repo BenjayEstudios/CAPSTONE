@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import {
   actualizarUsuarioSchema,
+  buscarOrganizacionesQuerySchema,
   crearUsuarioSchema,
   listarUsuariosQuerySchema,
   type RegistroAuditoria,
@@ -34,8 +35,18 @@ type DepsAdmin = { usuarioAdminRepository: UsuarioAdminRepository; usuarioReposi
 export function listarUsuarios(deps: { usuarioAdminRepository: UsuarioAdminRepository }) {
   return async (input: unknown) => {
     const f = validar(listarUsuariosQuerySchema, input);
-    const { items, total } = await deps.usuarioAdminRepository.listar(f);
-    return { items, pagina: f.pagina, tamano: f.tamano, total, totalPaginas: Math.max(1, Math.ceil(total / f.tamano)) };
+    const { items, total, totalExacto, hayMas } = await deps.usuarioAdminRepository.listar(f);
+    return {
+      items,
+      pagina: f.pagina,
+      tamano: f.tamano,
+      orden: f.orden,
+      // Con totalExacto=false el conteo se acoto: el total real es mayor y `totalPaginas` es un minimo.
+      total,
+      totalExacto,
+      totalPaginas: Math.max(f.pagina, Math.ceil(total / f.tamano)),
+      hayMas
+    };
   };
 }
 
@@ -49,6 +60,12 @@ export function obtenerUsuario(deps: { usuarioAdminRepository: UsuarioAdminRepos
 
 export function opcionesUsuarios(deps: { usuarioAdminRepository: UsuarioAdminRepository }) {
   return () => deps.usuarioAdminRepository.opciones();
+}
+
+export function buscarOrganizaciones(deps: { usuarioAdminRepository: UsuarioAdminRepository }) {
+  return async (input: unknown) => ({
+    items: await deps.usuarioAdminRepository.buscarOrganizaciones(validar(buscarOrganizacionesQuerySchema, input))
+  });
 }
 
 /** Bloquea si `id` es hoy un administrador activo (cambiar_permisos total) y el ultimo que queda. */
@@ -75,7 +92,7 @@ export function crearUsuario(
 
     const clave = deps.generarClave();
     const hashClave = await bcrypt.hash(clave, RONDAS_BCRYPT);
-    // mfa "activo" = 2FA exigido pero aun sin configurar -> "pendiente" (el login rechaza "activo" hasta implementar 2FA).
+    // mfa "activo" = 2FA exigido pero aun sin configurar -> "pendiente": en su primer ingreso el login le pide enrolar su app TOTP.
     const mfaEstado = d.mfa === "activo" ? "pendiente" : d.mfa === "opcional" ? "opcional" : "inactivo";
 
     const id = await deps.usuarioAdminRepository.crear(

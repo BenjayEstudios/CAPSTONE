@@ -1,0 +1,188 @@
+@switch (estado()) {
+  @case ("no-encontrado") {
+    <div class="contenedor vacio">
+      <h1>Este producto no está en el catálogo</h1>
+      <p>Puede que ya no tenga ofertas publicadas. <a routerLink="/catalogo">Ver el catálogo</a></p>
+    </div>
+  }
+  @case ("error") {
+    <div class="contenedor vacio">
+      <p class="mensaje error" role="alert">No pudimos cargar el producto. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p>
+    </div>
+  }
+  @default {
+    @if (ficha(); as f) {
+      <div class="contenedor ficha" [class.atenuado]="estado() === 'cargando'">
+        <nav class="migas" aria-label="Ruta">
+          <a routerLink="/catalogo">Catálogo</a>
+          @if (f.categoria.padre; as padre) {
+            / <a routerLink="/catalogo" [queryParams]="{ categoria: padre.id }">{{ padre.nombre }}</a>
+          }
+          / <a routerLink="/catalogo" [queryParams]="{ categoria: f.categoria.id }">{{ f.categoria.nombre }}</a>
+          / <span>{{ f.nombre }}</span>
+        </nav>
+
+        <div class="columnas">
+          <figure class="imagen">
+            @if (f.imagenUrl) { <img [src]="f.imagenUrl" [alt]="f.nombre" /> }
+            @else { <span class="sin-imagen">Imagen del producto<br /><small>{{ f.formato }}</small></span> }
+            <figcaption>La imagen es de referencia. El envase puede variar según el distribuidor.</figcaption>
+          </figure>
+
+          <div class="detalle">
+            <p class="etiqueta categoria">{{ f.categoria.nombre }}</p>
+            <h1>{{ f.nombre }}</h1>
+            <p class="meta">{{ f.formato }}@if (f.marca) { · {{ f.marca }} } · SKU {{ f.sku }}</p>
+
+            @if (masBarata(); as barata) {
+              <div class="resumen-precio">
+                <div>
+                  <p class="etiqueta">Precio más bajo hoy</p>
+                  <p class="precio-grande"><span class="tinta-desfasada" [attr.data-valor]="clp(barata.precioUnitario)">{{ clp(barata.precioUnitario) }}</span></p>
+                </div>
+                <ul class="datos">
+                  <li>{{ porUnidad(barata) }}</li>
+                  <li>{{ f.ofertas.length }} {{ f.ofertas.length === 1 ? "distribuidor publica" : "distribuidores publican" }} este producto</li>
+                  @if (f.ofertas.length > 1) {
+                    <li class="diferencia">{{ clp(diferencia()) }} entre el más barato y el más caro</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (aviso(); as a) {
+              <p class="mensaje" [class.ok]="a.tipo === 'ok'" [class.error]="a.tipo === 'error'" role="status">
+                {{ a.texto }}
+                @if (a.conEnlaceCarro) { <a routerLink="/carro">Ver carro</a> }
+              </p>
+            }
+
+            <div class="cabecera-comparador">
+              <h2>
+                @if (vista() === "lado") { Comparación lado a lado <small>los {{ tresMasBaratas().length }} más baratos de {{ f.ofertas.length }}</small> }
+                @else { Distribuidores que lo venden <small>ordenados por precio unitario</small> }
+              </h2>
+              @if (f.ofertas.length > 1) {
+                <div class="segmento" role="group" aria-label="Vista del comparador">
+                  <button type="button" [class.activo]="vista() === 'tabla'" [attr.aria-pressed]="vista() === 'tabla'" (click)="cambiarVista('tabla')">Tabla</button>
+                  <button type="button" [class.activo]="vista() === 'lado'" [attr.aria-pressed]="vista() === 'lado'" (click)="cambiarVista('lado')">Lado a lado</button>
+                </div>
+              }
+            </div>
+
+            @if (vista() === "tabla" || f.ofertas.length <= 1) {
+              <div class="tabla-contenedor">
+                <table class="tabla">
+                  <thead>
+                    <tr>
+                      <th scope="col">Distribuidor</th>
+                      <th scope="col" class="num">Precio unitario</th>
+                      <th scope="col" class="num">Precio por {{ f.unidad === "unidad" ? "unidad" : f.unidad }}</th>
+                      <th scope="col">Entrega</th>
+                      <th scope="col">Mínimo</th>
+                      <th scope="col"><span class="visualmente-oculto">Acción</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (o of f.ofertas; track o.id; let primera = $first) {
+                      <tr [class.mas-bajo]="primera">
+                        <th scope="row">
+                          <span class="proveedor">{{ o.proveedor.nombre }}</span>
+                          <span class="zona">
+                            @if (o.proveedor.zona; as z) { {{ z.comuna }} · {{ z.region }} }
+                            @if (o.proveedor.calificacion.promedio !== null) { · ★ {{ o.proveedor.calificacion.promedio }} ({{ o.proveedor.calificacion.cantidad }}) }
+                          </span>
+                          <span class="zona">{{ despacho(o) }}</span>
+                        </th>
+                        <td class="num fuerte">{{ clp(o.precioUnitario) }}</td>
+                        <td class="num suave">{{ porUnidad(o) }}</td>
+                        <td>{{ plazo(o.plazoHoras) }}</td>
+                        <td>{{ o.minimoCompra ?? 1 }} un.</td>
+                        <td class="accion">
+                          @if (primera && f.ofertas.length > 1) { <span class="insignia">Más bajo</span> }
+                          <button type="button" class="btn btn-comprar" [disabled]="comprando() !== null" (click)="comprar(o)">
+                            {{ comprando() === o.id ? "Agregando…" : "Comprar" }}
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              @if (f.ofertas.length >= 2 && vista() === "tabla") {
+                <p class="pie-comparador">
+                  <button type="button" class="btn btn-secondary" (click)="cambiarVista('lado')">Comparar lado a lado</button>
+                  Puedes mezclar distribuidores distintos en el mismo carro.
+                </p>
+              }
+            } @else {
+              <div class="lado-a-lado" [style.--columnas]="tresMasBaratas().length">
+                <div class="fila encabezados">
+                  <span></span>
+                  @for (o of tresMasBaratas(); track o.id) {
+                    <div class="col-encabezado">
+                      <strong>{{ o.proveedor.nombre }}</strong>
+                      <small>@if (o.proveedor.zona; as z) { {{ z.comuna }} · {{ z.region }} }</small>
+                    </div>
+                  }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Precio unitario</span>
+                  @for (o of tresMasBaratas(); track o.id; let primera = $first) {
+                    <span class="valor" [class.mejor]="primera">
+                      {{ clp(o.precioUnitario) }}
+                      <small>@if (primera) { más bajo } @else { +{{ clp(o.precioUnitario - (masBarata()?.precioUnitario ?? 0)) }} }</small>
+                    </span>
+                  }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Precio por {{ f.unidad === "unidad" ? "unidad" : f.unidad }}</span>
+                  @for (o of tresMasBaratas(); track o.id) { <span class="valor">{{ porUnidad(o) }}</span> }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Plazo de entrega</span>
+                  @for (o of tresMasBaratas(); track o.id) { <span class="valor">{{ plazo(o.plazoHoras) }}</span> }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Mínimo de compra</span>
+                  @for (o of tresMasBaratas(); track o.id) { <span class="valor">{{ o.minimoCompra ?? 1 }} un.</span> }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Calificación</span>
+                  @for (o of tresMasBaratas(); track o.id) {
+                    <span class="valor">@if (o.proveedor.calificacion.promedio !== null) { ★ {{ o.proveedor.calificacion.promedio }} <small>({{ o.proveedor.calificacion.cantidad }})</small> } @else { <small>Sin calificaciones</small> }</span>
+                  }
+                </div>
+                <div class="fila">
+                  <span class="rotulo">Despacho</span>
+                  @for (o of tresMasBaratas(); track o.id) { <span class="valor chico">{{ despacho(o) }}</span> }
+                </div>
+                <div class="fila acciones">
+                  <span></span>
+                  @for (o of tresMasBaratas(); track o.id) {
+                    <button type="button" class="btn btn-comprar" [disabled]="comprando() !== null" (click)="comprar(o)">
+                      {{ comprando() === o.id ? "Agregando…" : "Comprar a " + o.proveedor.nombre }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <p class="pie-comparador">
+                <button type="button" class="btn-link" (click)="cambiarVista('tabla')">Ver los {{ f.ofertas.length }} en tabla</button>
+                · El precio por {{ f.unidad === "unidad" ? "unidad" : f.unidad }} es la comparación real cuando los formatos difieren.
+              </p>
+            }
+
+            @if (f.descripcion) {
+              <section class="sobre">
+                <h2>Sobre este producto</h2>
+                <p>{{ f.descripcion }}</p>
+              </section>
+            }
+          </div>
+        </div>
+      </div>
+    } @else {
+      <p class="contenedor cargando">Cargando el producto…</p>
+    }
+  }
+}

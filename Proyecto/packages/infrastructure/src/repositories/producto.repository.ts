@@ -149,6 +149,10 @@ export class DrizzleProductoRepository implements ProductoRepository {
     return fila ? toEntity(fila) : null;
   }
 
+  async listarTodos(): Promise<Producto[]> {
+    const filas = await this.db.select().from(producto).orderBy(producto.id);
+    return filas.map(toEntity);
+  }
   buscarPorId(id: number) {
     return this.uno(eq(producto.id, id));
   }

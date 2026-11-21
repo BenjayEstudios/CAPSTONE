@@ -7,7 +7,7 @@ import { obtenerProducto } from "./obtener-producto.use-case.js";
 import { reemplazarImagenesProducto } from "./reemplazar-imagenes-producto.use-case.js";
 import { categoriaRepoEnMemoria } from "./categoria.use-cases.test.js";
 
-function productoRepoEnMemoria(inicial: Producto[] = []) {
+export function productoRepoEnMemoria(inicial: Producto[] = []) {
   const datos = [...inicial];
   let seq = Math.max(0, ...datos.map((p) => p.id));
   const repo: ProductoRepository & { datos: Producto[]; ultimosFiltros?: unknown } = {
@@ -16,6 +16,7 @@ function productoRepoEnMemoria(inicial: Producto[] = []) {
       repo.ultimosFiltros = f;
       return { items: [], total: 0 };
     },
+    listarTodos: async () => [...datos],
     buscarPorId: async (id) => datos.find((p) => p.id === id) ?? null,
     buscarPorSku: async (sku) => datos.find((p) => p.sku === sku) ?? null,
     buscarPorEan: async (ean) => datos.find((p) => p.ean === ean) ?? null,

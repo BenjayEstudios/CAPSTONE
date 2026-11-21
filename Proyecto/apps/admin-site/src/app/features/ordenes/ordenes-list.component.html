@@ -92,6 +92,48 @@
           <dt class="fuerte">A liquidar a proveedores</dt><dd class="fuerte">{{ clp(d.montoALiquidarTotal) }}</dd>
         </dl>
 
+        <section class="documentos" aria-label="Documentos tributarios">
+          <h4>
+            <span>Documentos tributarios ({{ documentos().length }})</span>
+            <span class="badge simulado" title="Los DTE son simulados: no hay integración real con el SII">Simulado</span>
+          </h4>
+          @if (errorDocs()) {
+            <p class="mensaje" role="alert">
+              {{ errorDocs() }} <button type="button" class="btn btn-secondary" (click)="reintentarDocumentos()">Reintentar</button>
+            </p>
+          }
+          @if (avisoDocs()) { <p class="aviso" role="status">{{ avisoDocs() }}</p> }
+          @if (cargandoDocs() && documentos().length === 0) {
+            <p class="estado" role="status">Cargando documentos…</p>
+          } @else if (documentos().length === 0 && !errorDocs()) {
+            <p class="estado">
+              @if (puedeEmitir()) { Esta orden aún no tiene documentos emitidos. }
+              @else { La orden no está pagada: aún no hay documentos. }
+            </p>
+          } @else if (documentos().length > 0) {
+            <table class="lineas">
+              <thead><tr><th>Tipo</th><th class="num">Folio</th><th>Emisión</th><th>SII</th><th class="num">Total</th><th>PDF</th></tr></thead>
+              <tbody>
+                @for (doc of documentos(); track doc.id) {
+                  <tr>
+                    <td>{{ doc.tipoNombre }}@if (doc.ordenEnvioId) { <small> · envío {{ doc.ordenEnvioId }}</small> }</td>
+                    <td class="num">{{ doc.folio }}</td>
+                    <td>{{ doc.emitidoEn | date: "dd-MM-yyyy HH:mm" }}</td>
+                    <td><span class="badge" [class]="'badge sii-' + doc.estadoSii">{{ etiquetaSii[doc.estadoSii] }}</span></td>
+                    <td class="num">{{ clp(doc.total) }}</td>
+                    <td><button type="button" class="link" (click)="verPdf(doc)">Ver PDF</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+          @if (puedeEmitir()) {
+            <button type="button" class="btn btn-secondary" [disabled]="emitiendo()" (click)="emitirDocumentos()">
+              {{ emitiendo() ? "Emitiendo…" : documentos().length === 0 ? "Emitir documentos" : "Emitir faltantes" }}
+            </button>
+          }
+        </section>
+
         <h4>Envíos por proveedor ({{ d.envios.length }})</h4>
         @for (e of d.envios; track e.id) {
           <section class="envio">

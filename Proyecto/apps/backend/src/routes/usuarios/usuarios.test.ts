@@ -6,6 +6,7 @@ import type { FastifyInstance } from "fastify";
 const SECRET = "secreto-solo-para-test";
 let app: FastifyInstance;
 const enviados: Array<{ para: string; texto: string }> = [];
+const consultas: unknown[] = [];
 
 const permisos: Record<number, Record<string, string>> = {
   1: { crear_usuario: "total", cambiar_permisos: "total" },
@@ -26,9 +27,10 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     }
   },
   DrizzleUsuarioAdminRepository: class {
-    async listar() { return { items: [fila], total: 1 }; }
+    async listar(f: unknown) { consultas.push(f); return { items: [fila], total: 1, totalExacto: true, hayMas: false }; }
     async obtener(id: number) { return id === 5 ? fila : null; }
-    async opciones() { return { roles: [], organizaciones: [] }; }
+    async opciones() { return { roles: [] }; }
+    async buscarOrganizaciones(f: unknown) { consultas.push(f); return [{ id: 1, razonSocial: "O", rut: "1-9", tipo: "interna", estado: "activa" }]; }
     async existeRol() { return true; }
     async existeOrganizacion() { return true; }
     async crear(_d: unknown, aud: (id: number) => unknown) { aud(5); return 5; }
@@ -81,5 +83,21 @@ describe("rutas de usuarios", () => {
     expect(d.json().error.code).toBe("EMAIL_DUPLICADO");
     expect((await app.inject({ method: "GET", url: "/usuarios/99", headers: bearer("1") })).statusCode).toBe(404);
     expect((await app.inject({ method: "POST", url: "/usuarios", headers: bearer("1"), payload: {} })).statusCode).toBe(400);
+  });
+  it("listado: paginacion y orden validados, respuesta con total acotado", async () => {
+    const r = await app.inject({ method: "GET", url: "/usuarios?q=garc&orden=nombre_asc&tamano=50&pagina=2", headers: bearer("2") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ pagina: 2, tamano: 50, orden: "nombre_asc", totalExacto: true, hayMas: false });
+    expect(consultas.at(-1)).toMatchObject({ q: "garc", orden: "nombre_asc", tamano: 50, pagina: 2 });
+    expect((await app.inject({ method: "GET", url: "/usuarios?orden=otro", headers: bearer("2") })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/usuarios?tamano=1000", headers: bearer("2") })).statusCode).toBe(400);
+  });
+  it("organizaciones: buscador acotado, no se confunde con /usuarios/:id y exige permiso", async () => {
+    const r = await app.inject({ method: "GET", url: "/usuarios/organizaciones?q=pan", headers: bearer("2") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().items).toHaveLength(1);
+    expect((await app.inject({ method: "GET", url: "/usuarios/organizaciones?limite=500", headers: bearer("2") })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/usuarios/organizaciones", headers: bearer("3") })).statusCode).toBe(403);
+    expect((await app.inject({ method: "GET", url: "/usuarios/organizaciones" })).statusCode).toBe(401);
   });
 });

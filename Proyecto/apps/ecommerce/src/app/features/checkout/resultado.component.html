@@ -1,0 +1,36 @@
+<div class="contenedor checkout resultado">
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Revisando tu pago…</p> }
+    @case ("no-encontrada") {
+      <div class="vacio">
+        <h1>No encontramos esa orden</h1>
+        <p>Si pagaste, el comprobante llega a tu correo.</p>
+        <a routerLink="/catalogo" class="btn btn-secondary">Ir al catálogo</a>
+      </div>
+    }
+    @default {
+      @if (orden(); as o) {
+        <p class="etiqueta" [class.ok]="pagada()">{{ pagada() ? "Pago aprobado" : "Pago pendiente" }}</p>
+        <h1>{{ titulo() }}</h1>
+        @if (pagada()) {
+          <p class="intro">Recibimos tu pago. Cada distribuidor ya tiene su parte del pedido y te avisará cuando lo despache o esté listo para retirar.</p>
+        } @else {
+          <p class="intro">Tu orden <strong>{{ o.codigo }}</strong> quedó guardada y pendiente de pago por <strong>{{ clp(o.total) }}</strong>. Puedes intentarlo de nuevo; no se te cobró nada.</p>
+          @if (errorReintento(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+          <p class="acciones">
+            <button type="button" class="btn btn-primary" [disabled]="reintentando()" (click)="reintentar()">
+              {{ reintentando() ? "Te llevamos a Webpay…" : "Reintentar el pago" }}
+            </button>
+            <a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a>
+          </p>
+        }
+
+        <app-detalle-orden [orden]="o" [documentos]="documentos()" />
+
+        @if (pagada()) {
+          <p class="acciones"><a [routerLink]="['/pedidos', o.id]" class="btn btn-primary">Seguir mi pedido</a> <a routerLink="/catalogo" class="btn btn-secondary">Seguir comprando</a></p>
+        }
+      }
+    }
+  }
+</div>

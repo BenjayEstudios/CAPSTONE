@@ -33,27 +33,45 @@ export interface LoginAdminResultadoDto {
   usuario: UsuarioSesionDto;
 }
 
-// ---- 2FA por correo (KAN-112) ----
-// Paso 2: desafio firmado (JWT corto) + codigo de 6 digitos.
-export const verificarMfaSchema = z.object({
-  desafio: z.string().min(10).max(2000),
-  codigo: z.string().trim().regex(/^\d{6}$/)
-});
+// ---- 2FA TOTP para usuarios internos (KAN-144, reemplaza el codigo por correo de KAN-112) ----
+const desafio = z.string().min(10).max(4000);
+const codigoTotp = z.string().trim().regex(/^\d{6}$/);
+
+// Paso 2 (usuario ya enrolado): desafio + codigo de la app autenticadora.
+export const verificarMfaSchema = z.object({ desafio, codigo: codigoTotp });
 export type VerificarMfaDto = z.infer<typeof verificarMfaSchema>;
 
-export const reenviarMfaSchema = z.object({ desafio: z.string().min(10).max(2000) });
-export type ReenviarMfaDto = z.infer<typeof reenviarMfaSchema>;
+// Enrolamiento, paso a: con el desafio de enrolamiento se pide el QR.
+export const iniciarEnrolamientoMfaSchema = z.object({ desafio });
+export type IniciarEnrolamientoMfaDto = z.infer<typeof iniciarEnrolamientoMfaSchema>;
 
-// Claims del desafio MFA. hash = HMAC-SHA256(secreto, sub + ":" + codigo).
+// Enrolamiento, paso b: desafio de confirmacion + primer codigo de la app.
+export const confirmarEnrolamientoMfaSchema = z.object({ desafio, codigo: codigoTotp });
+export type ConfirmarEnrolamientoMfaDto = z.infer<typeof confirmarEnrolamientoMfaSchema>;
+
+// Claims de los desafios (JWT cortos firmados por el backend):
+// - "mfa": el usuario ya tiene secreto; falta el codigo.
+// - "mfa_enrolamiento": 2FA exigido sin secreto; debe enrolarse antes de tener sesion.
+// - "mfa_confirmacion": ya vio el QR; falta el primer codigo para activar.
 export interface DesafioMfaClaims {
   sub: string;
-  tipo: "mfa";
-  hash: string;
+  tipo: "mfa" | "mfa_enrolamiento" | "mfa_confirmacion";
   jti: string;
 }
 
+// Paso 1 con 2FA: sin token. enrolar = true si el usuario todavia no configuro su app.
 export interface MfaRequeridoDto {
   mfaRequerido: true;
+  enrolar: boolean;
+  desafio: string;
+}
+
+// Respuesta de POST /auth/admin/mfa/enrolar: lo que la app autenticadora necesita.
+// "secreto" se muestra para ingresarlo a mano si no se puede escanear el QR.
+export interface EnrolamientoMfaDto {
+  secreto: string;
+  otpauthUrl: string;
+  qrDataUrl: string;
   desafio: string;
 }
 

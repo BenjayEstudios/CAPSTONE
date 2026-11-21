@@ -88,3 +88,22 @@ export interface ImagenSubida {
   ancho: number;
   alto: number;
 }
+
+// Carga masiva del catalogo desde Excel (POST /productos/importar).
+export type AccionImportacion = "crear" | "actualizar" | "sin_cambios" | "error";
+
+export interface FilaImportacionResultado {
+  fila: number;
+  sku: string | null;
+  accion: AccionImportacion;
+  productoId?: number;
+  error?: { codigo: string; mensaje: string };
+}
+
+export interface ResultadoImportacion {
+  /** true = solo se valido; no se guardo nada. */
+  simulacion: boolean;
+  totalFilas: number;
+  resumen: { crear: number; actualizar: number; sinCambios: number; errores: number };
+  filas: FilaImportacionResultado[];
+}
