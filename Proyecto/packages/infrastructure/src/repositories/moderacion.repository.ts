@@ -14,6 +14,7 @@ import type {
 import type { DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
 import { moderacionCaso } from "../db/schema/moderacion-caso.schema.js";
+import { oferta } from "../db/schema/oferta.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
 import { producto } from "../db/schema/producto.schema.js";
 import { rol } from "../db/schema/rol.schema.js";
@@ -150,6 +151,23 @@ export class DrizzleModeracionRepository implements ModeracionRepository {
     if (entidad === "producto") {
       const [f] = await this.db.select({ n: producto.nombre }).from(producto).where(eq(producto.id, entidadId)).limit(1);
       return f ? { entidad, id: entidadId, etiqueta: f.n } : null;
+    }
+    if (entidad === "oferta") {
+      // Casos precio_fuera_rango (KAN-146): "Producto · Proveedor · $precio".
+      const [f] = await this.db
+        .select({
+          producto: producto.nombre,
+          proveedor: sql<string>`COALESCE(${organizacion.nombreFantasia}, ${organizacion.razonSocial})`,
+          precio: oferta.precioUnitario
+        })
+        .from(oferta)
+        .innerJoin(producto, eq(oferta.productoId, producto.id))
+        .innerJoin(organizacion, eq(oferta.proveedorId, organizacion.id))
+        .where(eq(oferta.id, entidadId))
+        .limit(1);
+      return f
+        ? { entidad, id: entidadId, etiqueta: `${f.producto} · ${f.proveedor} · $${f.precio.toLocaleString("es-CL")}` }
+        : null;
     }
     return null;
   }

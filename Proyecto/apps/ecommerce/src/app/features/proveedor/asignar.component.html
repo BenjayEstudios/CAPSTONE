@@ -1,0 +1,142 @@
+<section class="asignar" aria-labelledby="titulo-asignar">
+  <h2 id="titulo-asignar">Asignarme un producto</h2>
+  <p class="bajada">Los productos vienen del catálogo de Cotizapp. Elige uno y publica tus condiciones; no creas fichas nuevas.</p>
+
+  @if (creada(); as c) {
+    <div class="mensaje ok creada" role="status">
+      @if (c.resultado.oferta.estado === "publicada") {
+        <strong>Publicaste {{ c.producto.nombre }} a {{ clp(c.resultado.oferta.precioUnitario) }}.</strong> Ya aparece en el comparador.
+      } @else {
+        <strong>Guardaste {{ c.producto.nombre }} como borrador.</strong> No se muestra a los compradores hasta que lo publiques.
+        @if (c.resultado.revisionPrecio; as r) {
+          El precio supera el tope ({{ clp(r.precioMaximo) }}): el equipo de Cotizapp lo revisará.
+        }
+      }
+      <span class="acciones"><button type="button" class="btn-link" (click)="otra()">Asignar otro producto</button> · <a routerLink="/proveedor/productos">Ver mis productos</a></span>
+    </div>
+  }
+
+  <div class="columnas">
+    <div class="buscador">
+      <label class="field" for="buscar-catalogo">
+        <span>Buscar en el catálogo</span>
+        <input id="buscar-catalogo" class="input" type="search" placeholder="Nombre, marca o SKU" autocomplete="off" [ngModel]="q()" (ngModelChange)="alEscribir($event)" />
+      </label>
+      <p class="conteo" aria-live="polite">{{ buscando() ? "Buscando…" : totalResultados() + (totalResultados() === 1 ? " producto que aún no ofreces" : " productos que aún no ofreces") }}</p>
+      <ul class="resultados">
+        @for (p of resultados(); track p.id) {
+          <li>
+            <button type="button" class="resultado" [class.activo]="elegido()?.id === p.id" [attr.aria-pressed]="elegido()?.id === p.id" (click)="elegir(p)">
+              <span class="nombre">{{ p.nombre }}</span>
+              <span class="meta">{{ p.formato }}@if (p.marca) { · {{ p.marca }} } · SKU {{ p.sku }}</span>
+              @if (p.precioReferencia) { <span class="meta">Referencia {{ clp(p.precioReferencia) }}</span> }
+            </button>
+          </li>
+        } @empty {
+          @if (!buscando()) { <li class="vacio">No hay productos con ese nombre que aún no ofrezcas.</li> }
+        }
+      </ul>
+    </div>
+
+    <div class="formulario">
+      @if (elegido(); as p) {
+        <p class="etiqueta">Producto elegido</p>
+        <h3>{{ p.nombre }}</h3>
+        <p class="meta">{{ p.formato }}@if (p.marca) { · {{ p.marca }} } · SKU {{ p.sku }}</p>
+
+        <form (ngSubmit)="enviar()" novalidate>
+          <div class="campos">
+            <label class="field">
+              <span>Precio por unidad (CLP)</span>
+              <input class="input" type="number" name="precio" min="1" step="1" inputmode="numeric" [ngModel]="precio()" (ngModelChange)="precio.set($event)"
+                [class.invalido]="(intentado() && !precio()) || sobreTope()" />
+            </label>
+            <label class="field">
+              <span>Unidades por caja</span>
+              <input class="input" type="number" name="porCaja" min="1" step="1" inputmode="numeric" [ngModel]="porCaja()" (ngModelChange)="porCaja.set($event)" [class.invalido]="intentado() && !porCaja()" />
+            </label>
+            <label class="field">
+              <span>Cajas disponibles</span>
+              <input class="input" type="number" name="cajas" min="0" step="1" inputmode="numeric" [ngModel]="cajas()" (ngModelChange)="cajas.set($event)" [class.invalido]="intentado() && cajas() === null" />
+            </label>
+            <label class="field">
+              <span>Mínimo de compra (unidades) <small>opcional</small></span>
+              <input class="input" type="number" name="minimo" min="1" step="1" inputmode="numeric" [ngModel]="minimo()" (ngModelChange)="minimo.set($event)" />
+            </label>
+          </div>
+
+          @if (tope() !== null) {
+            <p class="tope" [class.sobre]="sobreTope()">
+              Tope de publicación: <strong>{{ clp(tope()!) }}</strong> (referencia {{ clp(p.precioReferencia!) }} + {{ p.topeSobreReferenciaPct }} %).
+              @if (sobreTope()) { Sobre el tope no se puede publicar; puedes guardarlo como borrador y el equipo de Cotizapp lo revisará. }
+            </p>
+          }
+
+          <dl class="calculos">
+            <div><dt>Stock total</dt><dd>{{ entero(stockTotal()) }} unidades</dd></div>
+            <div><dt>Valor del stock</dt><dd>{{ clp(valorStock()) }}</dd></div>
+            <div><dt>Precio por {{ p.unidad === "unidad" ? "unidad" : p.unidad }}</dt><dd>{{ porUnidadDeMedida() ?? "—" }}</dd></div>
+          </dl>
+          @if (posicion(); as pos) { <p class="posicion">{{ pos }}</p> }
+
+          <h4>Entrega</h4>
+          <div class="campos">
+            <label class="field">
+              <span>Plazo de despacho</span>
+              <select class="input" name="plazo" [ngModel]="plazoHoras()" (ngModelChange)="plazoHoras.set($event)">
+                <option [ngValue]="24">24 h</option>
+                <option [ngValue]="48">48 h</option>
+                <option [ngValue]="72">72 h</option>
+                <option [ngValue]="120">5 días</option>
+              </select>
+            </label>
+            <fieldset class="field modalidad">
+              <legend>Cómo se entrega</legend>
+              <label><input type="radio" name="modalidad" value="ambos" [checked]="modalidad() === 'ambos'" (change)="modalidad.set('ambos')" /> Despacho o retiro</label>
+              <label><input type="radio" name="modalidad" value="despacho" [checked]="modalidad() === 'despacho'" (change)="modalidad.set('despacho')" /> Solo despacho</label>
+              <label><input type="radio" name="modalidad" value="retiro" [checked]="modalidad() === 'retiro'" (change)="modalidad.set('retiro')" /> Solo retiro</label>
+            </fieldset>
+          </div>
+
+          <div class="condiciones">
+            @if (condiciones(); as c) {
+              <p><strong>Tus condiciones de despacho</strong> (valen para todas tus ofertas):</p>
+              <ul>
+                <li>Corte de pedidos: {{ c.horaCorte ?? "sin definir" }}</li>
+                <li>Despacho gratis desde: {{ c.despachoGratisDesde ? clp(c.despachoGratisDesde) : "sin definir" }}</li>
+                <li>Zonas: @if (c.zonas.length) { @for (z of c.zonas; track $index) { <span class="zona">{{ textoZona(z) }}</span> } } @else { todavía no defines zonas de despacho }</li>
+              </ul>
+              <p class="suave">Se configuran en la cobertura de despacho de tu empresa.</p>
+            } @else {
+              <p class="suave">No pudimos cargar tus condiciones de despacho.</p>
+            }
+          </div>
+
+          <label class="field">
+            <span>Notas para el cliente <small>opcional</small></span>
+            <input class="input" name="notas" maxlength="300" placeholder="Se entrega en caja cerrada; sin fraccionar" [ngModel]="notas()" (ngModelChange)="notas.set($event)" />
+          </label>
+
+          <div class="publicar" role="radiogroup" aria-label="Publicación">
+            <label><input type="radio" name="estado" value="publicada" [checked]="estado() === 'publicada'" (change)="estado.set('publicada')" /> Publicar de inmediato</label>
+            <label><input type="radio" name="estado" value="borrador" [checked]="estado() === 'borrador'" (change)="estado.set('borrador')" /> Guardar como borrador</label>
+          </div>
+
+          @if (intentado() && faltantes().length) { <p class="mensaje error" role="alert">Falta {{ faltantes().join(", ") }}.</p> }
+          @if (error(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
+
+          <div class="acciones-form">
+            <button type="submit" class="btn btn-primary" [disabled]="enviando() || (estado() === 'publicada' && sobreTope())">
+              {{ enviando() ? "Guardando…" : estado() === "publicada" ? "Publicar oferta" : "Guardar borrador" }}
+            </button>
+            <a routerLink="/proveedor" class="btn btn-secondary">Cancelar</a>
+          </div>
+        </form>
+      } @else {
+        <div class="sin-eleccion">
+          <p>Elige un producto de la lista para poner tu precio, tu stock y tus condiciones.</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

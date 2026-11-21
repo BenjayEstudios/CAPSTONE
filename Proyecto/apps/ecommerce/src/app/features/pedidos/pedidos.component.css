@@ -1,0 +1,41 @@
+.pedidos { padding-block: 24px 64px; max-width: 860px; }
+h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
+.intro { font-size: 14px; color: var(--color-text-soft); margin: 0 0 20px; max-width: 60ch; }
+.cargando { color: var(--color-text-soft); padding-block: 32px; }
+.vacio { padding: 48px 0; border-top: 1px solid var(--color-divider); max-width: 52ch; }
+.vacio h2 { font-size: 24px; margin: 0 0 8px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.chip { font: inherit; font-size: 13px; padding: 6px 12px; border: 1px solid var(--color-divider); background: #fff; cursor: pointer; color: var(--color-text); }
+.chip.activo { background: var(--color-accent); border-color: var(--color-accent); color: #fff; font-weight: 600; }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.lista.atenuada { opacity: .55; }
+.pedido { display: block; border: 1px solid var(--color-divider); background: var(--color-card); padding: 16px 18px; color: var(--color-text); text-decoration: none; }
+.pedido:hover, .pedido:focus-visible { border-color: var(--color-accent); }
+.cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.folio { font-family: var(--font-heading); font-weight: 700; font-size: 18px; letter-spacing: .02em; }
+.estado { font-size: 12px; font-weight: 600; padding: 2px 8px; background: var(--color-accent-100); color: var(--color-accent-800); }
+.estado[data-tono="pendiente"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.estado[data-tono="terminada"] { background: color-mix(in srgb, var(--color-ok) 12%, #fff); color: #1d5e38; }
+.datos { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; font-size: 13.5px; color: var(--color-text-soft); margin: 6px 0 8px; }
+.total { margin-left: auto; font-family: var(--font-heading); font-size: 17px; color: var(--color-text); }
+.envios { list-style: none; margin: 0; padding: 8px 0 0; border-top: 1px solid var(--color-divider); display: grid; gap: 4px; font-size: 13.5px; }
+.proveedor { font-weight: 600; margin-right: 6px; }
+.estado-envio { color: var(--color-text-soft); }
+.ver { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--color-accent); font-weight: 600; }
+
+.paginas { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 20px; font-size: 14px; }
+
+@media (max-width: 520px) {
+  .total { margin-left: 0; width: 100%; }
+}
+
+/* Detalle de un pedido */
+.migas { font-size: 13px; margin-bottom: 12px; }
+.migas a { color: var(--color-accent); text-decoration: none; }
+.migas a:hover { text-decoration: underline; }
+.titulo-pedido { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.pendiente { border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); padding: 12px 14px; margin-top: 12px; font-size: 14px; }
+.pendiente p { margin: 0 0 10px; }
+.pendiente .mensaje { margin-bottom: 10px; }

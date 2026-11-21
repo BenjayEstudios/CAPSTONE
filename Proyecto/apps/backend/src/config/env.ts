@@ -30,8 +30,29 @@ const envSchema = z.object({
   SMTP_PASS: z.string().min(1).optional(),
   SMTP_FROM: z.string().min(1).optional(),
   // URL del panel administrativo que se incluye en las invitaciones.
-  ADMIN_SITE_URL: z.string().url().default("http://localhost:4300")
+  ADMIN_SITE_URL: z.string().url().default("http://localhost:4300"),
+  // URL del ecommerce: base de los enlaces de recuperacion de clave de compradores y proveedores.
+  ECOMMERCE_URL: z.string().url().default("http://localhost:4200"),
+  // Pasarela de pago (KAN-95): Webpay Plus. En "integracion" (default) usa
+  // las credenciales publicas de prueba de Transbank si no se indican otras;
+  // en "produccion" el codigo de comercio y la API key son obligatorios.
+  // La URL de retorno es PUBLIC_BASE_URL + /pagos/webpay/retorno.
+  WEBPAY_ENTORNO: z.enum(["integracion", "produccion"]).default("integracion"),
+  // KAN-164: "simulada" aprueba todo pago sin Transbank, para las pruebas
+  // end-to-end (Newman en el CI) y demos. Prohibida en produccion.
+  PASARELA: z.enum(["webpay", "simulada"]).default("webpay"),
+  NODE_ENV: z.string().optional(),
+  WEBPAY_CODIGO_COMERCIO: z.string().min(1).optional(),
+  WEBPAY_API_KEY: z.string().min(1).optional()
 }).superRefine((v, ctx) => {
+  if (v.WEBPAY_ENTORNO === "produccion") {
+    for (const k of ["WEBPAY_CODIGO_COMERCIO", "WEBPAY_API_KEY"] as const) {
+      if (!v[k]) ctx.addIssue({ code: "custom", path: [k], message: k + " es obligatorio con WEBPAY_ENTORNO=produccion" });
+    }
+  }
+  if (v.PASARELA === "simulada" && (v.WEBPAY_ENTORNO === "produccion" || v.NODE_ENV === "production")) {
+    ctx.addIssue({ code: "custom", path: ["PASARELA"], message: "PASARELA=simulada no se permite en produccion" });
+  }
   if (v.MAIL_DRIVER === "smtp") {
     for (const k of ["SMTP_HOST", "SMTP_FROM"] as const) {
       if (!v[k]) ctx.addIssue({ code: "custom", path: [k], message: k + " es obligatorio con MAIL_DRIVER=smtp" });
@@ -42,5 +63,9 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  return envSchema.parse(source);
+  // Una variable vacia (ej. "SMTP_HOST=" en .env.example) cuenta como no
+  // definida: si no, los .optional() con min(1) rechazan el string vacio y
+  // el server no arranca con el .env de ejemplo.
+  const definidas = Object.fromEntries(Object.entries(source).filter(([, v]) => v !== ""));
+  return envSchema.parse(definidas);
 }

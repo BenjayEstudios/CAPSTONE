@@ -1,0 +1,519 @@
+{
+  "info": {
+    "name": "Cotizapp · Flujo de compra (E2E, KAN-164)",
+    "description": "Prueba end-to-end del flujo central: registro, busqueda, comparacion, carro multiproveedor, checkout, pago (pasarela simulada) y envios por proveedor. Requiere el seed y el backend con PASARELA=simulada. Generada por generar-flujo-compra.mjs: no editar a mano.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "termino",
+      "value": "aceite"
+    },
+    {
+      "key": "clave",
+      "value": "E2e.Prueba2026"
+    },
+    {
+      "key": "claveSeed",
+      "value": "Cotizapp.2026"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Registro de un comprador nuevo",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// RUT valido al azar (modulo 11) y correo unico por corrida.",
+              "const n = Math.floor(10000000 + Math.random() * 15000000);",
+              "let s = 0, m = 2;",
+              "for (const d of String(n).split('').reverse()) { s += Number(d) * m; m = m === 7 ? 2 : m + 1; }",
+              "const r = 11 - (s % 11);",
+              "const dv = r === 11 ? '0' : r === 10 ? 'K' : String(r);",
+              "pm.collectionVariables.set('rut', `${n}-${dv}`);",
+              "pm.collectionVariables.set('email', `e2e-${Date.now()}@cotizapp.test`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 con sesion de comprador', () => {",
+              "  pm.response.to.have.status(201);",
+              "  const r = pm.response.json();",
+              "  pm.expect(r.token).to.be.a('string');",
+              "  pm.expect(r.usuario.email).to.eql(pm.collectionVariables.get('email'));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Comprador E2E\",\n  \"email\": \"{{email}}\",\n  \"clave\": \"{{clave}}\",\n  \"rut\": \"{{rut}}\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/registro/comprador"
+      }
+    },
+    {
+      "name": "2 · Ingreso del comprador",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con token', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.collectionVariables.set('token_comprador', pm.response.json().token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"clave\": \"{{clave}}\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "3 · Buscar en el catalogo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('encuentra un producto que venden al menos dos proveedores', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const p = pm.response.json().items.find((i) => i.ofertas >= 2);",
+              "  pm.expect(p, 'producto con 2+ ofertas').to.exist;",
+              "  pm.collectionVariables.set('productoId', p.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/catalogo/productos?q={{termino}}&tamano=20"
+      }
+    },
+    {
+      "name": "4 · Comparar las ofertas del producto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('elige las dos ofertas mas baratas de proveedores distintos que despachan', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const ofertas = pm.response.json().ofertas",
+              "    .filter((o) => o.modalidadEntrega !== 'retiro' && (o.cajasDisponibles ?? 1) > 0)",
+              "    .sort((a, b) => a.precioUnitario - b.precioUnitario);",
+              "  const elegidas = [];",
+              "  for (const o of ofertas) if (!elegidas.some((e) => e.proveedor.id === o.proveedor.id)) elegidas.push(o);",
+              "  pm.expect(elegidas.length).to.be.at.least(2);",
+              "  // El minimo de compra va en unidades; la cantidad del carro, en cajas.",
+              "  const linea = (o) => ({ ofertaId: o.id, cantidad: Math.max(1, Math.ceil((o.minimoCompra ?? 1) / (o.unidadesPorCaja ?? 1))), precioVisto: o.precioUnitario });",
+              "  pm.collectionVariables.set('items', JSON.stringify(elegidas.slice(0, 2).map(linea)));",
+              "  pm.collectionVariables.set('proveedores', JSON.stringify(elegidas.slice(0, 2).map((o) => o.proveedor.id)));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/catalogo/productos/{{productoId}}"
+      }
+    },
+    {
+      "name": "5 · Carro multiproveedor",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.request.body.raw = JSON.stringify({ items: JSON.parse(pm.collectionVariables.get('items')) });"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con las dos lineas disponibles', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const c = pm.response.json();",
+              "  pm.expect(c.items).to.have.length(2);",
+              "  pm.expect(c.items.every((i) => i.disponible)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": []\n}"
+        },
+        "url": "{{baseUrl}}/carro"
+      }
+    },
+    {
+      "name": "6 · Opciones de entrega",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('los dos proveedores despachan a la Region Metropolitana', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const cob = pm.response.json().coberturas;",
+              "  for (const id of JSON.parse(pm.collectionVariables.get('proveedores'))) {",
+              "    pm.expect(cob.some((c) => c.proveedorId === id && c.regionCodigo === '13'), `proveedor ${id}`).to.be.true;",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "url": "{{baseUrl}}/carro/opciones-entrega"
+      }
+    },
+    {
+      "name": "7 · Confirmar el carro (checkout)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201: la orden queda pendiente de pago', () => {",
+              "  pm.response.to.have.status(201);",
+              "  const o = pm.response.json();",
+              "  pm.expect(o.codigo).to.match(/^CM-/);",
+              "  pm.collectionVariables.set('ordenId', o.ordenId);",
+              "  pm.collectionVariables.set('codigo', o.codigo);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"direccion\": {\n    \"comunaId\": 20,\n    \"calle\": \"Av. Irarrázaval\",\n    \"numero\": \"3450\",\n    \"complemento\": \"E2E\"\n  },\n  \"retiros\": [],\n  \"requiereFactura\": false\n}"
+        },
+        "url": "{{baseUrl}}/carro/confirmar"
+      }
+    },
+    {
+      "name": "8 · Iniciar el pago (pasarela sandbox)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('201 con el token de la pasarela', () => {",
+              "  pm.response.to.have.status(201);",
+              "  const p = pm.response.json();",
+              "  pm.expect(p.token).to.be.a('string');",
+              "  pm.expect(p.urlPago).to.be.a('string');",
+              "  pm.collectionVariables.set('tokenPago', p.token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"medioPago\": \"tarjeta\"\n}"
+        },
+        "url": "{{baseUrl}}/ordenes/{{ordenId}}/pago"
+      }
+    },
+    {
+      "name": "9 · Retorno de la pasarela",
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('303 al resultado con el pago aprobado', () => {",
+              "  pm.response.to.have.status(303);",
+              "  const destino = pm.response.headers.get('Location');",
+              "  pm.expect(destino).to.include(`orden=${pm.collectionVariables.get('ordenId')}`);",
+              "  pm.expect(destino).to.include('pago=aprobado');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/pagos/webpay/retorno?token_ws={{tokenPago}}"
+      }
+    },
+    {
+      "name": "10 · Orden pagada con un envio por proveedor",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('cuentasProveedor', \"{\\\"2\\\":\\\"ventas@losandes.test\\\",\\\"3\\\":\\\"pedidos@vallecentral.test\\\",\\\"4\\\":\\\"comercial@frigosur.test\\\"}\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const o = pm.response.json();",
+              "pm.test('pagada', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(o.estado).to.eql('pagada');",
+              "  pm.expect(o.estadoPago).to.eql('pagado');",
+              "});",
+              "pm.test('un envio por proveedor, cada uno con sus lineas y su monto', () => {",
+              "  const ids = JSON.parse(pm.collectionVariables.get('proveedores'));",
+              "  pm.expect(o.envios.map((e) => e.proveedorId).sort()).to.eql([...ids].sort());",
+              "  for (const e of o.envios) {",
+              "    pm.expect(e.estado).to.eql('por_despachar');",
+              "    pm.expect(e.subtotal).to.eql(e.lineas.reduce((t, l) => t + l.totalLinea, 0));",
+              "  }",
+              "  pm.expect(o.total).to.eql(o.envios.reduce((t, e) => t + e.montoEnvio, 0));",
+              "});",
+              "const envio = o.envios[0];",
+              "pm.collectionVariables.set('envioId', envio.id);",
+              "pm.collectionVariables.set('proveedorId', envio.proveedorId);",
+              "pm.collectionVariables.set('emailProveedor', JSON.parse(pm.collectionVariables.get('cuentasProveedor'))[envio.proveedorId]);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "url": "{{baseUrl}}/ordenes/{{ordenId}}"
+      }
+    },
+    {
+      "name": "11 · Ingreso del proveedor del primer envio",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 con token de proveedor', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.collectionVariables.set('token_proveedor', pm.response.json().token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{emailProveedor}}\",\n  \"clave\": \"{{claveSeed}}\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "12 · El proveedor ve solo su tramo en sus ventas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('su envio aparece por despachar, con su monto y no el total de la orden', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const v = pm.response.json().items.find((x) => x.envioId === Number(pm.collectionVariables.get('envioId')));",
+              "  pm.expect(v, 'venta del envio').to.exist;",
+              "  pm.expect(v.folio).to.eql(pm.collectionVariables.get('codigo'));",
+              "  pm.expect(v.siguiente).to.eql('en_preparacion');",
+              "  pm.expect(pm.response.json().items.some((x) => x.ordenId === v.ordenId && x.envioId !== v.envioId)).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_proveedor}}"
+          }
+        ],
+        "url": "{{baseUrl}}/proveedor/ventas?estado=por_despachar&tamano=100"
+      }
+    },
+    {
+      "name": "13 · El proveedor prepara su envio",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 en preparacion', () => {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().estado).to.eql('en_preparacion');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_proveedor}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"en_preparacion\"\n}"
+        },
+        "url": "{{baseUrl}}/ordenes/envios/{{envioId}}/estado"
+      }
+    },
+    {
+      "name": "14 · El comprador ve la orden en preparacion",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('la orden pasa a en preparacion y el otro envio sigue por despachar', () => {",
+              "  pm.response.to.have.status(200);",
+              "  const o = pm.response.json();",
+              "  pm.expect(o.estado).to.eql('en_preparacion');",
+              "  const otro = o.envios.find((e) => e.id !== Number(pm.collectionVariables.get('envioId')));",
+              "  pm.expect(otro.estado).to.eql('por_despachar');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token_comprador}}"
+          }
+        ],
+        "url": "{{baseUrl}}/ordenes/{{ordenId}}"
+      }
+    }
+  ]
+}

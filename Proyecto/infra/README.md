@@ -240,6 +240,7 @@ Un push nuevo cancela la corrida anterior de la misma rama/PR.
 | Job | Qué corre |
 |---|---|
 | **Node** | pnpm (versión de `packageManager`), Node 22, caché de pnpm y de Turborepo. `pnpm install --frozen-lockfile` → `turbo run check-types lint test build` (vitest en backend/packages; angular-eslint y karma en ChromeHeadless en ecommerce y admin-site). |
+| **E2E** | Prueba end-to-end del flujo de compra (KAN-164). Levanta un servicio MySQL 8.4 limpio, hace el build del backend, corre `db:migrate` y `db:seed`, y levanta el backend con `PASARELA=simulada`. Luego corre `pnpm e2e` (Newman con `docs/desarrollo/postman/flujo-compra.postman_collection.json`). Si falla, muestra el log del backend. |
 | **Flutter** | Solo si el PR/push toca `Proyecto/apps/mobile/**` (o el propio `ci.yml`). Flutter 3.47.5 stable: `flutter pub get`, `flutter analyze`, `flutter test`. Si no corre aparece como *skipped*, que GitHub cuenta como éxito. |
 
 El script `test` de las apps Angular es `ng test --watch=false

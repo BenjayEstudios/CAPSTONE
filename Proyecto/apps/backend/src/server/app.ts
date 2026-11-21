@@ -9,6 +9,7 @@ import { createDbClient } from "@cotizapp/infrastructure";
 import type { Env } from "../config/env.js";
 import { crearAlmacenArchivos } from "../lib/storage.js";
 import { crearServicioCorreo } from "../lib/mail.js";
+import { crearPasarelaPago } from "../lib/pasarela.js";
 import { logger } from "../lib/logger.js";
 import { registerRoutes } from "../routes/index.js";
 
@@ -34,6 +35,13 @@ export async function buildApp(env: Env) {
   app.decorate("almacenArchivos", crearAlmacenArchivos(env));
   app.decorate("servicioCorreo", crearServicioCorreo(env));
   app.decorate("adminSiteUrl", env.ADMIN_SITE_URL);
+  app.decorate("ecommerceUrl", env.ECOMMERCE_URL);
+  app.decorate("pasarelaPago", crearPasarelaPago(env));
+  app.decorate("publicBaseUrl", env.PUBLIC_BASE_URL.replace(/\/$/, ""));
+  // Webpay devuelve al comprador con un formulario (POST x-www-form-urlencoded).
+  app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_req, cuerpo, listo) => {
+    listo(null, Object.fromEntries(new URLSearchParams(cuerpo as string)));
+  });
   await app.register(multipart, { limits: { fileSize: uploadsMaxBytes, files: 1, fields: 5 } });
   // Solo lectura y sin listado de directorios. (Con STORAGE_DRIVER=spaces
   // esto no aplica: las URL apuntan al CDN.)

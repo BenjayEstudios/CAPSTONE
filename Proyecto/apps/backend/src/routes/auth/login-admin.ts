@@ -11,7 +11,7 @@ export const loginAdminRoute: RouteOptions = {
   url: "/auth/admin/login",
   handler: async (request) => {
     const usuarioRepository = new DrizzleUsuarioRepository(request.server.db);
-    const mfa = crearDepsMfa(request.server.servicioCorreo);
+    const mfa = crearDepsMfa();
     // La validacion (Zod, en @cotizapp/domain) la hace el caso de uso.
     return loginAdmin({ usuarioRepository, firmarToken, mfa })(request.body as never);
   }

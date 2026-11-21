@@ -1,6 +1,6 @@
 import type { FastifyRequest, RouteOptions } from "fastify";
-import { estadisticasPlataforma, estadisticasProveedor } from "@cotizapp/application";
-import { DrizzleEventoAnaliticoRepository } from "@cotizapp/infrastructure";
+import { estadisticasPlataforma, estadisticasProveedor, ventasProveedor } from "@cotizapp/application";
+import { DrizzleAnaliticaRepository, DrizzleEventoAnaliticoRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 // Solo lectura. Nunca devuelven sesion_id ni usuario_id.
@@ -21,4 +21,13 @@ const proveedorRoute: RouteOptions = {
   handler: async (request) => estadisticasProveedor(deps(request))(request.query, Number(request.auth?.organizacionId))
 };
 
-export const estadisticasRoutes: RouteOptions[] = [plataformaRoute, proveedorRoute];
+// Ventas del proveedor por semana y producto (KAN-101, KAN-133). Mismo ?desde&hasta.
+const ventasProveedorRoute: RouteOptions = {
+  method: "GET",
+  url: "/estadisticas/proveedor/ventas",
+  preHandler: [requireAuth, requirePermiso("ver_ordenes_propias")],
+  handler: async (request) =>
+    ventasProveedor({ analiticaRepository: new DrizzleAnaliticaRepository(request.server.db) })(request.query, Number(request.auth?.organizacionId))
+};
+
+export const estadisticasRoutes: RouteOptions[] = [plataformaRoute, proveedorRoute, ventasProveedorRoute];

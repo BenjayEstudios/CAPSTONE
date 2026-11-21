@@ -15,6 +15,13 @@
       "when": 1795050941215,
       "tag": "0001_kan140_indices_restricciones_particiones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1795207945231,
+      "tag": "0002_usuario_mfa_secreto",
+      "breakpoints": true
     }
   ]
 }

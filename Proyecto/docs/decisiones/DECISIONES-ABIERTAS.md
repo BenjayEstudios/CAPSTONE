@@ -2,22 +2,6 @@
 
 Lo que falta resolver. Ninguna bloquea el trabajo en curso salvo donde se diga.
 
-## 1. Código del rol administrador en `POST /categorias`
-
-**Aplica en:** KAN-144 / KAN-151 (API)
-
-`POST /categorias` exige `requireRol("administrador")`, pero en el seed el
-código del rol es `admin_general` (los internos son `admin_general`,
-`editor_catalogo` y `soporte`). Con el seed, nadie puede crear categorías.
-
-Hay que decidir si la ruta pide `admin_general` (o también
-`editor_catalogo`, que suena a dueño natural del catálogo) y alinear el
-ejemplo de referencia del README. KAN-144 pide además que `requireRol` pase
-a leer la matriz `rol.permisos` en vez de comparar códigos de rol a mano,
-lo que resolvería esto de raíz.
-
-**Bloquea:** que admin-site pueda gestionar categorías (KAN-118).
-
 ## 2. Fastify vs Express
 
 **Aplica en:** KAN-169 — conviene resolverlo **antes** de que entre más API
@@ -32,14 +16,6 @@ de auth, el composition root y la validación de entorno ya están hechos y
 documentados sobre Fastify.
 
 **Bloquea:** el arranque de los tickets de API (KAN-144 a KAN-156).
-
-## 3. Pasarela de pago
-
-**Aplica en:** KAN-148
-
-Webpay o MercadoPago, ambas en sandbox. Ya está decidido que el split entre
-proveedores es simulado en la base propia (ver
-[cerradas](DECISIONES-CERRADAS.md)); falta elegir la pasarela.
 
 ## 5. Dominio y HTTPS
 
@@ -77,41 +53,6 @@ particiones (mes actual + 3), pero los deploys no tienen fecha fija: falta la
 corrida mensual garantizada. Opciones: cron en el droplet o job programado en
 GitHub Actions (KAN-163).
 
-## 9. Búsqueda sin stemming
-
-**Aplica en:** KAN-145
-
-El FULLTEXT de `producto.nombre` no hace stemming: "quesos" no encuentra
-"Queso". La propuesta es `MATCH ... AGAINST('ques*' IN BOOLEAN MODE)`
-(prefijo); falta confirmarla al implementar el endpoint. El fake de mobile
-busca por subcadena sin tildes, así que puede haber diferencias.
-
-## 10. Login de clientes y proveedores
-
-**Aplica en:** KAN-144 · **Bloquea:** la integración real de mobile (KAN-87) y del ecommerce (KAN-85)
-
-El único login es `POST /auth/admin/login`, que rechaza a quien no sea de la
-organización interna. Sin un login para organizaciones `cliente` y
-`proveedor`, nadie fuera del equipo obtiene token, y endpoints que ya existen
-(`/carro`, `/ordenes`, `/estadisticas/proveedor`) no se pueden usar desde las
-apps. La propuesta está en
-[`apps/mobile/API_CONTRACT.md`](../../apps/mobile/API_CONTRACT.md#-post-authlogin--kan-126):
-mismas reglas que `loginAdmin` sin exigir organización interna, y la misma
-respuesta más el objeto `organizacion`. Falta decidir si es una ruta aparte o
-`/auth/admin/login` generalizado.
-
-## 11. Ruta del catálogo público
-
-**Aplica en:** KAN-145 · **Afecta:** mobile (KAN-127 a 129) y ecommerce
-
-`GET /productos` ya existe, pero es el listado de **administración** (exige
-`crear_producto`, devuelve fichas sin ofertas ni precios). El comprador
-necesita otro: público, con el rango de precios de las ofertas visibles y el
-comparador con calificaciones. Mobile lo especificó como
-`GET /catalogo/productos` y `GET /catalogo/productos/:id`
-([contrato](../../apps/mobile/API_CONTRACT.md#-get-catalogoproductos--kan-127-kan-128));
-el ecommerce debería usar los mismos. Falta confirmarlo con backend.
-
 ## 12. Unidad de `cantidad` y de `precio_unitario`
 
 **Aplica en:** KAN-145, KAN-147 · **Afecta:** precios por kg/L, mínimos y stock en las tres apps
@@ -126,6 +67,13 @@ compara en unidades (`cantidad × unidades_por_caja`), el seed carga
 un bidón. Mobile sigue la matemática del backend (total = precio × cantidad)
 y muestra "c/u" sin decir "caja" hasta que se decida. Hay que fijar qué es
 cada campo y alinear seed, casos de uso y pantallas.
+
+El catálogo público (KAN-145) sigue la lectura del seed: el
+`precioNormalizado` de cada oferta es `precio_unitario / contenido` (el
+bidón de 5 L a $12.490 sale a $2.498 por litro). Si se decide que
+`precio_unitario` es por caja, hay que dividir además por
+`unidades_por_caja` en `precioNormalizado`
+(`packages/application/src/use-cases/catalogo.use-cases.ts`).
 
 ## 13. Umbrales de las alertas del proveedor
 
@@ -175,3 +123,89 @@ se puede validar en serio: los datos de órdenes y eventos son sintéticos.
   nunca en el repo).
 - Si Metabase cabe en la RAM del droplet (su JVM pide ~1 GB) o corre solo en
   local para la demo.
+
+## 15. "Marca propia" en la búsqueda
+
+**Aplica en:** KAN-91 (y la ficha de producto del proveedor)
+
+KAN-91 pide refinar por "marca propia", pero el modelo no distingue si un
+producto es la marca propia de un distribuidor: `producto.marca` es solo un
+texto y el producto es único para todos los distribuidores. Hoy la búsqueda
+ofrece **filtrar por marca** (con las marcas de los resultados). Para
+"marca propia" de verdad haría falta, por ejemplo, `producto.marca_propia_de`
+(id del proveedor dueño de la marca) o una marca por oferta. Falta decidir si
+vale la pena para la demo.
+
+## 16. Transferencia y línea de crédito en el checkout
+
+**Aplica en:** KAN-95 (checkout), KAN-148 (pagos) · **Afecta:** paso 3 del pago en el ecommerce y la app
+
+El checkout ofrece tarjeta (crédito, débito o prepago) por Webpay Plus. KAN-95
+pide además transferencia bancaria y línea de crédito para empresas a 30
+días, que hoy aparecen como "pronto disponible" y el backend responde
+`409 MEDIO_PAGO_NO_DISPONIBLE`. Falta decidir:
+
+- **Transferencia:** la orden quedaría `pendiente_pago` con los datos de la
+  cuenta y el folio como glosa, y alguien (admin, o una conciliación) la
+  marca pagada. No hay pantalla ni endpoint para eso.
+- **Línea de crédito:** necesita quién la aprueba, con qué cupo y qué pasa
+  con la orden mientras tanto (`estado_pago = autorizado` existe en el
+  modelo). Sin eso no se puede ofrecer.
+
+Relacionado: el paso 1 del mockup pide nombre, RUT, correo y teléfono, pero
+`POST /carro/confirmar` no los recibe; la boleta o factura sale con los datos
+de la organización. El checkout los muestra desde la cuenta en vez de
+pedirlos. Si un comprador necesita facturar a otro RUT, hay que agregarlo al
+schema.
+
+## 17. Tipo de cliente (empresa, persona o institución)
+
+**Aplica en:** KAN-106 (tus clientes) · **Afecta:** la columna "Tipo" del panel del proveedor
+
+El mockup del proveedor muestra si cada cliente es empresa, persona o
+institución, pero `organizacion` no guarda ese dato y el registro no lo
+pregunta. Hoy se deduce del RUT y del giro (`tipoCliente` en
+`ordenes.use-cases.ts`):
+
+- RUT entre 60.000.000 y 69.999.999 (organismos públicos, corporaciones y
+  fundaciones): institución.
+- RUT bajo 50.000.000 sin giro: persona.
+- Todo lo demás: empresa. Una persona natural con giro (un minimarket) cuenta
+  como empresa, como en el mockup.
+
+Falta decidir si basta con eso o si se agrega una columna `tipo_cliente` a
+`organizacion` que el comprador elija al registrarse. Eso necesita una
+migración y un campo en el registro (KAN-89).
+
+## 18. Representante legal y contacto de operaciones del proveedor
+
+**Aplica en:** KAN-108 (perfil de empresa) · **Afecta:** `organizacion` y el registro de proveedores (KAN-100)
+
+El mockup del perfil pide representante legal (nombre y RUT) y un contacto de
+operaciones con su teléfono. `organizacion` no tiene esas columnas. Hoy el
+perfil muestra como contacto de operaciones a los usuarios activos de la
+empresa, que son quienes reciben los avisos de órdenes, y no muestra al
+representante legal.
+
+Falta decidir si se agregan las columnas `representante_nombre`,
+`representante_rut`, `contacto_operaciones` y `telefono_operaciones` a
+`organizacion`. Eso necesita una migración, que se aplicaría en Aiven con el
+deploy. El representante también podría pedirse en el alta del proveedor,
+junto con sus documentos.
+
+## 19. Documentos del proveedor en una URL pública
+
+**Aplica en:** KAN-110 (documentos del proveedor) · **Afecta:** el almacenamiento (`AlmacenArchivos`) y el deploy
+
+Los documentos que sube el proveedor (carpeta tributaria, resolución
+sanitaria, certificado de vigencia) se guardan con el mismo almacén que las
+imágenes de producto. Hoy es disco local, servido en `/uploads`, así que
+cualquiera que tenga la URL puede abrirlos. El nombre lleva un UUID y no se
+puede adivinar, pero la carpeta tributaria tiene datos tributarios de la
+empresa.
+
+Falta decidir cómo se sirven en producción. Una opción es un bucket privado
+con URLs firmadas que expiren. La otra es un endpoint
+`GET /proveedor/documentos/:id/archivo` que revise que quien lo pide sea el
+proveedor dueño o un admin. Cualquiera de las dos se resuelve al implementar
+el adaptador de DigitalOcean Spaces (ver `apps/backend/src/lib/storage.ts`).

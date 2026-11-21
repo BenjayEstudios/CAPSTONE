@@ -23,11 +23,11 @@ Hoy existen `GET /health-check` y `GET/POST /categorias`, más los
 
 | Ticket | Historia | Responsable | Estado |
 |---|---|---|---|
-| KAN-144 | Autenticación, roles y 2FA | Benjamín | ⏳ Contrato de `POST /auth/login` escrito |
-| KAN-145 | Catálogo, búsqueda y comparador | Benjamín | ⏳ Contrato de `GET /productos[/:id]` escrito; FULLTEXT listo |
-| KAN-146 | Ofertas del proveedor | Sebastián | ⏳ |
+| KAN-144 | Autenticación, roles y 2FA | Benjamín | ✅ [login y registro](../cambios/2026-11-18-login-registro-y-recuperacion-de-clave.md), [2FA TOTP](../cambios/2026-11-18-2fa-totp-para-internos.md); falta migrar Aiven |
+| KAN-145 | Catálogo, búsqueda y comparador | Benjamín | ✅ [entrada](../cambios/2026-11-20-catalogo-publico-y-comparador.md) |
+| KAN-146 | Ofertas del proveedor | Benjamín | ✅ [entrada](../cambios/2026-11-20-ofertas-del-proveedor.md) |
 | KAN-147 | Carro y creación de orden con split por proveedor | Sebastián | ⏳ |
-| KAN-148 | Pagos: pasarela Webpay/MercadoPago sandbox | Sebastián | ⏳ |
+| KAN-148 | Pagos: pasarela Webpay/MercadoPago sandbox | Sebastián | 🔄 Webpay Plus integrado en KAN-95 (iniciar, retorno, emisión de documentos; [entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md)). Falta: devolución por pasarela en reembolsos (`devolverDinero`) y la vuelta a la app móvil |
 | KAN-149 | Órdenes y estados de envío | Sebastián | ⏳ |
 | KAN-150 | Proveedores: perfil, cobertura, retiro y documentos | Sebastián | ⏳ |
 | KAN-151 | Usuarios, roles y permisos | Sebastián | ⏳ |
@@ -58,8 +58,8 @@ El orden de la tabla es el orden acordado en
 
 | Ticket | Historia | Estado |
 |---|---|---|
-| KAN-164 | Pruebas end-to-end del flujo de compra | ⏳ |
-| KAN-165 | Pruebas de usabilidad con usuarios piloto | ⏳ |
+| KAN-164 | Pruebas end-to-end del flujo de compra | ✅ [entrada](../cambios/2026-11-20-pruebas-e2e-flujo-de-compra.md) |
+| KAN-165 | Pruebas de usabilidad con usuarios piloto | 🔄 Guion, formulario y plantilla listos ([entrada](../cambios/2026-11-20-material-pruebas-de-usabilidad.md)); faltan las sesiones y el informe |
 
 ## Pendiente transversal
 
