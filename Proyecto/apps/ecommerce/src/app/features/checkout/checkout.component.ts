@@ -92,6 +92,45 @@ export class CheckoutComponent {
     if (v === "nueva") void this.cargarComunas();
   }
 
+  /** La comuna a la que se despacharia: la de la direccion guardada elegida o la de la nueva. */
+  destino(): { id: number; regionCodigo: string | null; nombre: string } | null {
+    const d = this.direccionElegida();
+    if (d === null) return null;
+    if (d === "nueva") {
+      const c = this.comunas().find((x) => x.id === this.nueva.comunaId);
+      return c ? { id: c.id, regionCodigo: c.regionCodigo, nombre: c.nombre } : null;
+    }
+    const g = this.opciones()?.direcciones.find((x) => x.id === d);
+    return g ? { id: g.comunaId, regionCodigo: g.regionCodigo ?? null, nombre: g.comuna } : null;
+  }
+
+  /**
+   * Zona del distribuidor que cubre el destino (KAN-109): la de la comuna, si
+   * no la de toda su region; la misma regla del backend. undefined = no cubre.
+   */
+  coberturaDe(g: GrupoCarro) {
+    const dest = this.destino();
+    const zonas = (this.opciones()?.coberturas ?? []).filter((c) => c.proveedorId === g.proveedorId);
+    if (!dest) return undefined;
+    return zonas.find((c) => c.comunaId === dest.id) ?? zonas.find((c) => c.comunaId === null && c.regionCodigo === dest.regionCodigo);
+  }
+
+  /** Sin destino elegido o sin datos de cobertura (API anterior) no se descarta: decide el backend. */
+  cubre(g: GrupoCarro): boolean {
+    if (!this.destino() || !this.opciones()?.coberturas) return true;
+    return this.coberturaDe(g) !== undefined;
+  }
+
+  /** Despacha este pedido si ninguna de sus ofertas es solo retiro (sin mirar la comuna). */
+  despachaPorModalidad(g: GrupoCarro): boolean {
+    return !this.ofertasDe(g).some((o) => o.modalidadEntrega === "retiro");
+  }
+
+  /** Hay algun distribuidor que podria despachar: se pide la direccion (para elegir una cubierta). */
+  hayDespachoPosible(): boolean {
+    return this.grupos().some((g) => this.despachaPorModalidad(g));
+  }
+
   /** Puntos de retiro del distribuidor, si todas sus ofertas aceptan retiro. */
   puntosDe(g: GrupoCarro): PuntoRetiro[] {
     const ofertas = this.ofertasDe(g);
@@ -99,9 +138,9 @@ export class CheckoutComponent {
     return (this.opciones()?.puntosRetiro ?? []).filter((p) => p.proveedorId === g.proveedorId);
   }
 
-  /** Despacha si ninguna de sus ofertas es solo retiro. */
+  /** Despacha si ninguna de sus ofertas es solo retiro y cubre la comuna de destino (KAN-109). */
   puedeDespachar(g: GrupoCarro): boolean {
-    return !this.ofertasDe(g).some((o) => o.modalidadEntrega === "retiro");
+    return this.despachaPorModalidad(g) && this.cubre(g);
   }
 
   private ofertasDe(g: GrupoCarro) {
@@ -112,7 +151,8 @@ export class CheckoutComponent {
   /** Lo elegido para el grupo; por defecto despacho, o el primer punto si solo hay retiro. */
   entregaDe(g: GrupoCarro): EntregaGrupo | null {
     const elegida = this.entregas().get(g.proveedorId!);
-    if (elegida) return elegida;
+    // Un despacho elegido que dejo de estar disponible (cambio la direccion) no vale.
+    if (elegida && (elegida.tipo === "retiro" || this.puedeDespachar(g))) return elegida;
     if (this.puedeDespachar(g)) return { tipo: "despacho" };
     const p = this.puntosDe(g)[0];
     return p ? { tipo: "retiro", puntoRetiroId: p.id } : null;
@@ -129,15 +169,30 @@ export class CheckoutComponent {
     return e?.tipo === "retiro" && e.puntoRetiroId === puntoId;
   }
 
-  readonly hayDespacho = computed(() => this.grupos().some((g) => this.entregaDe(g)?.tipo === "despacho"));
-
-  /** Despacho estimado (la tarifa a la comuna de la cuenta); el backend calcula el definitivo. */
-  despachoDe(g: GrupoCarro): number {
-    return this.entregaDe(g)?.tipo === "despacho" ? g.despacho.costo : 0;
+  // Metodos y no computed: dependen de la direccion nueva, que no es un signal.
+  hayDespacho(): boolean {
+    return this.grupos().some((g) => this.entregaDe(g)?.tipo === "despacho");
   }
 
-  readonly despachos = computed(() => this.grupos().reduce((s, g) => s + this.despachoDe(g), 0));
-  readonly total = computed(() => this.resumen().subtotal + this.despachos());
+  /**
+   * Despacho estimado: la tarifa de la zona que cubre el destino (o, sin
+   * destino, la de la comuna de la cuenta), gratis sobre el monto del
+   * distribuidor. El backend calcula el definitivo.
+   */
+  despachoDe(g: GrupoCarro): number {
+    if (this.entregaDe(g)?.tipo !== "despacho") return 0;
+    const zona = this.coberturaDe(g);
+    if (!zona) return g.despacho.costo;
+    return g.despacho.gratisDesde !== null && g.subtotal >= g.despacho.gratisDesde ? 0 : zona.costoDespacho;
+  }
+
+  despachos(): number {
+    return this.grupos().reduce((s, g) => s + this.despachoDe(g), 0);
+  }
+
+  total(): number {
+    return this.resumen().subtotal + this.despachos();
+  }
 
   /** "3 productos" */
   productos(g: GrupoCarro): string {
@@ -161,7 +216,9 @@ export class CheckoutComponent {
     return !this.nueva.calle.trim() || !this.nueva.comunaId;
   }
 
-  readonly sinEntrega = computed(() => this.grupos().some((g) => this.entregaDe(g) === null));
+  sinEntrega(): boolean {
+    return this.grupos().some((g) => this.entregaDe(g) === null);
+  }
 
   private armarSolicitud(): ConfirmarCarroRequest {
     const retiros = this.grupos()
@@ -193,7 +250,12 @@ export class CheckoutComponent {
       return;
     }
     if (this.sinEntrega()) {
-      this.error.set({ texto: "Hay un distribuidor sin forma de entrega disponible. Quítalo del carro para continuar.", alCarro: true });
+      const fuera = this.grupos().find((g) => this.entregaDe(g) === null && this.despachaPorModalidad(g) && !this.cubre(g));
+      this.error.set(
+        fuera
+          ? { texto: `${fuera.nombre} no despacha a ${this.destino()?.nombre ?? "esa comuna"}. Elige otra dirección o quítalo del carro.` }
+          : { texto: "Hay un distribuidor sin forma de entrega disponible. Quítalo del carro para continuar.", alCarro: true }
+      );
       return;
     }
     if (this.faltaDireccion()) {

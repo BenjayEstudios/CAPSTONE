@@ -50,6 +50,22 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
       };
     }
     async actualizarPerfil() {}
+    async cobertura() {
+      return { horaCorte: "14:00", despachoGratisDesde: null, plazoEstandarHoras: 24, ofreceDespacho: true, ofreceRetiro: true,
+        zonas: [{ id: 7, comunaId: null, comuna: null, regionCodigo: "13", region: "RM", costoDespacho: 4990, plazoHoras: 24 }] };
+    }
+    async crearZona() {
+      return 99;
+    }
+    async eliminarZona() {
+      return true;
+    }
+    async puntosRetiro() {
+      return [{ id: 1, nombre: "Bodega", horario: null, activo: true, usado: true, direccion: { calle: "X", numero: null, complemento: null, comunaId: 20, comuna: "Ñuñoa", region: "RM" } }];
+    }
+    async eliminarPuntoRetiro() {
+      return true;
+    }
   },
   DrizzleComunaRepository: class {
     async listar() {
@@ -204,5 +220,27 @@ describe("GET/PATCH /proveedor/perfil (KAN-108)", () => {
     expect(ninguna.json().error.code).toBe("SIN_MODALIDAD");
     expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { rut: "1-9" } })).statusCode).toBe(400);
     expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("5"), payload: { horaCorte: "15:00" } })).statusCode).toBe(403);
+  });
+});
+
+describe("cobertura y puntos de retiro (KAN-109)", () => {
+  it("zonas: 401, 403, crear 201, repetida 409, borrar 204, ajena 404", async () => {
+    expect((await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", payload: {} })).statusCode).toBe(401);
+    expect((await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("5"), payload: { comunaId: 20, costoDespacho: 1 } })).statusCode).toBe(403);
+    const ok = await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("7"), payload: { comunaId: 20, costoDespacho: 3990, plazoHoras: 24 } });
+    expect(ok.statusCode).toBe(201);
+    expect(ok.json()).toEqual({ id: 99 });
+    const dup = await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("7"), payload: { regionCodigo: "13", costoDespacho: 1 } });
+    expect(dup.statusCode).toBe(409);
+    expect((await app.inject({ method: "DELETE", url: "/proveedor/cobertura/zonas/7", headers: bearer("7") })).statusCode).toBe(204);
+    expect((await app.inject({ method: "DELETE", url: "/proveedor/cobertura/zonas/8", headers: bearer("7") })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/proveedor/cobertura/regiones", headers: bearer("7") })).json()).toEqual([{ codigo: "13", nombre: "RM", comunas: [{ id: 20, nombre: "Ñuñoa" }] }]);
+  });
+  it("puntos: lista, y uno con retiros no se borra (409 PUNTO_USADO)", async () => {
+    const l = await app.inject({ method: "GET", url: "/proveedor/puntos-retiro", headers: bearer("7") });
+    expect(l.json().items[0]).toMatchObject({ id: 1, usado: true });
+    const del = await app.inject({ method: "DELETE", url: "/proveedor/puntos-retiro/1", headers: bearer("7") });
+    expect(del.statusCode).toBe(409);
+    expect(del.json().error.code).toBe("PUNTO_USADO");
   });
 });

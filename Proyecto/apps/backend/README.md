@@ -172,6 +172,22 @@ Tambien trae `desde`, `hasta` e `inicioMes`. Se arma con `AnaliticaRepository.em
   - Una comuna inexistente da 400.
   - Audita en `auditoria_log` (`editar_perfil_proveedor`) solo lo que cambio, con la cuenta bancaria enmascarada.
 
+## Cobertura de despacho y puntos de retiro (KAN-109)
+
+Todo con `publicar_precio_stock`; la organizacion sale del token y una fila de otro proveedor responde 404. Cada escritura deja su fila en `auditoria_log` (`proveedor_cobertura` o `punto_retiro`) en la misma transaccion.
+
+- `GET /proveedor/cobertura`: las zonas traen `id` (aditivo). `GET /proveedor/cobertura/regiones`: regiones con sus comunas, para elegir una zona.
+- `POST /proveedor/cobertura/zonas` (`{ comunaId? | regionCodigo, costoDespacho, plazoHoras? }`, 201 `{ id }`).
+  - Con comuna, la region sale de la comuna; sin comuna, la zona es toda la region.
+  - `409 ZONA_DUPLICADA` si ya hay una zona igual. El UNIQUE de MySQL no ataja dos regiones enteras, porque `comuna_id` NULL no choca.
+- `PATCH /proveedor/cobertura/zonas/:id` (costo y plazo) y `DELETE` (204).
+- `GET /proveedor/puntos-retiro`: todos, activos primero, con `usado` (lo cita algun envio).
+- `POST /proveedor/puntos-retiro` (`{ nombre, horario?, direccion, activo? }`) y `PATCH /proveedor/puntos-retiro/:id` (nombre, horario, `direccion` o `activo`).
+  - Una direccion nueva inserta otra fila, como en el perfil.
+  - `409 ULTIMO_PUNTO_RETIRO` si quien ofrece retiro quedaria sin puntos activos.
+- `DELETE /proveedor/puntos-retiro/:id` (204): solo sin envios; si no, `409 PUNTO_USADO` (se desactiva).
+- `GET /carro/opciones-entrega` agrega `coberturas` (zonas de los proveedores del carro) y `regionCodigo` en cada direccion, para que el checkout solo ofrezca despacho a una comuna cubierta. Es la misma regla de `planificarOrden`.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:
@@ -254,7 +270,7 @@ Limitaciones (sin estado servidor): los contadores de intentos y los codigos/des
 
 ## Checkout y pago con Webpay (KAN-95)
 
-- `GET /carro/opciones-entrega` (cliente): direcciones de la organización y puntos de retiro activos de los proveedores del carro.
+- `GET /carro/opciones-entrega` (cliente): direcciones de la organización (con `regionCodigo`) y puntos de retiro activos y zonas de despacho (`coberturas`, KAN-109) de los proveedores del carro.
 - `GET /comunas` (público): comunas con su región, para una dirección nueva.
 - `POST /ordenes/:id/pago` (cliente dueño): crea la transacción en Webpay Plus (`iniciarPago`) y devuelve `urlPago` y `token`.
 - `GET|POST /pagos/webpay/retorno` (público, lo llama el navegador al volver de Webpay): `confirmarRetornoPago` confirma, marca la orden y emite documentos; redirige a `ECOMMERCE_URL/checkout/resultado`. Acepta el formulario `x-www-form-urlencoded` de Webpay (parser en `server/app.ts`).

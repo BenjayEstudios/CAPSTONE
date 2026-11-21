@@ -159,6 +159,48 @@ describe("Checkout (KAN-95)", () => {
     expect(el.querySelector(".resumen a[href='/carro']")).not.toBeNull();
     ctrl.expectNone(`${API}/carro/confirmar`);
   });
+
+  describe("cobertura de despacho (KAN-109)", () => {
+    // Los Andes cubre toda la RM (comuna 20 = Ñuñoa, region 13); Valle Central solo Providencia (23).
+    const CON_COBERTURA: OpcionesEntrega = {
+      ...OPCIONES,
+      direcciones: [{ ...OPCIONES.direcciones[0]!, regionCodigo: "13" }],
+      coberturas: [
+        { proveedorId: 2, comunaId: null, regionCodigo: "13", costoDespacho: 3990, plazoHoras: 24 },
+        { proveedorId: 3, comunaId: 23, regionCodigo: "13", costoDespacho: 2990, plazoHoras: 48 }
+      ]
+    };
+
+    it("solo ofrece despacho si la zona del distribuidor cubre la comuna; usa la tarifa de esa zona", async () => {
+      const { el } = await abrir(CON_COBERTURA);
+      const [andes, valle] = Array.from(el.querySelectorAll("fieldset.entrega")) as HTMLElement[];
+      // Los Andes cubre Ñuñoa por la region: despacho a $3.990 (su zona), no la tarifa de la ficha.
+      expect(texto(andes!)).toContain("$3.990");
+      expect(radio(andes!, "Despacho a domicilio").disabled).toBeFalse();
+      // Valle Central solo despacha (sin retiro) y no cubre Ñuñoa.
+      expect(radio(valle!, "Despacho a domicilio").disabled).toBeTrue();
+      expect(texto(valle!)).toContain("no despacha a Ñuñoa");
+      expect(texto(valle!)).toContain("Valle Central Mayorista no despacha a Ñuñoa y no tiene retiro para este pedido.");
+    });
+
+    it("pagar avisa que elija otra direccion; con una comuna cubierta el despacho vuelve", async () => {
+      const { h, c, el } = await abrir(CON_COBERTURA);
+      await c.pagar();
+      h.detectChanges();
+      expect(texto(el)).toContain("Valle Central Mayorista no despacha a Ñuñoa. Elige otra dirección o quítalo del carro.");
+      ctrl.expectNone(`${API}/carro/confirmar`);
+
+      c.elegirDireccion("nueva");
+      ctrl.expectOne(`${API}/comunas`).flush([{ id: 23, nombre: "Providencia", regionCodigo: "13", regionNombre: "Metropolitana de Santiago" }]);
+      await h.fixture.whenStable();
+      c.nueva.comunaId = 23;
+      h.detectChanges();
+      const valle = el.querySelectorAll("fieldset.entrega")[1] as HTMLElement;
+      expect(radio(valle, "Despacho a domicilio").disabled).toBeFalse();
+      expect(texto(valle)).toContain("$2.990");
+      expect(c.sinEntrega()).toBeFalse();
+    });
+  });
 });
 
 describe("Resultado del pago (KAN-95)", () => {

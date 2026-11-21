@@ -42,11 +42,17 @@
             @for (g of grupos(); track g.proveedorId) {
               <fieldset class="entrega">
                 <legend>{{ g.nombre }} <small>· {{ productos(g) }}</small></legend>
-                @if (puedeDespachar(g)) {
-                  <label class="radio">
-                    <input type="radio" [name]="'entrega-' + g.proveedorId" [checked]="entregaDe(g)?.tipo === 'despacho'" (change)="elegirEntrega(g, { tipo: 'despacho' })" />
+                @if (despachaPorModalidad(g)) {
+                  <label class="radio" [class.deshabilitado]="!cubre(g)">
+                    <input type="radio" [name]="'entrega-' + g.proveedorId" [disabled]="!cubre(g)" [checked]="entregaDe(g)?.tipo === 'despacho'" (change)="elegirEntrega(g, { tipo: 'despacho' })" />
                     <span>Despacho a domicilio
-                      <small>@if (g.despacho.tipo === "gratis") { gratis } @else if (g.despacho.tipo === "sin-cobertura") { no despacha a la comuna de tu cuenta } @else { {{ clp(g.despacho.costo) }} } · entrega {{ plazo(g.plazoHoras) }}</small>
+                      @if (!cubre(g)) {
+                        <small class="sin-cobertura">no despacha a {{ destino()?.nombre }}</small>
+                      } @else if (coberturaDe(g)) {
+                        <small>@if (despachoDe(g) === 0 && entregaDe(g)?.tipo === "despacho") { gratis } @else { {{ clp(coberturaDe(g)!.costoDespacho) }} } · entrega {{ plazo(g.plazoHoras) }}</small>
+                      } @else {
+                        <small>@if (g.despacho.tipo === "gratis") { gratis } @else if (g.despacho.tipo === "sin-cobertura") { no despacha a la comuna de tu cuenta } @else { {{ clp(g.despacho.costo) }} } · entrega {{ plazo(g.plazoHoras) }}</small>
+                      }
                     </span>
                   </label>
                 }
@@ -59,13 +65,17 @@
                   </label>
                 }
                 @if (!puedeDespachar(g) && !puntosDe(g).length) {
-                  <p class="mensaje error">Este distribuidor no tiene una forma de entrega disponible para este pedido.</p>
+                  @if (despachaPorModalidad(g)) {
+                    <p class="mensaje error">{{ g.nombre }} no despacha a {{ destino()?.nombre }} y no tiene retiro para este pedido. Elige otra dirección o quítalo del carro.</p>
+                  } @else {
+                    <p class="mensaje error">Este distribuidor no tiene una forma de entrega disponible para este pedido.</p>
+                  }
                 }
               </fieldset>
             }
           </div>
 
-          @if (hayDespacho()) {
+          @if (hayDespachoPosible()) {
             <h3>Dirección de despacho</h3>
             <div class="direcciones">
               @for (d of opciones()!.direcciones; track d.id) {

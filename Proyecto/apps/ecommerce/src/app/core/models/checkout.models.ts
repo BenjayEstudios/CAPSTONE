@@ -9,6 +9,8 @@ export interface DireccionGuardada {
   comunaId: number;
   comuna: string;
   region: string;
+  /** KAN-109: para saber que distribuidores cubren la direccion. */
+  regionCodigo?: string;
 }
 
 export interface PuntoRetiro {
@@ -19,10 +21,21 @@ export interface PuntoRetiro {
   direccion: string;
 }
 
+/** Zona de despacho de un distribuidor (KAN-109): una comuna o toda la region (comunaId null). */
+export interface CoberturaDespacho {
+  proveedorId: number;
+  comunaId: number | null;
+  regionCodigo: string;
+  costoDespacho: number;
+  plazoHoras: number | null;
+}
+
 /** GET /carro/opciones-entrega */
 export interface OpcionesEntrega {
   direcciones: DireccionGuardada[];
   puntosRetiro: PuntoRetiro[];
+  /** KAN-109: sin este campo (API anterior) se asume cobertura y decide el backend. */
+  coberturas?: CoberturaDespacho[];
 }
 
 /** GET /comunas */

@@ -1,6 +1,15 @@
 import type { FastifyRequest, RouteOptions } from "fastify";
+import { idParamSchema } from "@cotizapp/domain";
 import {
   actualizarMiPerfilProveedor,
+  actualizarPuntoRetiro,
+  actualizarZona,
+  crearPuntoRetiro,
+  crearZona,
+  eliminarPuntoRetiro,
+  eliminarZona,
+  misPuntosRetiro,
+  regionesParaCobertura,
   demandaProveedor,
   listarClientes,
   listarVentas,
@@ -81,4 +90,81 @@ export const actualizarPerfilRoute: RouteOptions = {
     actualizarMiPerfilProveedor(depsPerfil(request))(Number(request.auth?.sub), Number(request.auth?.organizacionId), request.body)
 };
 
-export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute, demandaRoute, miPerfilRoute, actualizarPerfilRoute];
+// Cobertura de despacho y puntos de retiro (KAN-109). La organizacion sale
+// del token; una fila de otro proveedor responde 404.
+const proveedorDe = (request: FastifyRequest) => Number(request.auth?.organizacionId);
+const usuarioDe = (request: FastifyRequest) => Number(request.auth?.sub);
+const idDe = (request: FastifyRequest) => idParamSchema.parse(request.params).id;
+const soloProveedor = [requireAuth, requirePermiso("publicar_precio_stock")];
+
+export const regionesCoberturaRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/cobertura/regiones",
+  preHandler: soloProveedor,
+  handler: async (request) => regionesParaCobertura(depsPerfil(request))()
+};
+export const crearZonaRoute: RouteOptions = {
+  method: "POST",
+  url: "/proveedor/cobertura/zonas",
+  preHandler: soloProveedor,
+  handler: async (request, reply) => reply.status(201).send(await crearZona(depsPerfil(request))(usuarioDe(request), proveedorDe(request), request.body))
+};
+export const actualizarZonaRoute: RouteOptions = {
+  method: "PATCH",
+  url: "/proveedor/cobertura/zonas/:id",
+  preHandler: soloProveedor,
+  handler: async (request) => actualizarZona(depsPerfil(request))(usuarioDe(request), proveedorDe(request), idDe(request), request.body)
+};
+export const eliminarZonaRoute: RouteOptions = {
+  method: "DELETE",
+  url: "/proveedor/cobertura/zonas/:id",
+  preHandler: soloProveedor,
+  handler: async (request, reply) => {
+    await eliminarZona(depsPerfil(request))(usuarioDe(request), proveedorDe(request), idDe(request));
+    return reply.status(204).send();
+  }
+};
+export const misPuntosRetiroRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/puntos-retiro",
+  preHandler: soloProveedor,
+  handler: async (request) => misPuntosRetiro(depsPerfil(request))(proveedorDe(request))
+};
+export const crearPuntoRetiroRoute: RouteOptions = {
+  method: "POST",
+  url: "/proveedor/puntos-retiro",
+  preHandler: soloProveedor,
+  handler: async (request, reply) => reply.status(201).send(await crearPuntoRetiro(depsPerfil(request))(usuarioDe(request), proveedorDe(request), request.body))
+};
+export const actualizarPuntoRetiroRoute: RouteOptions = {
+  method: "PATCH",
+  url: "/proveedor/puntos-retiro/:id",
+  preHandler: soloProveedor,
+  handler: async (request) => actualizarPuntoRetiro(depsPerfil(request))(usuarioDe(request), proveedorDe(request), idDe(request), request.body)
+};
+export const eliminarPuntoRetiroRoute: RouteOptions = {
+  method: "DELETE",
+  url: "/proveedor/puntos-retiro/:id",
+  preHandler: soloProveedor,
+  handler: async (request, reply) => {
+    await eliminarPuntoRetiro(depsPerfil(request))(usuarioDe(request), proveedorDe(request), idDe(request));
+    return reply.status(204).send();
+  }
+};
+
+export const panelProveedorRoutes: RouteOptions[] = [
+  miCoberturaRoute,
+  misVentasRoute,
+  misClientesRoute,
+  demandaRoute,
+  miPerfilRoute,
+  actualizarPerfilRoute,
+  regionesCoberturaRoute,
+  crearZonaRoute,
+  actualizarZonaRoute,
+  eliminarZonaRoute,
+  misPuntosRetiroRoute,
+  crearPuntoRetiroRoute,
+  actualizarPuntoRetiroRoute,
+  eliminarPuntoRetiroRoute
+];

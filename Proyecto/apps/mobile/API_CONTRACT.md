@@ -221,19 +221,31 @@ de los proveedores (los ids que piden `direccionId` y `retiros` de
   "direcciones": [{
     "id": 6, "calle": "Av. Irarrázaval", "numero": "3450", "complemento": "Local 2",
     "referencia": "Entrada de proveedores por calle lateral", "comunaId": 20, "comuna": "Ñuñoa",
-    "region": "Metropolitana de Santiago"
+    "region": "Metropolitana de Santiago", "regionCodigo": "13"
   }],
   "puntosRetiro": [{
     "id": 1, "proveedorId": 2, "nombre": "Bodega Quilicura",
     "horario": "Lun a Vie 08:00-17:00, Sáb 09:00-13:00",
     "direccion": "Av. Presidente Eduardo Frei Montalva 9650, Bodega 12, Quilicura"
-  }]
+  }],
+  "coberturas": [
+    { "proveedorId": 2, "comunaId": null, "regionCodigo": "13", "costoDespacho": 4990, "plazoHoras": 24 },
+    { "proveedorId": 3, "comunaId": 23, "regionCodigo": "13", "costoDespacho": 2990, "plazoHoras": 48 }
+  ]
 }
 ```
 
 Direcciones: las de la organización del token (la de su ficha y las usadas
 en sus órdenes, incluidas las creadas con `direccion` en un checkout
 anterior). Puntos de retiro: los activos de los proveedores del carro abierto.
+
+`coberturas` y `regionCodigo` son aditivos (KAN-109): las zonas de despacho
+de los proveedores del carro. Un proveedor despacha a una dirección si tiene
+una zona con su `comunaId` o, si no, una con `comunaId: null` y su
+`regionCodigo`; vale el costo de esa zona (gratis desde el
+`despachoGratisDesde` del proveedor). Es la misma regla con la que
+`POST /carro/confirmar` responde `409 SIN_COBERTURA`: sirve para no
+ofrecer despacho a una comuna no cubierta.
 
 ## ✅ `GET /comunas` — KAN-131, KAN-95
 

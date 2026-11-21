@@ -108,6 +108,43 @@ export interface CambiosPerfil {
   cuentaBancaria?: string | null;
 }
 
+/** Zona de despacho (KAN-109): una comuna, o toda la region si comunaId es null. */
+export interface ZonaDespacho {
+  id: number;
+  comunaId: number | null;
+  comuna: string | null;
+  regionCodigo: string;
+  region: string;
+  costoDespacho: number;
+  plazoHoras: number | null;
+}
+
+/** GET /proveedor/cobertura */
+export interface CoberturaProveedor {
+  horaCorte: string | null;
+  despachoGratisDesde: number | null;
+  plazoEstandarHoras: number | null;
+  ofreceDespacho: boolean;
+  ofreceRetiro: boolean;
+  zonas: ZonaDespacho[];
+}
+
+export interface RegionCobertura {
+  codigo: string;
+  nombre: string;
+  comunas: Array<{ id: number; nombre: string }>;
+}
+
+/** GET /proveedor/puntos-retiro */
+export interface PuntoRetiroProveedor {
+  id: number;
+  nombre: string;
+  horario: string | null;
+  activo: boolean;
+  usado: boolean;
+  direccion: DireccionPerfil;
+}
+
 @Injectable({ providedIn: "root" })
 export class PanelProveedorService {
   private readonly api = inject(ApiClient);
@@ -119,6 +156,43 @@ export class PanelProveedorService {
   /** Demanda y cobertura de los ultimos `dias` (KAN-107). */
   demanda(desde: string): Promise<DemandaProveedor> {
     return firstValueFrom(this.api.get<DemandaProveedor>(`/proveedor/demanda?desde=${desde}`));
+  }
+
+  // ---- Cobertura y puntos de retiro (KAN-109)
+  cobertura(): Promise<CoberturaProveedor> {
+    return firstValueFrom(this.api.get<CoberturaProveedor>("/proveedor/cobertura"));
+  }
+
+  regionesCobertura(): Promise<RegionCobertura[]> {
+    return firstValueFrom(this.api.get<RegionCobertura[]>("/proveedor/cobertura/regiones"));
+  }
+
+  crearZona(z: { comunaId: number | null; regionCodigo: string; costoDespacho: number; plazoHoras: number | null }): Promise<{ id: number }> {
+    return firstValueFrom(this.api.post<{ id: number }>("/proveedor/cobertura/zonas", z));
+  }
+
+  actualizarZona(id: number, c: { costoDespacho?: number; plazoHoras?: number | null }): Promise<ZonaDespacho> {
+    return firstValueFrom(this.api.patch<ZonaDespacho>(`/proveedor/cobertura/zonas/${id}`, c));
+  }
+
+  eliminarZona(id: number): Promise<unknown> {
+    return firstValueFrom(this.api.delete(`/proveedor/cobertura/zonas/${id}`));
+  }
+
+  puntosRetiro(): Promise<{ items: PuntoRetiroProveedor[] }> {
+    return firstValueFrom(this.api.get<{ items: PuntoRetiroProveedor[] }>("/proveedor/puntos-retiro"));
+  }
+
+  crearPuntoRetiro(p: { nombre: string; horario: string | null; direccion: NuevaDireccion }): Promise<{ id: number }> {
+    return firstValueFrom(this.api.post<{ id: number }>("/proveedor/puntos-retiro", p));
+  }
+
+  actualizarPuntoRetiro(id: number, c: { nombre?: string; horario?: string | null; activo?: boolean; direccion?: NuevaDireccion }): Promise<PuntoRetiroProveedor> {
+    return firstValueFrom(this.api.patch<PuntoRetiroProveedor>(`/proveedor/puntos-retiro/${id}`, c));
+  }
+
+  eliminarPuntoRetiro(id: number): Promise<unknown> {
+    return firstValueFrom(this.api.delete(`/proveedor/puntos-retiro/${id}`));
   }
 
   perfil(): Promise<PerfilProveedor> {

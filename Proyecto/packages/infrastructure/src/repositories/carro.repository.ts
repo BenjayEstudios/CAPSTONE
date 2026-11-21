@@ -90,7 +90,8 @@ export class DrizzleCarroRepository implements CarroRepository {
             referencia: direccion.referencia,
             comunaId: direccion.comunaId,
             comuna: comuna.nombre,
-            region: comuna.regionNombre
+            region: comuna.regionNombre,
+            regionCodigo: comuna.regionCodigo
           })
           .from(direccion)
           .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
@@ -115,8 +116,21 @@ export class DrizzleCarroRepository implements CarroRepository {
           .where(and(eq(puntoRetiro.activo, 1), inArray(puntoRetiro.proveedorId, proveedorIds)))
           .orderBy(asc(puntoRetiro.proveedorId), asc(puntoRetiro.id))
       : [];
+    const coberturas = proveedorIds.length
+      ? await this.db
+          .select({
+            proveedorId: proveedorCobertura.proveedorId,
+            comunaId: proveedorCobertura.comunaId,
+            regionCodigo: proveedorCobertura.regionCodigo,
+            costoDespacho: proveedorCobertura.costoDespacho,
+            plazoHoras: proveedorCobertura.plazoHoras
+          })
+          .from(proveedorCobertura)
+          .where(inArray(proveedorCobertura.proveedorId, proveedorIds))
+      : [];
     return {
       direcciones,
+      coberturas,
       puntosRetiro: puntos.map((p) => ({
         id: p.id,
         proveedorId: p.proveedorId,

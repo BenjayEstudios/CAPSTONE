@@ -29,6 +29,8 @@ export interface RevisionDocumento {
 // Puerto de persistencia de proveedores (organizacion tipo = proveedor) y sus documentos.
 /** Zona de despacho de un proveedor: una comuna, o toda la region si comunaId es null. */
 export interface ZonaCobertura {
+  /** Aditivo (KAN-109): id de la fila de proveedor_cobertura. */
+  id: number;
   comunaId: number | null;
   comuna: string | null;
   regionCodigo: string;
@@ -95,6 +97,32 @@ export interface NuevaDireccionPerfil {
   comunaId: number;
 }
 
+export interface NuevaZona {
+  comunaId: number | null;
+  regionCodigo: string;
+  costoDespacho: number;
+  plazoHoras: number | null;
+}
+
+/** Punto de retiro del proveedor, activo o no (KAN-109). */
+export interface PuntoRetiroProveedor {
+  id: number;
+  nombre: string;
+  horario: string | null;
+  activo: boolean;
+  direccion: DireccionPerfil;
+  /** Lo cita algun envio: no se puede borrar, solo desactivar. */
+  usado: boolean;
+}
+
+export interface CambiosPuntoRetiro {
+  nombre?: string;
+  horario?: string | null;
+  activo?: boolean;
+  /** Se inserta una direccion nueva y el punto pasa a apuntar a ella. */
+  direccion?: NuevaDireccionPerfil;
+}
+
 export interface CambiosPerfilProveedor {
   nombreFantasia?: string;
   giro?: string | null;
@@ -115,6 +143,16 @@ export interface CambiosPerfilProveedor {
 }
 
 export interface ProveedorRepository {
+  // Cobertura y puntos de retiro (KAN-109). Cada escritura va con su
+  // auditoria en la misma transaccion y filtra por proveedor (una fila de
+  // otro proveedor no se toca y devuelve false).
+  crearZona(proveedorId: number, zona: NuevaZona, auditoria: RegistroAuditoria): Promise<number>;
+  actualizarZona(proveedorId: number, id: number, cambios: { costoDespacho?: number; plazoHoras?: number | null }, auditoria: RegistroAuditoria): Promise<boolean>;
+  eliminarZona(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean>;
+  puntosRetiro(proveedorId: number): Promise<PuntoRetiroProveedor[]>;
+  crearPuntoRetiro(proveedorId: number, punto: { nombre: string; horario: string | null; activo: boolean; direccion: NuevaDireccionPerfil }, auditoria: RegistroAuditoria): Promise<number>;
+  actualizarPuntoRetiro(proveedorId: number, id: number, cambios: CambiosPuntoRetiro, auditoria: RegistroAuditoria): Promise<boolean>;
+  eliminarPuntoRetiro(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean>;
   /** null si no existe o no es tipo proveedor (KAN-108). */
   perfil(proveedorId: number): Promise<PerfilProveedor | null>;
   /** Transaccion: organizacion, direcciones nuevas, punto de retiro principal y auditoria. */

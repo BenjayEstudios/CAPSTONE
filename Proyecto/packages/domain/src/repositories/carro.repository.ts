@@ -108,6 +108,8 @@ export interface DireccionGuardada {
   comunaId: number;
   comuna: string;
   region: string;
+  /** Aditivo (KAN-109): para saber que proveedores cubren la direccion. */
+  regionCodigo: string;
 }
 
 /** Punto de retiro activo de un proveedor. */
@@ -122,6 +124,12 @@ export interface PuntoRetiroOpcion {
 export interface OpcionesEntrega {
   direcciones: DireccionGuardada[];
   puntosRetiro: PuntoRetiroOpcion[];
+  /**
+   * Aditivo (KAN-109): zonas de despacho de los proveedores del carro, para
+   * que el checkout solo ofrezca despacho a una comuna cubierta (la misma
+   * regla que planificarOrden: la comuna primero, si no, toda la region).
+   */
+  coberturas: Array<CoberturaProveedor & { proveedorId: number }>;
 }
 
 export interface CarroRepository {

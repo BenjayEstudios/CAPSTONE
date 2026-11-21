@@ -8,7 +8,8 @@ export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?
   { ruta: "/proveedor/productos", etiqueta: "Mis productos" },
   { ruta: "/proveedor/ventas", etiqueta: "Órdenes" },
   { ruta: "/proveedor/clientes", etiqueta: "Clientes" },
-  { ruta: "/proveedor/demanda", etiqueta: "Demanda" }
+  { ruta: "/proveedor/demanda", etiqueta: "Demanda" },
+  { ruta: "/proveedor/cobertura", etiqueta: "Cobertura" }
 ];
 
 // Marco del panel del proveedor (KAN-101): franja con la empresa y las

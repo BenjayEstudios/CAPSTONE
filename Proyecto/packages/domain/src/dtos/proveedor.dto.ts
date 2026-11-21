@@ -74,3 +74,42 @@ export const actualizarPerfilProveedorSchema = z
   .strict()
   .refine((o) => Object.keys(o).length > 0, "No hay cambios");
 export type ActualizarPerfilProveedorDto = z.infer<typeof actualizarPerfilProveedorSchema>;
+
+// Cobertura de despacho (KAN-109): una zona es una comuna o toda una region
+// (comunaId null + regionCodigo), con su costo y plazo.
+export const nuevaZonaSchema = z
+  .object({
+    comunaId: z.number().int().positive().nullable().optional(),
+    regionCodigo: z.string().trim().min(1).max(8).optional(),
+    costoDespacho: z.number().int().min(0).max(1_000_000),
+    plazoHoras: z.number().int().min(1).max(720).nullable().optional()
+  })
+  .strict()
+  .refine((z) => z.comunaId || z.regionCodigo, "Indica una comuna o una region");
+export const cambiosZonaSchema = z
+  .object({
+    costoDespacho: z.number().int().min(0).max(1_000_000).optional(),
+    plazoHoras: z.number().int().min(1).max(720).nullable().optional()
+  })
+  .strict()
+  .refine((o) => Object.keys(o).length > 0, "No hay cambios");
+
+// Puntos de retiro (KAN-109). La direccion, como en el perfil: una nueva no
+// pisa la anterior (la citan los retiros pasados).
+export const nuevoPuntoRetiroSchema = z
+  .object({
+    nombre: z.string().trim().min(1).max(120),
+    horario: textoOpcional(180),
+    direccion: direccionPerfilSchema,
+    activo: z.boolean().optional()
+  })
+  .strict();
+export const cambiosPuntoRetiroSchema = z
+  .object({
+    nombre: z.string().trim().min(1).max(120).optional(),
+    horario: textoOpcional(180),
+    direccion: direccionPerfilSchema.optional(),
+    activo: z.boolean().optional()
+  })
+  .strict()
+  .refine((o) => Object.keys(o).length > 0, "No hay cambios");

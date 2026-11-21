@@ -77,4 +77,40 @@ describeDb("DrizzleProveedorRepository: perfil de empresa (KAN-108)", (db) => {
     expect(p.ofreceRetiro).toBe(true);
     expect(p.bodega).toMatchObject({ nombre: "Bodega San Bernardo", horario: null, direccion: { calle: "Av. Portales" } });
   });
+
+  it("zonas (KAN-109): crear, editar y borrar solo las propias; la cobertura trae el id", async () => {
+    const id = await repo().crearZona(LOS_ANDES, { comunaId: 20, regionCodigo: "13", costoDespacho: 3990, plazoHoras: 12 }, auditoria(LOS_ANDES));
+    expect((await repo().cobertura(LOS_ANDES)).zonas).toContainEqual(expect.objectContaining({ id, comunaId: 20, comuna: "Ñuñoa", costoDespacho: 3990, plazoHoras: 12 }));
+    expect(await repo().actualizarZona(LOS_ANDES, id, { costoDespacho: 2990, plazoHoras: null }, auditoria(LOS_ANDES))).toBe(true);
+    expect((await repo().cobertura(LOS_ANDES)).zonas.find((z) => z.id === id)).toMatchObject({ costoDespacho: 2990, plazoHoras: null });
+    // Otro proveedor no la toca.
+    expect(await repo().actualizarZona(VALLE_CENTRAL, id, { costoDespacho: 1 }, auditoria(VALLE_CENTRAL))).toBe(false);
+    expect(await repo().eliminarZona(VALLE_CENTRAL, id, auditoria(VALLE_CENTRAL))).toBe(false);
+    expect(await repo().eliminarZona(LOS_ANDES, id, auditoria(LOS_ANDES))).toBe(true);
+    expect((await repo().cobertura(LOS_ANDES)).zonas.some((z) => z.id === id)).toBe(false);
+    const [aud] = await consultar<{ n: number }>(db(), sql`SELECT COUNT(*) AS n FROM auditoria_log WHERE entidad = 'organizacion' AND JSON_EXTRACT(datos_despues, '$.prueba') = true`);
+    expect(Number(aud!.n)).toBe(3); // crear, editar y borrar (los rechazados no auditan)
+  });
+
+  it("puntos de retiro (KAN-109): lista con usado, crea, desactiva, cambia la direccion sin pisarla y borra solo sin envios", async () => {
+    const antes = await repo().puntosRetiro(LOS_ANDES);
+    expect(antes).toEqual([expect.objectContaining({ id: 1, nombre: "Bodega Quilicura", activo: true, usado: true, direccion: expect.objectContaining({ comuna: "Quilicura" }) })]);
+    const id = await repo().crearPuntoRetiro(LOS_ANDES, { nombre: "Bodega Ñuñoa", horario: "L-S 8 a 14", activo: true, direccion: { calle: "Pedro de Valdivia", numero: "100", complemento: null, comunaId: 20 } }, auditoria(LOS_ANDES));
+    expect((await repo().puntosRetiro(LOS_ANDES)).find((p) => p.id === id)).toMatchObject({ activo: true, usado: false, direccion: { calle: "Pedro de Valdivia", comuna: "Ñuñoa" } });
+
+    const [{ dir }] = await consultar<{ dir: number }>(db(), sql`SELECT direccion_id AS dir FROM punto_retiro WHERE id = ${id}`);
+    expect(await repo().actualizarPuntoRetiro(LOS_ANDES, id, { activo: false, direccion: { calle: "Irarrázaval", numero: "5", complemento: null, comunaId: 20 } }, auditoria(LOS_ANDES))).toBe(true);
+    const cambiado = (await repo().puntosRetiro(LOS_ANDES)).find((p) => p.id === id)!;
+    expect(cambiado).toMatchObject({ activo: false, direccion: { calle: "Irarrázaval" } });
+    const [{ vieja }] = await consultar<{ vieja: string }>(db(), sql`SELECT calle AS vieja FROM direccion WHERE id = ${dir}`);
+    expect(vieja).toBe("Pedro de Valdivia");
+    // Los activos van primero.
+    expect((await repo().puntosRetiro(LOS_ANDES)).map((p) => p.id)).toEqual([1, id]);
+
+    expect(await repo().actualizarPuntoRetiro(VALLE_CENTRAL, id, { nombre: "X" }, auditoria(VALLE_CENTRAL))).toBe(false);
+    expect(await repo().eliminarPuntoRetiro(VALLE_CENTRAL, id, auditoria(VALLE_CENTRAL))).toBe(false);
+    expect(await repo().eliminarPuntoRetiro(LOS_ANDES, id, auditoria(LOS_ANDES))).toBe(true);
+    expect((await repo().puntosRetiro(LOS_ANDES)).map((p) => p.id)).toEqual([1]);
+  });
+
 });

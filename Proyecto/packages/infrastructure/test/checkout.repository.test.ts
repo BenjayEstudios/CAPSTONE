@@ -27,6 +27,16 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect((await new DrizzleCarroRepository(db()).opcionesEntrega(ORG.elFogon, [])).puntosRetiro).toEqual([]);
   });
 
+  it("opcionesEntrega (KAN-109): las zonas de despacho de los proveedores pedidos y la region de cada direccion", async () => {
+    const o = await new DrizzleCarroRepository(db()).opcionesEntrega(ORG.elFogon, [ORG.losAndes, ORG.valleCentral]);
+    expect(o.direcciones[0]).toMatchObject({ regionCodigo: "13" });
+    const [esperado] = await consultar<{ n: number }>(db(), sql`SELECT COUNT(*) AS n FROM proveedor_cobertura WHERE proveedor_id IN (${ORG.losAndes}, ${ORG.valleCentral})`);
+    expect(o.coberturas).toHaveLength(Number(esperado!.n));
+    expect(o.coberturas).toContainEqual({ proveedorId: ORG.losAndes, comunaId: null, regionCodigo: "13", costoDespacho: expect.any(Number), plazoHoras: expect.any(Number) });
+    expect(o.coberturas.every((c) => c.proveedorId === ORG.losAndes || c.proveedorId === ORG.valleCentral)).toBe(true);
+    expect((await new DrizzleCarroRepository(db()).opcionesEntrega(ORG.elFogon, [])).coberturas).toEqual([]);
+  });
+
   it("comunas: todas, con su region, ordenadas por region y nombre", async () => {
     const comunas = await new DrizzleComunaRepository(db()).listar();
     const [{ total }] = await consultar<{ total: number }>(db(), sql`SELECT COUNT(*) AS total FROM comuna`);

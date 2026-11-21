@@ -108,6 +108,18 @@ Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publ
 
 `features/proveedor/perfil.component.ts`: `/proveedor/perfil`, desde el boton "Perfil de empresa" del marco del panel. Formulario con datos legales (razon social y RUT de solo lectura), contacto, direccion comercial y bodega (comunas agrupadas por region), tiempos de despacho y modalidad, y cuenta de liquidacion. Al lado va el estado de la cuenta. `cambiosPerfil` arma el PATCH con lo que cambio y `problemasPerfil` dice que falta antes de guardar.
 
+## Cobertura de despacho y puntos de retiro (KAN-109)
+
+`features/proveedor/cobertura.component.ts`: pestaña "Cobertura" (`/proveedor/cobertura`).
+- **Zonas:** agrupadas por region, con su costo y plazo. Se editan en la misma fila, se quitan, y se agregan eligiendo una region y una comuna (o toda la region).
+- **Puntos de retiro:** se crean, se editan, se activan o desactivan, y se borran solo los que no tienen retiros.
+- **Errores:** los 409 del backend se muestran con su motivo.
+
+En el checkout, `checkout.component.ts` usa `coberturas` de `GET /carro/opciones-entrega`.
+- **Comuna sin zona:** el despacho de ese distribuidor aparece deshabilitado ("no despacha a Ñuñoa") y se propone el retiro.
+- **Dirección:** se sigue pidiendo mientras algún distribuidor pueda despachar, para que el comprador elija una comuna cubierta.
+- **Costo:** sale de la zona que cubre la comuna elegida.
+
 El dashboard y Demanda toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
 
 ## Tests

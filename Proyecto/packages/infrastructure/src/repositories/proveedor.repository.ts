@@ -10,6 +10,9 @@ import type {
   RevisionDocumento,
   CondicionesEntregaProveedor,
   CambiosPerfilProveedor,
+  CambiosPuntoRetiro,
+  NuevaZona,
+  PuntoRetiroProveedor,
   DireccionPerfil,
   NuevaDireccionPerfil,
   PerfilProveedor
@@ -19,6 +22,7 @@ import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
 import { comuna } from "../db/schema/comuna.schema.js";
 import { direccion } from "../db/schema/direccion.schema.js";
 import { puntoRetiro } from "../db/schema/punto-retiro.schema.js";
+import { proveedorCobertura } from "../db/schema/proveedor-cobertura.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
 import { proveedorDocumento } from "../db/schema/proveedor-documento.schema.js";
 import { usuario } from "../db/schema/usuario.schema.js";
@@ -191,16 +195,122 @@ export class DrizzleProveedorRepository implements ProveedorRepository {
     });
   }
 
+  // ---- Cobertura y puntos de retiro (KAN-109)
+
+  async crearZona(proveedorId: number, zona: NuevaZona, auditoria: RegistroAuditoria): Promise<number> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.insert(proveedorCobertura).values({ proveedorId, ...zona });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+  }
+
+  async actualizarZona(proveedorId: number, id: number, cambios: { costoDespacho?: number; plazoHoras?: number | null }, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx
+        .update(proveedorCobertura)
+        .set(cambios)
+        .where(and(eq(proveedorCobertura.id, id), eq(proveedorCobertura.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  async eliminarZona(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.delete(proveedorCobertura).where(and(eq(proveedorCobertura.id, id), eq(proveedorCobertura.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  // Todos los puntos del proveedor (activos primero); "usado" = lo cita algun
+  // envio (orden_envio.punto_retiro_id), y entonces no se puede borrar.
+  async puntosRetiro(proveedorId: number): Promise<PuntoRetiroProveedor[]> {
+    const filas = await this.db
+      .select({
+        id: puntoRetiro.id,
+        nombre: puntoRetiro.nombre,
+        horario: puntoRetiro.horario,
+        activo: puntoRetiro.activo,
+        calle: direccion.calle,
+        numero: direccion.numero,
+        complemento: direccion.complemento,
+        comunaId: direccion.comunaId,
+        comuna: comuna.nombre,
+        region: comuna.regionNombre,
+        usado: sql<number>`EXISTS (SELECT 1 FROM orden_envio oe WHERE oe.punto_retiro_id = ${puntoRetiro.id})`.mapWith(Number)
+      })
+      .from(puntoRetiro)
+      .innerJoin(direccion, eq(direccion.id, puntoRetiro.direccionId))
+      .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+      .where(eq(puntoRetiro.proveedorId, proveedorId))
+      .orderBy(desc(puntoRetiro.activo), asc(puntoRetiro.id));
+    return filas.map((f) => ({
+      id: f.id,
+      nombre: f.nombre,
+      horario: f.horario,
+      activo: f.activo === 1,
+      usado: f.usado === 1,
+      direccion: { calle: f.calle, numero: f.numero, complemento: f.complemento, comunaId: f.comunaId, comuna: f.comuna, region: f.region }
+    }));
+  }
+
+  async crearPuntoRetiro(
+    proveedorId: number,
+    punto: { nombre: string; horario: string | null; activo: boolean; direccion: NuevaDireccionPerfil },
+    auditoria: RegistroAuditoria
+  ): Promise<number> {
+    return this.db.transaction(async (tx) => {
+      const [d] = await tx.insert(direccion).values(punto.direccion);
+      const [r] = await tx.insert(puntoRetiro).values({ proveedorId, nombre: punto.nombre, horario: punto.horario, activo: punto.activo ? 1 : 0, direccionId: d.insertId });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+  }
+
+  async actualizarPuntoRetiro(proveedorId: number, id: number, cambios: CambiosPuntoRetiro, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [actual] = await tx
+        .select({ id: puntoRetiro.id })
+        .from(puntoRetiro)
+        .where(and(eq(puntoRetiro.id, id), eq(puntoRetiro.proveedorId, proveedorId)))
+        .for("update");
+      if (!actual) return false;
+      const set: Partial<typeof puntoRetiro.$inferInsert> = {};
+      if (cambios.nombre !== undefined) set.nombre = cambios.nombre;
+      if (cambios.horario !== undefined) set.horario = cambios.horario;
+      if (cambios.activo !== undefined) set.activo = cambios.activo ? 1 : 0;
+      if (cambios.direccion) set.direccionId = (await tx.insert(direccion).values(cambios.direccion))[0].insertId;
+      if (Object.keys(set).length) await tx.update(puntoRetiro).set(set).where(eq(puntoRetiro.id, id));
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  // Solo un punto sin envios (el caso de uso lo revisa; la FK de orden_envio
+  // lo impediria igual). Su direccion queda: no estorba y es barato.
+  async eliminarPuntoRetiro(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.delete(puntoRetiro).where(and(eq(puntoRetiro.id, id), eq(puntoRetiro.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
   async cobertura(proveedorId: number): Promise<CondicionesEntregaProveedor> {
     const [org] = await this.db
       .select({ horaCorte: organizacion.horaCorte, despachoGratisDesde: organizacion.despachoGratisDesde, plazoEstandarHoras: organizacion.plazoEstandarHoras, ofreceDespacho: organizacion.ofreceDespacho, ofreceRetiro: organizacion.ofreceRetiro })
       .from(organizacion)
       .where(eq(organizacion.id, proveedorId));
     // La region se nombra desde cualquier comuna con ese codigo (comuna_id NULL = toda la region).
-    const zonas = await consultar<{ comunaId: number | null; comuna: string | null; regionCodigo: string; region: string; costoDespacho: number; plazoHoras: number | null }>(
+    const zonas = await consultar<{ id: number; comunaId: number | null; comuna: string | null; regionCodigo: string; region: string; costoDespacho: number; plazoHoras: number | null }>(
       this.db,
       sql`
-        SELECT pc.comuna_id AS comunaId, c.nombre AS comuna, pc.region_codigo AS regionCodigo,
+        SELECT pc.id AS id, pc.comuna_id AS comunaId, c.nombre AS comuna, pc.region_codigo AS regionCodigo,
                (SELECT MIN(r.region_nombre) FROM comuna r WHERE r.region_codigo = pc.region_codigo) AS region,
                pc.costo_despacho AS costoDespacho, pc.plazo_horas AS plazoHoras
         FROM proveedor_cobertura pc LEFT JOIN comuna c ON c.id = pc.comuna_id
@@ -213,7 +323,7 @@ export class DrizzleProveedorRepository implements ProveedorRepository {
       plazoEstandarHoras: org?.plazoEstandarHoras ?? null,
       ofreceDespacho: org?.ofreceDespacho === 1,
       ofreceRetiro: org?.ofreceRetiro === 1,
-      zonas: zonas.map((z) => ({ ...z, costoDespacho: Number(z.costoDespacho), plazoHoras: z.plazoHoras === null ? null : Number(z.plazoHoras) }))
+      zonas: zonas.map((z) => ({ ...z, id: Number(z.id), costoDespacho: Number(z.costoDespacho), plazoHoras: z.plazoHoras === null ? null : Number(z.plazoHoras) }))
     };
   }
 
