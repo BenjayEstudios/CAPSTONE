@@ -9,6 +9,9 @@
 #                      adelante que el código viejo)
 #   --sin-pull         usa las imágenes que ya estén en el host (prueba local)
 #
+# CURL_EXTRA (opcional, solo pruebas locales): opciones extra para el curl del
+# health-check, ej. CURL_EXTRA="--cacert cert.pem" con un certificado propio.
+#
 # Pasos: pull → migraciones (contenedor de una sola vez, debe terminar bien)
 # → up sin build → health-check → logout → limpieza de imágenes viejas.
 # El token de GHCR llega por variable de entorno y se le pasa a docker por
@@ -52,11 +55,24 @@ fi
 echo "==> Levantando el stack ($IMAGE_TAG)"
 compose up -d --no-build --remove-orphans --wait --wait-timeout 180
 
-# Mismo health-check que antes, pero por el puerto que realmente publica nginx.
-puerto="$(compose port nginx 80)"
-puerto="${puerto##*:}"
+# Health-check a través de Nginx, por el puerto que realmente publica. En
+# modo HTTPS (KAN-159) el 80 solo redirige: se prueba por 443 con el dominio
+# real resuelto a 127.0.0.1, así también se valida el certificado.
+if compose exec -T nginx grep -q "listen 443" /etc/nginx/conf.d/default.conf; then
+  dominio="$(compose exec -T nginx printenv APP_DOMAIN | tr -d '\r')"
+  puerto="$(compose port nginx 443)"
+  puerto="${puerto##*:}"
+  url="https://${dominio}:${puerto}/api/health-check"
+  resolver=(--resolve "${dominio}:${puerto}:127.0.0.1")
+else
+  puerto="$(compose port nginx 80)"
+  puerto="${puerto##*:}"
+  url="http://127.0.0.1:${puerto}/api/health-check"
+  resolver=()
+fi
+read -r -a extra <<< "${CURL_EXTRA:-}"
 for _ in $(seq 1 30); do
-  if curl -fsS "http://127.0.0.1:${puerto}/api/health-check"; then
+  if curl -fsS "${extra[@]}" "${resolver[@]}" "$url"; then
     echo
     docker image prune -f >/dev/null
     echo "==> Desplegado $IMAGE_TAG"

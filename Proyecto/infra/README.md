@@ -37,13 +37,20 @@ internet.
 
 | Archivo | Qué es |
 |---|---|
-| `docker-compose.prod.yml` | Stack de producción: `nginx`, `backend`, `mysql`. Las imágenes son `ghcr.io/benjayestudios/cotizapp-{nginx,backend}:${IMAGE_TAG}`; conserva `build:` para construirlas en local. |
+| `docker-compose.prod.yml` | Stack de producción: `nginx`, `backend`, `mysql` y `certbot` (renueva el certificado HTTPS). Las imágenes son `ghcr.io/benjayestudios/cotizapp-{nginx,backend}:${IMAGE_TAG}`; conserva `build:` para construirlas en local. |
 | `deploy/desplegar.sh` | Deploy en el droplet: pull de GHCR → migraciones → `up` sin build → health-check. Lo llama `deploy-dev.yml`; sirve a mano y en local. |
+| `deploy/certificado.sh` | Emite el certificado de Let's Encrypt (una vez, en el droplet; `--prueba` ensaya contra el staging). Ver [deploy/README.md](deploy/README.md#activar-https-kan-159). |
 | `deploy/cloud-init.yml` | Prepara un droplet nuevo en su primer arranque. Guía para crearlo y costos: [deploy/README.md](deploy/README.md). |
 | `oracle/` | QA adicional en Oracle Cloud Always Free (VM ARM, US$0): cloud-init y guía. Lo despliega `deploy-oracle.yml` con imágenes `-arm64`. Ver [oracle/README.md](oracle/README.md). |
 | `.env.example` | Variables de producción (dominio, passwords, JWT). Se copia a `infra/.env` en el droplet. |
 | `nginx/Dockerfile` | Compila `apps/ecommerce` y `apps/admin-site` (Angular) y los copia en una imagen `nginx:1.30-alpine`. |
-| `nginx/templates/default.conf.template` | Config de Nginx: un `server` por dominio (ecommerce por defecto, admin-site en `ADMIN_DOMAIN`). La imagen oficial le aplica `envsubst` al arrancar (`${APP_DOMAIN}`, `${ADMIN_DOMAIN}`). |
+| `nginx/templates/http/default.conf.template` | Config en modo HTTP: un `server` en el 80 por dominio (ecommerce por defecto, admin-site en `ADMIN_DOMAIN`). La imagen oficial le aplica `envsubst` al arrancar. |
+| `nginx/templates/https/default.conf.template` | Config en modo HTTPS (KAN-159): el 80 solo atiende Let's Encrypt y redirige con 301; los dos sitios en 443 con HTTP/2. |
+| `nginx/snippets/comun.conf` | Común a las dos plantillas: gzip, `server_tokens off`, resolver de Docker y `upstream` del backend. |
+| `nginx/snippets/sitio-ecommerce.conf`, `sitio-admin.conf` | Contenido de cada sitio (root, API, uploads, SPA, `robots.txt` del admin), igual en HTTP y HTTPS. |
+| `nginx/snippets/acme.conf`, `tls.conf` | Desafío HTTP-01 de Let's Encrypt (`/.well-known/acme-challenge/`) y parámetros TLS (solo 1.2 y 1.3). |
+| `nginx/entrypoint/18-esquema.envsh` | Elige la plantilla según `PUBLIC_SCHEME`; con `https` sin certificado se queda en HTTP y lo avisa. |
+| `nginx/entrypoint/40-recargar-certificados.sh` | En HTTPS, `nginx -s reload` cada 12 h para tomar el certificado renovado. |
 | `nginx/snippets/api-proxy.conf` | `location /api/` → backend (quita el prefijo `/api`). |
 | `nginx/snippets/spa.conf` | Reglas de SPA: fallback a `index.html` y caché de assets con hash. |
 | `nginx/snippets/uploads.conf` | `/uploads/` → archivos subidos, directo del volumen. Solo `productos/<id>/<uuid>.jpg\|png` es público. |
@@ -132,8 +139,9 @@ backend rechaza con 413, y Nginx corta el body en `UPLOADS_MAX_MB + 1` MB
 (holgura para el multipart) respondiendo el mismo JSON de error.
 
 **Ojo**: `producto.imagenes` guarda la URL absoluta
-(`PUBLIC_BASE_URL=http://APP_DOMAIN`). Un cambio de dominio o el paso a
-`https` (KAN-159) rompe las URL ya guardadas.
+(`PUBLIC_BASE_URL=<PUBLIC_SCHEME>://APP_DOMAIN`). Un cambio de dominio o el
+paso a `https` (KAN-159) rompe las URL ya guardadas. Al activar HTTPS en QA
+(2026-11-21) ningún producto tenía imágenes, así que no se rompió nada.
 
 ### Base de datos de producción: MySQL del compose, no Aiven
 
@@ -409,6 +417,6 @@ sudo chown -R "$(id -u):$(id -g)" Proyecto/   # desde la raíz del repo
 Epic KAN-88 (Plataforma), en este orden:
 
 - KAN-160 — Respaldos automáticos de MySQL y del volumen `cotizapp-uploads`.
-- KAN-159 — HTTPS con Let's Encrypt (falta definir el dominio).
+- KAN-159 — HTTPS con Let's Encrypt: código listo (dominio DuckDNS); falta activarlo en el droplet, ver [deploy/README.md](deploy/README.md#activar-https-kan-159).
 - KAN-162 — Hardening del droplet.
 - KAN-163 — Monitoreo y logs.

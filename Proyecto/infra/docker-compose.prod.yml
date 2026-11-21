@@ -1,5 +1,5 @@
 # Stack de producción del droplet: nginx (frontends + reverse proxy) +
-# backend (Fastify) + mysql. En el droplet las imágenes vienen de GHCR, ya
+# backend (Fastify) + mysql + certbot (certificados HTTPS, KAN-159). En el droplet las imágenes vienen de GHCR, ya
 # construidas por el CI (deploy/desplegar.sh). En local se pueden construir:
 #   docker compose -f docker-compose.prod.yml up -d --build
 # Variables: infra/.env (ver .env.example). Documentación: infra/README.md.
@@ -16,13 +16,20 @@ services:
     restart: unless-stopped
     ports:
       - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Falta APP_DOMAIN en infra/.env}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?Falta ADMIN_DOMAIN en infra/.env}
       UPLOADS_MAX_MB: ${UPLOADS_MAX_MB:-5}
-    # Nginx sirve /uploads/ directo del volumen, sin pasar por el backend.
+      # http | https. Con https y certificado, Nginx sirve en 443 y redirige
+      # el 80 (nginx/entrypoint/18-esquema.envsh).
+      PUBLIC_SCHEME: ${PUBLIC_SCHEME:-http}
     volumes:
+      # Nginx sirve /uploads/ directo del volumen, sin pasar por el backend.
       - cotizapp-uploads:/srv/uploads:ro
+      # Certificados de Let's Encrypt y desafío HTTP-01 (los escribe certbot).
+      - cotizapp-letsencrypt:/etc/letsencrypt:ro
+      - cotizapp-acme:/var/www/acme:ro
     depends_on:
       backend:
         condition: service_healthy
@@ -47,15 +54,18 @@ services:
       # Los frontends llaman a /api en su mismo origen, así que CORS no entra
       # en juego para ellos; se dejan sus dominios por si algo llama desde
       # fuera. Ojo: el backend lee CORS_ORIGIN (singular), lista con comas.
-      CORS_ORIGIN: http://${APP_DOMAIN},http://${ADMIN_DOMAIN}
+      CORS_ORIGIN: ${PUBLIC_SCHEME:-http}://${APP_DOMAIN},${PUBLIC_SCHEME:-http}://${ADMIN_DOMAIN}
       # Link al panel que va en los correos de invitación.
-      ADMIN_SITE_URL: http://${ADMIN_DOMAIN}
+      ADMIN_SITE_URL: ${PUBLIC_SCHEME:-http}://${ADMIN_DOMAIN}
       # Archivos subidos: disco local (volumen cotizapp-uploads). Las URL
-      # públicas quedan como http://APP_DOMAIN/uploads/... y las sirve Nginx.
+      # públicas quedan como <esquema>://APP_DOMAIN/uploads/... y las sirve Nginx.
       STORAGE_DRIVER: local
       UPLOADS_DIR: /data/uploads
       UPLOADS_MAX_MB: ${UPLOADS_MAX_MB:-5}
-      PUBLIC_BASE_URL: http://${APP_DOMAIN}
+      PUBLIC_BASE_URL: ${PUBLIC_SCHEME:-http}://${APP_DOMAIN}
+      # Webpay (KAN-148) devuelve el navegador a esta base + /pagos/webpay/retorno/...
+      # Detrás de Nginx la API está bajo /api, por eso no sirve PUBLIC_BASE_URL.
+      PAGOS_RETORNO_BASE_URL: ${PUBLIC_SCHEME:-http}://${APP_DOMAIN}/api
     volumes:
       - cotizapp-uploads:/data/uploads
     healthcheck:
@@ -86,6 +96,20 @@ services:
       retries: 10
       start_period: 30s
 
+  # Certificados HTTPS (KAN-159). Sin puertos ni dependencias: cada 12 h
+  # intenta renovar los certificados que estén por vencer (sin certificados,
+  # no hace nada). Lo emite la primera vez infra/deploy/certificado.sh. Nginx
+  # toma el renovado con su reload periódico.
+  certbot:
+    image: certbot/certbot:v5.9.0
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "trap exit TERM; while :; do certbot renew --webroot -w /var/www/acme --quiet; sleep 12h & wait $$!; done"
+    volumes:
+      - cotizapp-letsencrypt:/etc/letsencrypt
+      - cotizapp-acme:/var/www/acme
+
 volumes:
   cotizapp-mysql-data:
     # Nombre fijo (sin prefijo de proyecto) para que los scripts de respaldo
@@ -94,3 +118,9 @@ volumes:
   # Archivos subidos (imágenes de producto). Se respalda junto con la base (KAN-160).
   cotizapp-uploads:
     name: cotizapp-uploads
+  # Cuenta y certificados de Let's Encrypt (KAN-159). Respaldar junto con la base.
+  cotizapp-letsencrypt:
+    name: cotizapp-letsencrypt
+  # Archivos temporales del desafío HTTP-01.
+  cotizapp-acme:
+    name: cotizapp-acme

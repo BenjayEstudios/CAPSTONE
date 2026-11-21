@@ -1,0 +1,23 @@
+# Plantilla de Nginx en modo HTTP (PUBLIC_SCHEME=http, o https sin
+# certificado todavía). La elige entrypoint/18-esquema.envsh; la imagen
+# oficial la pasa por envsubst y la deja en /etc/nginx/conf.d/default.conf.
+# Variables: ${APP_DOMAIN}, ${ADMIN_DOMAIN} y ${NGINX_BODY_MAX_MB}.
+
+include /etc/nginx/snippets/comun.conf;
+
+# Tope del body de cualquier request (subidas de archivos incluidas).
+client_max_body_size ${NGINX_BODY_MAX_MB}m;
+
+server {
+    listen 80 default_server;
+    server_name ${APP_DOMAIN};
+    include /etc/nginx/snippets/acme.conf;
+    include /etc/nginx/snippets/sitio-ecommerce.conf;
+}
+
+server {
+    listen 80;
+    server_name ${ADMIN_DOMAIN};
+    include /etc/nginx/snippets/acme.conf;
+    include /etc/nginx/snippets/sitio-admin.conf;
+}

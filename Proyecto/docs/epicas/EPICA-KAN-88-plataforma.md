@@ -45,9 +45,9 @@ Hoy existen `GET /health-check` y `GET/POST /categorias`, más los
 | KAN-158 | Servir el build de `apps/ecommerce` en producción | ✅ [entrada](../cambios/2026-10-23-stack-de-produccion-servible.md) |
 | KAN-168 | Servir el build de `apps/admin-site` | ✅ [entrada](../cambios/2026-11-18-admin-site-en-produccion.md) |
 | KAN-157 | Almacenamiento de imágenes y documentos | ✅ [entrada](../cambios/2026-11-18-almacenamiento-de-archivos-en-volumen.md) (endpoint de documentos de proveedor queda en KAN-150) |
-| KAN-161 | Pipeline de despliegue (CI/CD) | ✅ [entrada](../cambios/2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) — código listo; el deploy queda apagado hasta tener droplet y secrets (`DEPLOY_ENABLED`). Alternativa gratis en Oracle Cloud ([entrada](../cambios/2026-11-19-qa-en-oracle-cloud-always-free.md)), apagada hasta `ORACLE_ENABLED` |
+| KAN-161 | Pipeline de despliegue (CI/CD) | ✅ [entrada](../cambios/2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) — desplegando: droplet `cotizapp-dev` (167.71.17.12) y primer deploy OK el 2026-11-20 ([entrada](../cambios/2026-11-20-droplet-de-dev-creado.md)). Alternativa gratis en Oracle Cloud ([entrada](../cambios/2026-11-19-qa-en-oracle-cloud-always-free.md)), apagada hasta `ORACLE_ENABLED` |
 | KAN-160 | Respaldos automáticos de MySQL | ⏳ |
-| KAN-159 | HTTPS con Let's Encrypt | ⏳ |
+| KAN-159 | HTTPS con Let's Encrypt | 🔄 Código listo ([entrada](../cambios/2026-11-21-https-con-lets-encrypt.md)); falta el dominio DuckDNS y activarlo en el droplet |
 | KAN-162 | Hardening y control de accesos del droplet | ⏳ |
 | KAN-163 | Monitoreo y logs | ⏳ |
 

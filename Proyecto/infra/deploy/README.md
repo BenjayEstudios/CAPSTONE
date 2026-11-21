@@ -3,6 +3,7 @@
 | Archivo | Qué es |
 |---|---|
 | [`cloud-init.yml`](cloud-init.yml) | Prepara un droplet nuevo en su primer arranque (Docker, usuario `deploy`, firewall, swap, clon del repo, `infra/.env` con secretos generados ahí). |
+| [`certificado.sh`](certificado.sh) | Emite el certificado HTTPS de Let's Encrypt (una vez). Ver [Activar HTTPS](#activar-https-kan-159). |
 | [`desplegar.sh`](desplegar.sh) | El deploy en sí: pull de GHCR → migraciones → `up` sin build → health-check. Lo llama `deploy-dev.yml` por SSH; ver [../README.md](../README.md#deploy-devyml--imágenes-en-ghcr-y-deploy-al-droplet). |
 
 ## Costo (precios de Digital Ocean, noviembre 2026)
@@ -115,6 +116,41 @@ commit.
 
 Sin cloud-init (droplet ya creado), los mismos pasos a mano están en el script
 dentro de `cloud-init.yml` (`write_files`); se pueden correr como root.
+
+## Activar HTTPS (KAN-159)
+
+Dominio: **DuckDNS** (gratis). Un subdominio de DuckDNS también resuelve
+todos sus sub-subdominios a la misma IP, así que basta con uno:
+`cotizapp.duckdns.org` (ecommerce) y `admin.cotizapp.duckdns.org` (admin).
+No sirve nip.io: Let's Encrypt comparte su límite de certificados con todo el
+mundo (`certificado.sh` lo rechaza).
+
+1. **DuckDNS** (duckdns.org, se entra con una cuenta de GitHub o Google):
+   crear el subdominio y poner la IP del droplet. Comprobar desde cualquier
+   máquina: `getent hosts cotizapp.duckdns.org admin.cotizapp.duckdns.org`
+   → las dos con la IP del droplet. La IP es fija, así que no hace falta el
+   script de actualización de DuckDNS.
+2. **`infra/.env` del droplet** (como `deploy`): cambiar `APP_DOMAIN`,
+   `ADMIN_DOMAIN` y, opcional, `LETSENCRYPT_EMAIL` (avisos de vencimiento).
+   Dejar `PUBLIC_SCHEME=http` por ahora y aplicar:
+   `docker compose -f docker-compose.prod.yml up -d`.
+3. **Ensayo** contra el staging de Let's Encrypt (no guarda nada ni gasta
+   límites): `./deploy/certificado.sh --prueba`.
+4. **Certificado real**: `./deploy/certificado.sh` (acepta los términos de
+   Let's Encrypt).
+5. **Pasar a HTTPS**: `PUBLIC_SCHEME=https` en `infra/.env` y
+   `docker compose -f docker-compose.prod.yml up -d`. Nginx pasa a 443 y
+   redirige el 80; el backend arma sus URL (CORS, uploads, Webpay, links del
+   admin) con `https`.
+6. **Verificar**: `curl -I http://cotizapp.duckdns.org` → `301` a https;
+   `curl https://cotizapp.duckdns.org/api/health-check` → `{"status":"ok"}`.
+
+Después no hay que hacer nada: el servicio `certbot` intenta renovar cada
+12 h (Let's Encrypt renueva desde 30 días antes del vencimiento) y Nginx
+recarga cada 12 h. Los deploys siguientes validan el health-check por HTTPS.
+Volver a HTTP: `PUBLIC_SCHEME=http` y `up -d`.
+
+La app móvil apunta a `API_URL=https://cotizapp.duckdns.org/api`.
 
 ## Droplet actual
 

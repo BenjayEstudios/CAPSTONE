@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-21 | [HTTPS con Let's Encrypt (código)](2026-11-21-https-con-lets-encrypt.md) | KAN-88 | KAN-159 |
 | 2026-11-21 | [Integración del rediseño "Laguna" en el admin-site](2026-11-21-integracion-rediseno-laguna-admin-site.md) | KAN-86 | — |
 | 2026-11-20 | [Material para las pruebas de usabilidad](2026-11-20-material-pruebas-de-usabilidad.md) | KAN-88 | KAN-165 |
 | 2026-11-20 | [Pruebas end-to-end del flujo de compra](2026-11-20-pruebas-e2e-flujo-de-compra.md) | KAN-88 | KAN-164 |

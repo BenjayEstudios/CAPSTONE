@@ -1,0 +1,21 @@
+#!/bin/sh
+# Lo ejecuta (con source) el entrypoint de la imagen oficial antes de
+# 20-envsubst-on-templates.sh. Elige la plantilla según PUBLIC_SCHEME
+# (KAN-159): templates/http o templates/https. Con https pero sin
+# certificado todavía (primer arranque, antes de deploy/certificado.sh) se
+# queda en HTTP para poder emitirlo, y lo avisa en el log.
+CERT_DIR=/etc/letsencrypt/live/cotizapp
+case "${PUBLIC_SCHEME:-http}" in
+    http)
+        export NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/http ;;
+    https)
+        if [ -s "$CERT_DIR/fullchain.pem" ] && [ -s "$CERT_DIR/privkey.pem" ]; then
+            export NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/https
+        else
+            echo "AVISO: PUBLIC_SCHEME=https pero no hay certificado en $CERT_DIR; se sirve HTTP hasta emitirlo (infra/deploy/certificado.sh)" >&2
+            export NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates/http
+        fi ;;
+    *)
+        echo "PUBLIC_SCHEME debe ser http o https (es '$PUBLIC_SCHEME')" >&2
+        exit 1 ;;
+esac
