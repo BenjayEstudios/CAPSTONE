@@ -10,6 +10,7 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-20 | [Panel del proveedor: perfil de empresa](2026-11-20-perfil-de-empresa-del-proveedor.md) | KAN-85 | KAN-108 |
 | 2026-11-20 | [Panel del proveedor: demanda y cobertura](2026-11-20-demanda-y-cobertura-del-proveedor.md) | KAN-85 | KAN-107 |
 | 2026-11-20 | [Panel del proveedor: tus clientes](2026-11-20-tus-clientes-del-proveedor.md) | KAN-85 | KAN-106 |
 | 2026-11-20 | [Panel del proveedor: órdenes de venta](2026-11-20-ordenes-de-venta-del-proveedor.md) | KAN-85 | KAN-105 |

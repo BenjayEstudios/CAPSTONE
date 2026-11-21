@@ -63,6 +63,9 @@ documentos, liquidaciones).
 - Proveedor: "Demanda" (`/proveedor/demanda`), más vistos y clickeados,
   stock restante del mes y clientes potenciales por comuna (KAN-107)
   ([entrada](../cambios/2026-11-20-demanda-y-cobertura-del-proveedor.md)).
+- Proveedor: "Perfil de empresa" (`/proveedor/perfil`), datos legales, contacto,
+  dirección y bodega, tiempos de despacho, liquidación y estado de la cuenta (KAN-108)
+  ([entrada](../cambios/2026-11-20-perfil-de-empresa-del-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -96,7 +99,7 @@ documentos, liquidaciones).
 | KAN-105 | Órdenes de venta | ✅ [entrada](../cambios/2026-11-20-ordenes-de-venta-del-proveedor.md) |
 | KAN-106 | Tus clientes | ✅ [entrada](../cambios/2026-11-20-tus-clientes-del-proveedor.md) |
 | KAN-107 | Demanda y cobertura (analítica) | ✅ [entrada](../cambios/2026-11-20-demanda-y-cobertura-del-proveedor.md) |
-| KAN-108 | Perfil de empresa | ⏳ |
+| KAN-108 | Perfil de empresa | ✅ [entrada](../cambios/2026-11-20-perfil-de-empresa-del-proveedor.md) |
 | KAN-109 | Cobertura de despacho y puntos de retiro | ⏳ |
 | KAN-110 | Documentos del proveedor | ⏳ |
 | KAN-111 | Liquidaciones | ⏳ |

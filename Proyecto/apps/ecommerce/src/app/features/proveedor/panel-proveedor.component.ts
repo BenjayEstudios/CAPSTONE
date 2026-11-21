@@ -25,7 +25,10 @@ export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?
           <h1>Cotizapp <span>para distribuidores</span></h1>
           <p>Publica tus precios, despacha y cobra en un solo lugar.</p>
         </div>
-        <a routerLink="/proveedor/asignar" class="btn btn-primary">Asignarme un producto</a>
+        <div class="acciones">
+          <a routerLink="/proveedor/perfil" class="btn btn-secondary">Perfil de empresa</a>
+          <a routerLink="/proveedor/asignar" class="btn btn-primary">Asignarme un producto</a>
+        </div>
       </div>
       <nav class="pestanas" aria-label="Panel de proveedor">
         @for (p of pestanas; track p.ruta) {
@@ -40,6 +43,7 @@ export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?
     .franja { font-size: 12px; letter-spacing: .04em; color: var(--color-text-soft); margin: 0 0 14px; }
     .franja strong { color: var(--color-text); }
     .titulo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .acciones { display: flex; gap: 10px; flex-wrap: wrap; }
     .titulo h1 { font-size: clamp(26px, 3.4vw, 36px); margin: 0; }
     .titulo h1 span { font-weight: 400; color: var(--color-text-soft); font-size: .6em; margin-left: 6px; }
     .titulo p { margin: 4px 0 0; color: var(--color-text-soft); font-size: 14px; }

@@ -47,6 +47,67 @@ export interface DemandaProveedor {
   potenciales: Array<{ comunaId: number; comuna: string; region: string; clientes: number; cubre: boolean }>;
 }
 
+export interface DireccionPerfil {
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  comunaId: number;
+  comuna: string;
+  region: string;
+}
+
+/** GET /proveedor/perfil (KAN-108). */
+export interface PerfilProveedor {
+  id: number;
+  razonSocial: string;
+  rut: string;
+  nombreFantasia: string | null;
+  giro: string | null;
+  emailContacto: string | null;
+  telefono: string | null;
+  direccion: DireccionPerfil | null;
+  bodega: { id: number; nombre: string; horario: string | null; direccion: DireccionPerfil } | null;
+  plazoEstandarHoras: number | null;
+  plazoFueraRegionHoras: number | null;
+  horaCorte: string | null;
+  despachoGratisDesde: number | null;
+  ofreceDespacho: boolean;
+  ofreceRetiro: boolean;
+  banco: string | null;
+  cuentaBancaria: string | null;
+  estado: "activa" | "en_revision" | "suspendida";
+  comisionPct: number | null;
+  entregasATiempoPct: number | null;
+  creadaEn: string;
+  regiones: string[];
+  equipo: Array<{ nombre: string; email: string; telefono: string | null }>;
+}
+
+export interface NuevaDireccion {
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  comunaId: number;
+}
+
+/** PATCH /proveedor/perfil: solo lo que cambio. */
+export interface CambiosPerfil {
+  nombreFantasia?: string;
+  giro?: string | null;
+  emailContacto?: string;
+  telefono?: string | null;
+  direccion?: NuevaDireccion;
+  bodega?: NuevaDireccion & { nombre: string; horario: string | null };
+  plazoEstandarHoras?: number;
+  plazoFueraRegionHoras?: number | null;
+  horaCorte?: string | null;
+  despachoGratisDesde?: number | null;
+  ofreceDespacho?: boolean;
+  ofreceRetiro?: boolean;
+  banco?: string | null;
+  cuentaBancaria?: string | null;
+}
+
 @Injectable({ providedIn: "root" })
 export class PanelProveedorService {
   private readonly api = inject(ApiClient);
@@ -58,6 +119,14 @@ export class PanelProveedorService {
   /** Demanda y cobertura de los ultimos `dias` (KAN-107). */
   demanda(desde: string): Promise<DemandaProveedor> {
     return firstValueFrom(this.api.get<DemandaProveedor>(`/proveedor/demanda?desde=${desde}`));
+  }
+
+  perfil(): Promise<PerfilProveedor> {
+    return firstValueFrom(this.api.get<PerfilProveedor>("/proveedor/perfil"));
+  }
+
+  actualizarPerfil(cambios: CambiosPerfil): Promise<PerfilProveedor> {
+    return firstValueFrom(this.api.patch<PerfilProveedor>("/proveedor/perfil", cambios));
   }
 
   alertas(): Promise<AlertasProveedor> {

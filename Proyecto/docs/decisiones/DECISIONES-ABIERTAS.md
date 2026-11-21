@@ -176,3 +176,19 @@ pregunta. Hoy se deduce del RUT y del giro (`tipoCliente` en
 Falta decidir si basta con eso o si se agrega una columna `tipo_cliente` a
 `organizacion` que el comprador elija al registrarse. Eso necesita una
 migración y un campo en el registro (KAN-89).
+
+## 18. Representante legal y contacto de operaciones del proveedor
+
+**Aplica en:** KAN-108 (perfil de empresa) · **Afecta:** `organizacion` y el registro de proveedores (KAN-100)
+
+El mockup del perfil pide representante legal (nombre y RUT) y un contacto de
+operaciones con su teléfono. `organizacion` no tiene esas columnas. Hoy el
+perfil muestra como contacto de operaciones a los usuarios activos de la
+empresa, que son quienes reciben los avisos de órdenes, y no muestra al
+representante legal.
+
+Falta decidir si se agregan las columnas `representante_nombre`,
+`representante_rut`, `contacto_operaciones` y `telefono_operaciones` a
+`organizacion`. Eso necesita una migración, que se aplicaría en Aiven con el
+deploy. El representante también podría pedirse en el alta del proveedor,
+junto con sus documentos.

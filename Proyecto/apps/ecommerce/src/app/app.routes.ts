@@ -91,6 +91,11 @@ export const routes: Routes = [
         title: "Demanda y cobertura · Cotizapp para distribuidores"
       },
       {
+        path: "perfil",
+        loadComponent: () => import("./features/proveedor/perfil.component").then((m) => m.PerfilProveedorComponent),
+        title: "Perfil de empresa · Cotizapp para distribuidores"
+      },
+      {
         path: "asignar",
         loadComponent: () => import("./features/proveedor/asignar.component").then((m) => m.AsignarProductoComponent),
         title: "Asignarme un producto · Cotizapp para distribuidores"

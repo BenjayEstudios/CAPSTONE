@@ -1,6 +1,19 @@
-import type { RouteOptions } from "fastify";
-import { demandaProveedor, listarClientes, listarVentas, miCobertura } from "@cotizapp/application";
-import { DrizzleAnaliticaRepository, DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import type { FastifyRequest, RouteOptions } from "fastify";
+import {
+  actualizarMiPerfilProveedor,
+  demandaProveedor,
+  listarClientes,
+  listarVentas,
+  miCobertura,
+  miPerfilProveedor
+} from "@cotizapp/application";
+import {
+  DrizzleAnaliticaRepository,
+  DrizzleComunaRepository,
+  DrizzleOrdenRepository,
+  DrizzleProveedorRepository,
+  DrizzleUsuarioRepository
+} from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 // Datos propios del proveedor de la sesion para su panel (KAN-102). La
@@ -49,4 +62,23 @@ export const demandaRoute: RouteOptions = {
     demandaProveedor({ analiticaRepository: new DrizzleAnaliticaRepository(request.server.db) })(request.query, Number(request.auth?.organizacionId))
 };
 
-export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute, demandaRoute];
+// Perfil de empresa (KAN-108). La organizacion sale del token.
+const depsPerfil = (request: FastifyRequest) => ({
+  proveedorRepository: new DrizzleProveedorRepository(request.server.db),
+  comunaRepository: new DrizzleComunaRepository(request.server.db)
+});
+export const miPerfilRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/perfil",
+  preHandler: [requireAuth, requirePermiso("publicar_precio_stock")],
+  handler: async (request) => miPerfilProveedor(depsPerfil(request))(Number(request.auth?.organizacionId))
+};
+export const actualizarPerfilRoute: RouteOptions = {
+  method: "PATCH",
+  url: "/proveedor/perfil",
+  preHandler: [requireAuth, requirePermiso("publicar_precio_stock")],
+  handler: async (request) =>
+    actualizarMiPerfilProveedor(depsPerfil(request))(Number(request.auth?.sub), Number(request.auth?.organizacionId), request.body)
+};
+
+export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute, demandaRoute, miPerfilRoute, actualizarPerfilRoute];

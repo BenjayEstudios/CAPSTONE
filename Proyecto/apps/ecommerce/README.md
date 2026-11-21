@@ -104,6 +104,10 @@ Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publ
 
 `features/proveedor/demanda.component.ts`: pestaña "Demanda" (`/proveedor/demanda`). Muestra lo más visto y clickeado (vistas, clicks, conversión y cajas vendidas), los productos restantes frente al inicio del mes y los clientes potenciales por comuna, con "Despachas" o "Sin cobertura" (`GET /proveedor/demanda`). Muestra los últimos 30 días, con un botón para ver los últimos 90.
 
+## Perfil de empresa (KAN-108)
+
+`features/proveedor/perfil.component.ts`: `/proveedor/perfil`, desde el boton "Perfil de empresa" del marco del panel. Formulario con datos legales (razon social y RUT de solo lectura), contacto, direccion comercial y bodega (comunas agrupadas por region), tiempos de despacho y modalidad, y cuenta de liquidacion. Al lado va el estado de la cuenta. `cambiosPerfil` arma el PATCH con lo que cambio y `problemasPerfil` dice que falta antes de guardar.
+
 El dashboard y Demanda toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
 
 ## Tests

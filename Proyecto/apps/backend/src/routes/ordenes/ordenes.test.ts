@@ -40,6 +40,22 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
       throw Object.assign(new Error("stock"), { statusCode: 409, code: "SIN_STOCK", detalle: { lineas: [{ ofertaId: 1 }] } });
     }
   },
+  DrizzleProveedorRepository: class {
+    async perfil() {
+      return {
+        id: 2, razonSocial: "Distribuidora Los Andes Ltda.", rut: "76543210-3", nombreFantasia: "Los Andes", giro: null, emailContacto: "v@x.test", telefono: null,
+        direccion: null, bodega: null, plazoEstandarHoras: 24, plazoFueraRegionHoras: 72, horaCorte: "14:00", despachoGratisDesde: null,
+        ofreceDespacho: true, ofreceRetiro: false, banco: null, cuentaBancaria: null, estado: "activa", comisionPct: 8, entregasATiempoPct: 96.5,
+        creadaEn: new Date("2026-03-01T00:00:00Z"), regiones: [], equipo: []
+      };
+    }
+    async actualizarPerfil() {}
+  },
+  DrizzleComunaRepository: class {
+    async listar() {
+      return [{ id: 20, nombre: "Ñuñoa", regionCodigo: "13", regionNombre: "RM" }];
+    }
+  },
   DrizzleAnaliticaRepository: class {
     async embudoPorProducto() {
       return [{ ofertaId: 1, productoId: 1, nombre: "Arroz", formato: null, estadoOferta: "publicada", vistas: 10, clicks: 3, conversiones: 0, cajasVendidas: 2, tasaClick: null, tasaConversion: null }];
@@ -171,5 +187,22 @@ describe("GET /proveedor/demanda (KAN-107)", () => {
       potenciales: [{ comuna: "Ñuñoa", clientes: 2, cubre: true }]
     });
     expect((await app.inject({ method: "GET", url: "/proveedor/demanda?desde=2020-01-01", headers: bearer("7") })).statusCode).toBe(400);
+  });
+});
+
+describe("GET/PATCH /proveedor/perfil (KAN-108)", () => {
+  it("sin token 401; sin permiso de proveedor 403; el proveedor lee y guarda", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/perfil" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/perfil", headers: bearer("5") })).statusCode).toBe(403);
+    const g = await app.inject({ method: "GET", url: "/proveedor/perfil", headers: bearer("7") });
+    expect(g.statusCode).toBe(200);
+    expect(g.json()).toMatchObject({ razonSocial: "Distribuidora Los Andes Ltda.", horaCorte: "14:00" });
+    const ok = await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { horaCorte: "15:00" } });
+    expect(ok.statusCode).toBe(200);
+    const ninguna = await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { ofreceDespacho: false } });
+    expect(ninguna.statusCode).toBe(409);
+    expect(ninguna.json().error.code).toBe("SIN_MODALIDAD");
+    expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { rut: "1-9" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("5"), payload: { horaCorte: "15:00" } })).statusCode).toBe(403);
   });
 });

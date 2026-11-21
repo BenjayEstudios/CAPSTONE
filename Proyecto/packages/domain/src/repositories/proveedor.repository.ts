@@ -47,7 +47,78 @@ export interface CondicionesEntregaProveedor {
   zonas: ZonaCobertura[];
 }
 
+/** Una direccion del perfil, con su comuna y region (KAN-108). */
+export interface DireccionPerfil {
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  comunaId: number;
+  comuna: string;
+  region: string;
+}
+
+/** Perfil de empresa del proveedor (KAN-108): ficha publica y documentos tributarios. */
+export interface PerfilProveedor {
+  id: number;
+  razonSocial: string;
+  rut: string;
+  nombreFantasia: string | null;
+  giro: string | null;
+  emailContacto: string | null;
+  telefono: string | null;
+  direccion: DireccionPerfil | null;
+  /** Punto de retiro principal (el activo mas antiguo); el resto se ve en KAN-109. */
+  bodega: { id: number; nombre: string; horario: string | null; direccion: DireccionPerfil } | null;
+  plazoEstandarHoras: number | null;
+  plazoFueraRegionHoras: number | null;
+  /** "HH:MM" */
+  horaCorte: string | null;
+  despachoGratisDesde: number | null;
+  ofreceDespacho: boolean;
+  ofreceRetiro: boolean;
+  banco: string | null;
+  cuentaBancaria: string | null;
+  estado: ProveedorEstado;
+  comisionPct: number | null;
+  entregasATiempoPct: number | null;
+  creadaEn: Date;
+  /** Regiones con alguna zona de despacho (proveedor_cobertura). */
+  regiones: string[];
+  /** Usuarios activos de la organizacion: el contacto de operaciones. */
+  equipo: Array<{ nombre: string; email: string; telefono: string | null }>;
+}
+
+export interface NuevaDireccionPerfil {
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  comunaId: number;
+}
+
+export interface CambiosPerfilProveedor {
+  nombreFantasia?: string;
+  giro?: string | null;
+  emailContacto?: string;
+  telefono?: string | null;
+  plazoEstandarHoras?: number;
+  plazoFueraRegionHoras?: number | null;
+  horaCorte?: string | null;
+  despachoGratisDesde?: number | null;
+  ofreceDespacho?: boolean;
+  ofreceRetiro?: boolean;
+  banco?: string | null;
+  cuentaBancaria?: string | null;
+  /** Se inserta una direccion nueva y la organizacion pasa a apuntar a ella. */
+  direccion?: NuevaDireccionPerfil;
+  /** Igual para el punto de retiro principal; si no hay, se crea. */
+  bodega?: NuevaDireccionPerfil & { nombre: string; horario: string | null };
+}
+
 export interface ProveedorRepository {
+  /** null si no existe o no es tipo proveedor (KAN-108). */
+  perfil(proveedorId: number): Promise<PerfilProveedor | null>;
+  /** Transaccion: organizacion, direcciones nuevas, punto de retiro principal y auditoria. */
+  actualizarPerfil(proveedorId: number, cambios: CambiosPerfilProveedor, auditoria: RegistroAuditoria): Promise<void>;
   /** Condiciones de entrega y zonas de despacho del proveedor (KAN-102, se editan en KAN-109). */
   cobertura(proveedorId: number): Promise<CondicionesEntregaProveedor>;
   listar(f: FiltrosProveedores): Promise<{ items: ProveedorListado[]; total: number }>;

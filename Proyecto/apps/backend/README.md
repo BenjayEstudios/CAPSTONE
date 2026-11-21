@@ -153,6 +153,25 @@ Precio sobre referencia + tope %: una oferta que queda publicada responde `409 P
 
 Tambien trae `desde`, `hasta` e `inicioMes`. Se arma con `AnaliticaRepository.embudoPorProducto`, `stockDelMes` y `potencialesPorComuna`.
 
+## Perfil de empresa (KAN-108)
+
+`GET /proveedor/perfil` y `PATCH /proveedor/perfil` (`publicar_precio_stock`; la organizacion sale del token).
+
+- **GET** devuelve:
+  - Datos legales y de contacto.
+  - `direccion` y `bodega`: el punto de retiro principal, que es el activo de menor id.
+  - Plazos, hora de corte, despacho gratis desde y modalidades.
+  - Banco y cuenta.
+  - Estado, comision, entregas a tiempo y `creadaEn`.
+  - `regiones` con cobertura.
+  - `equipo`: los usuarios activos de la empresa.
+- **PATCH** recibe solo lo que cambia y devuelve el perfil actualizado. Valida con `actualizarPerfilProveedorSchema`, que es `strict`: `razonSocial` o `rut` dan 400.
+  - Una `direccion` o `bodega` nueva inserta otra fila de `direccion` y se apunta a ella; nunca se edita la anterior.
+  - Si no hay punto de retiro, `bodega` lo crea.
+  - `409 SIN_MODALIDAD` si quedaria sin despacho ni retiro; `409 RETIRO_SIN_BODEGA` si ofrece retiro sin bodega.
+  - Una comuna inexistente da 400.
+  - Audita en `auditoria_log` (`editar_perfil_proveedor`) solo lo que cambio, con la cuenta bancaria enmascarada.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:
