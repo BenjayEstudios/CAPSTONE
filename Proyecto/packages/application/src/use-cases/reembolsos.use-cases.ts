@@ -2,10 +2,12 @@ import {
   buscarReembolsoQuerySchema,
   crearReembolsoSchema,
   type ContextoEmision,
-  type DocumentoTributarioRepository
+  type DocumentoTributarioRepository,
+  type ModeracionRepository
 } from "@cotizapp/domain";
 import { ErrorAplicacion } from "../errors.js";
 import { validar } from "../validacion.js";
+import { abrirCasoModeracion } from "./moderacion.use-cases.js";
 import { desglosarIva, emitirDocumentosOrden, presentarDocumento, urlPdf } from "./documentos-tributarios.use-cases.js";
 
 // KAN-120. Reembolso total o parcial = nota de credito (DTE 61, simulada) + actualizacion del pago.
@@ -34,6 +36,9 @@ interface Deps {
   documentoRepository: DocumentoTributarioRepository;
   emisorRut?: string;
   devolverDinero?: DevolverDinero;
+  /** KAN-155: si se entrega, cada reembolso abre un caso de moderacion "reembolso" para revisarlo. */
+  moderacionRepository?: ModeracionRepository;
+  log?: (mensaje: string, error?: unknown) => void;
 }
 
 const sumaNotas = (ctx: ContextoEmision) => ctx.documentos.filter((d) => d.tipoDte === 61).reduce((t, d) => t + d.total, 0);
@@ -152,6 +157,20 @@ export function crearReembolso(deps: Deps) {
         ]
       };
     });
+
+    if (deps.moderacionRepository) {
+      try {
+        await abrirCasoModeracion({ moderacionRepository: deps.moderacionRepository })(
+          "reembolso",
+          "orden",
+          ordenId,
+          `Reembolso de $${nota.total.toLocaleString("es-CL")} en la orden ${previo.orden.codigo}: ${dto.motivo}`.slice(0, 300),
+          usuarioId
+        );
+      } catch (err) {
+        deps.log?.(`No se pudo abrir el caso de moderacion del reembolso de la orden ${ordenId}`, err);
+      }
+    }
 
     let devolucionPasarela: "no_integrada" | "ok" | "error" = "no_integrada";
     if (deps.devolverDinero) {

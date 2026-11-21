@@ -15,7 +15,7 @@ h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; col
 .oculto { font-style: italic; }
 .num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fuerte { font-family: var(--font-heading); font-weight: 600; }
-.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text-soft); }
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text-soft); border-radius: var(--radius-pill); }
 .tag[data-tono="frecuente"] { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag[data-tono="aviso"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .mas { display: flex; gap: 12px; align-items: center; margin-top: 14px; font-size: 13px; }

@@ -13,7 +13,7 @@ h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
 .paso > .ayuda:first-of-type { margin-top: 0; margin-bottom: 14px; }
 
 /* Segmento persona / empresa */
-.segmento { display: inline-flex; border: 1px solid var(--color-divider); background: #fff; margin-bottom: 16px; }
+.segmento { display: inline-flex; border: 1px solid var(--color-divider); background: #fff; margin-bottom: 16px; border-radius: var(--radius-pill); overflow: hidden; }
 .seg-opcion { position: relative; cursor: pointer; }
 .seg-opcion input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
 .seg-opcion span { display: block; padding: 8px 14px; font-size: 14px; border-right: 1px solid var(--color-divider); }
@@ -33,7 +33,7 @@ h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
 .radio.deshabilitado { cursor: not-allowed; opacity: .55; }
 
 .entregas { display: flex; flex-direction: column; gap: 14px; }
-.entrega { border: 1px solid var(--color-divider); padding: 6px 16px 8px; margin: 0; background: var(--color-card); min-width: 0; }
+.entrega { border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 6px 16px 8px; margin: 0; background: var(--color-card); min-width: 0; }
 .entrega legend { font-family: var(--font-heading); font-weight: 600; padding: 0 6px; margin-left: -6px; }
 .entrega legend small { font-family: var(--font-body); font-weight: 400; color: var(--color-text-soft); }
 
@@ -48,7 +48,7 @@ h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
 .suave { color: var(--color-text-soft); font-size: 13px; }
 .monto { text-align: right; font-family: var(--font-heading); font-weight: 600; }
 
-.resumen { background: var(--color-surface); padding: 26px; border-radius: var(--radius-md); position: sticky; top: 16px; }
+.resumen { background: var(--color-card); border: 1px solid var(--color-divider); box-shadow: var(--shadow-card); padding: 26px; border-radius: var(--radius-lg); position: sticky; top: 16px; }
 .resumen h2 { font-size: 19px; margin: 0 0 16px; }
 .resumen dl { margin: 0; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
 .resumen dl div { display: flex; gap: 12px; }

@@ -127,6 +127,7 @@ En el mismo PR que el código:
   [2-BACKEND-RUTAS.md](2-BACKEND-RUTAS.md#paso-7-probar-con-curl).
 - **`ApiClient` solo tiene `get`** y no hay interceptor de auth (KAN-166).
   Cómo agregarlos: [3-FRONTEND-BASE.md](3-FRONTEND-BASE.md#paso-8-completar-apiclient).
-- **Fastify vs Express** sigue abierto (KAN-169). Si se migra, cambian solo
-  los archivos de `apps/backend/src/routes/`; las tres capas de `packages/`
-  quedan igual.
+- **Fastify vs Express** quedó cerrado en Fastify (KAN-169, ver
+  [decisiones cerradas](../../decisiones/DECISIONES-CERRADAS.md)). Aun así,
+  solo `apps/backend/src/routes/` conoce el framework; las tres capas de
+  `packages/` no.

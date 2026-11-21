@@ -3,13 +3,17 @@ import type { ResultSetHeader } from "mysql2";
 import {
   CalificacionError,
   type Calificacion,
+  type CalificacionRecibida,
   type CalificacionRepository,
+  type ResumenCalificacionesRecibidas,
   type RegistrarCalificacionDto,
   type ResumenCalificacionProveedor
 } from "@cotizapp/domain";
 import type { DbClient } from "../db/client.js";
 import { calificacion } from "../db/schema/calificacion.schema.js";
 import { ordenEnvio } from "../db/schema/orden-envio.schema.js";
+import { orden } from "../db/schema/orden.schema.js";
+import { organizacion } from "../db/schema/organizacion.schema.js";
 
 const ER_DUP_ENTRY = 1062;
 const ER_CHECK_CONSTRAINT_VIOLATED = 3819;
@@ -88,5 +92,63 @@ export class DrizzleCalificacionRepository implements CalificacionRepository {
       .orderBy(desc(calificacion.creadaEn), desc(calificacion.id))
       .limit(limite);
     return filas.map((f) => f.calificacion);
+  }
+
+  async resumenRecibidas(proveedorId: number): Promise<ResumenCalificacionesRecibidas> {
+    const filas = await this.db
+      .select({ puntaje: calificacion.puntaje, n: count() })
+      .from(calificacion)
+      .innerJoin(ordenEnvio, eq(ordenEnvio.id, calificacion.ordenEnvioId))
+      .where(eq(ordenEnvio.proveedorId, proveedorId))
+      .groupBy(calificacion.puntaje);
+    const distribucion = { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 } as ResumenCalificacionesRecibidas["distribucion"];
+    let cantidad = 0;
+    let suma = 0;
+    for (const f of filas) {
+      if (f.puntaje >= 1 && f.puntaje <= 5) distribucion[String(f.puntaje) as keyof typeof distribucion] = f.n;
+      cantidad += f.n;
+      suma += f.puntaje * f.n;
+    }
+    return { promedio: cantidad ? Math.round((suma / cantidad) * 100) / 100 : null, cantidad, distribucion };
+  }
+
+  async listarRecibidas(proveedorId: number, p: { pagina: number; tamano: number }): Promise<{ items: CalificacionRecibida[]; total: number }> {
+    const filtro = eq(ordenEnvio.proveedorId, proveedorId);
+    const [totalFila] = await this.db
+      .select({ total: count() })
+      .from(calificacion)
+      .innerJoin(ordenEnvio, eq(ordenEnvio.id, calificacion.ordenEnvioId))
+      .where(filtro);
+    const filas = await this.db
+      .select({
+        id: calificacion.id,
+        ordenEnvioId: calificacion.ordenEnvioId,
+        ordenCodigo: orden.codigo,
+        razonSocial: organizacion.razonSocial,
+        nombreFantasia: organizacion.nombreFantasia,
+        puntaje: calificacion.puntaje,
+        comentario: calificacion.comentario,
+        creadaEn: calificacion.creadaEn
+      })
+      .from(calificacion)
+      .innerJoin(ordenEnvio, eq(ordenEnvio.id, calificacion.ordenEnvioId))
+      .innerJoin(orden, eq(orden.id, ordenEnvio.ordenId))
+      .innerJoin(organizacion, eq(organizacion.id, orden.organizacionId))
+      .where(filtro)
+      .orderBy(desc(calificacion.creadaEn), desc(calificacion.id))
+      .limit(p.tamano)
+      .offset((p.pagina - 1) * p.tamano);
+    return {
+      total: totalFila?.total ?? 0,
+      items: filas.map((f) => ({
+        id: f.id,
+        ordenEnvioId: f.ordenEnvioId,
+        ordenCodigo: f.ordenCodigo,
+        cliente: f.nombreFantasia ?? f.razonSocial,
+        puntaje: f.puntaje,
+        comentario: f.comentario,
+        creadaEn: f.creadaEn
+      }))
+    };
   }
 }

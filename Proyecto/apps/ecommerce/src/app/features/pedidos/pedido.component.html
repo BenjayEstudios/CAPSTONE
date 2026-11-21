@@ -23,7 +23,7 @@
             <p>Este pedido no está pagado. Los distribuidores lo preparan cuando se confirma el pago de {{ clp(o.total) }}.</p>
             @if (errorPago(); as e) { <p class="mensaje error" role="alert">{{ e }}</p> }
             <button type="button" class="btn btn-primary" [disabled]="pagando()" (click)="pagar()">
-              {{ pagando() ? "Te llevamos a Webpay…" : "Pagar ahora" }}
+              {{ pagando() ? "Te llevamos a la pasarela de pago…" : "Pagar ahora" }}
             </button>
           </div>
         }

@@ -57,6 +57,39 @@ llevar `preHandler`.
 Un archivo por operación, agrupados por módulo y registrados en un loop. Es
 la forma que el equipo ya usa en otros proyectos.
 
+### Nos quedamos en Fastify (KAN-169)
+
+Cerrada el 2026-11-21. Dos de los tres integrantes conocían Express y no
+Fastify; se evaluó migrar `apps/backend` antes de que entrara más API y se
+decidió **no migrar**.
+
+**Por qué:** el costo de migrar ya no es el de un ejemplo con `categoria`:
+hoy hay rutas de productos, órdenes, pagos, moderación, liquidaciones,
+reembolsos, panel del proveedor y auth, todas con `preHandler`, validación
+Zod y manejo de errores propios. La lógica de negocio no depende del
+framework (`domain`, `application` e `infrastructure` no importan Fastify),
+así que lo único que se reescribiría es la capa HTTP, sin ganar nada
+funcional. Además el patrón de rutas (`RouteOptions`), los `preHandler` de
+auth, el composition root y la validación de entorno ya están documentados
+sobre Fastify.
+
+**Plan de onboarding para quien no lo conoce** (equivale a Express con otra
+sintaxis):
+
+- Una ruta es un objeto `RouteOptions` (`method`, `url`, `preHandler`,
+  `handler`) en vez de `app.get(...)`. Se parte copiando
+  `apps/backend/src/routes/categorias/`, que es la implementación de
+  referencia de las 4 capas.
+- `preHandler: [requireAuth, requirePermiso(...)]` cumple el papel de los
+  middlewares de Express, pero se declara por ruta, no con `app.use`.
+- El `handler` recibe `request` y `reply`; devuelve el valor o usa
+  `reply.status(n).send(...)`. Los errores de aplicación (`ErrorAplicacion`)
+  los serializa `src/lib/error-handler.ts`; no se atrapan en cada ruta.
+- La lógica va en `packages/application`, no en el handler: quien sabe
+  Express puede escribir casos de uso sin tocar Fastify.
+- Guía completa de convenciones: `Proyecto/CLAUDE.md` y
+  `arquitectura/ARQUITECTURA.md`.
+
 ### Config validada al arrancar
 
 Todo pasa por Zod en `src/config/env.ts`. Una variable faltante (como pasó
@@ -199,6 +232,21 @@ inicia con la orden ya creada (`POST /carro/confirmar` y luego
 `POST /ordenes/:id/pago`), el retorno lo recibe el backend y confirma (commit)
 antes de redirigir al ecommerce, y solo se da por pagada si el monto
 autorizado es el total de la orden.
+
+### PayPal sandbox como pasarela de prueba mientras no haya cuenta de Webpay
+
+Decidido el 2026-11-21 (KAN-148). Webpay Plus sigue siendo la pasarela
+prevista para Chile, pero pasar a producción exige cuenta empresa; para probar
+el flujo completo se agregó un segundo adaptador, `PayPal` (Orders API v2,
+sandbox), detrás del mismo puerto `PasarelaPago`. Se elige con `PASARELA=paypal`
+y no cambia casos de uso ni el flujo de órdenes. Tres diferencias que quedan
+absorbidas por el adaptador y la ruta de retorno: PayPal no acepta CLP (se
+cobra en USD con `PAYPAL_CLP_POR_USD`, y el monto en pesos viaja en
+`custom_id` para verificar contra el total de la orden), el navegador va a la
+URL de aprobación con GET en vez de un formulario POST (`metodo: "GET"`), y el
+retorno es `/pagos/paypal/retorno` (se traduce a la forma de Webpay). El medio
+de pago guardado sigue siendo `tarjeta` (sin migración); la pasarela usada
+queda en la auditoría del pago (`pasarela: "paypal"`).
 
 ### 2FA solo con TOTP y solo para usuarios internos
 
@@ -351,4 +399,3 @@ socket de Docker; Nginx se mantiene y recarga cada 12 h. Un solo interruptor,
 `PUBLIC_SCHEME` en `infra/.env`. Si más adelante se compra un dominio, solo
 cambian `APP_DOMAIN`/`ADMIN_DOMAIN` y se vuelve a correr
 `infra/deploy/certificado.sh`. 2026-11-21, KAN-159.
-

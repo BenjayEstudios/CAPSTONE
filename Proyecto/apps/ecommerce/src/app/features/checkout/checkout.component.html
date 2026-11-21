@@ -128,7 +128,7 @@
           <div class="medios">
             <label class="radio">
               <input type="radio" name="medio" [checked]="medioPago() === 'tarjeta'" (change)="medioPago.set('tarjeta')" />
-              <span>Tarjeta de crédito, débito o prepago <small>Pagas en Webpay de Transbank. Cotizapp no ve los datos de tu tarjeta.</small></span>
+              <span>Tarjeta de crédito, débito o prepago <small>Pagas en la pasarela de pago segura (PayPal o Webpay). Cotizapp no ve los datos de tu tarjeta.</small></span>
             </label>
             <label class="radio deshabilitado">
               <input type="radio" name="medio" disabled />
@@ -171,10 +171,10 @@
           <p class="mensaje error" role="alert">{{ e.texto }} @if (e.alCarro) { <a routerLink="/carro">Volver al carro</a> }</p>
         }
         <button type="button" class="btn btn-primary btn-block pagar" [disabled]="enviando()" (click)="pagar()">
-          {{ enviando() ? "Te llevamos a Webpay…" : "Pagar " + clp(total()) }}
+          {{ enviando() ? "Te llevamos a la pasarela de pago…" : "Pagar " + clp(total()) }}
         </button>
         <a routerLink="/carro" class="btn btn-secondary btn-block">Volver al carro</a>
-        <p class="letra-chica">El despacho se calcula para la comuna de destino; si cambia, Webpay muestra el monto final antes de pagar. Al pagar aceptas las condiciones de cada distribuidor. Si un producto no está disponible, se devuelve ese monto.</p>
+        <p class="letra-chica">El despacho se calcula para la comuna de destino; si cambia, la pasarela muestra el monto final antes de pagar. Al pagar aceptas las condiciones de cada distribuidor. Si un producto no está disponible, se devuelve ese monto.</p>
       </aside>
     </div>
   }

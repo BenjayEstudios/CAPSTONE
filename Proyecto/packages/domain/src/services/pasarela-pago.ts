@@ -17,8 +17,13 @@ export interface SolicitudPago {
 export interface PagoIniciado {
   /** Token de la transaccion: se guarda en orden.referencia_pasarela. */
   token: string;
-  /** Formulario de la pasarela al que se envia el token. */
+  /** Formulario de la pasarela al que se envia el token (Webpay) o URL de aprobacion (PayPal). */
   url: string;
+  /**
+   * Como lleva el navegador al comprador: "POST" = formulario con token_ws
+   * (Webpay, el default); "GET" = redireccion a `url` (PayPal).
+   */
+  metodo?: "POST" | "GET";
 }
 
 export type TipoTarjeta = "credito" | "debito" | "prepago";
@@ -36,6 +41,15 @@ export interface TransaccionPago {
   cuotas: number | null;
 }
 
+export interface SolicitudDevolucionPasarela {
+  /** orden.referencia_pasarela: el token de la transaccion cobrada. */
+  referencia: string;
+  /** Monto entero en CLP a devolver (total o parcial). */
+  monto: number;
+  /** Folio de la orden (para la nota de la devolucion). */
+  ordenCompra: string;
+}
+
 export interface PasarelaPago {
   /** Nombre corto para la auditoria ("webpay"). */
   readonly nombre: string;
@@ -46,4 +60,10 @@ export interface PasarelaPago {
    * la pasarela no responde o el token no existe.
    */
   confirmar(token: string): Promise<TransaccionPago>;
+  /**
+   * Devuelve dinero al comprador por la transaccion ya cobrada. Opcional: una
+   * pasarela que no lo implementa deja el reembolso solo en nuestra base
+   * (devolucionPasarela = "no_integrada"). Lanza si la pasarela lo rechaza.
+   */
+  devolver?(solicitud: SolicitudDevolucionPasarela): Promise<void>;
 }

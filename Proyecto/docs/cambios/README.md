@@ -12,6 +12,11 @@ qué, y qué archivos toca.
 |---|---|---|---|
 | 2026-11-21 | [HTTPS con Let's Encrypt (código)](2026-11-21-https-con-lets-encrypt.md) | KAN-88 | KAN-159 |
 | 2026-11-21 | [Integración del rediseño "Laguna" en el admin-site](2026-11-21-integracion-rediseno-laguna-admin-site.md) | KAN-86 | — |
+| 2026-11-21 | [Ecommerce con el tema Laguna del admin-site](2026-11-21-ecommerce-tema-laguna.md) | KAN-88 | — |
+| 2026-11-21 | [Mobile: endpoints verificados contra la API real](2026-11-21-mobile-endpoints-verificados-contra-la-api.md) | KAN-87 | KAN-201 (parcial) |
+| 2026-11-21 | [Calificaciones recibidas, devolución por PayPal y datos de prueba](2026-11-21-calificaciones-recibidas-devolucion-paypal-y-datos-de-prueba.md) | KAN-88 | KAN-200, KAN-148 |
+| 2026-11-21 | [Pago con PayPal (sandbox) y job de vigencia de documentos](2026-11-21-paypal-sandbox-y-vigencia-de-documentos.md) | KAN-88 | KAN-148, KAN-150 |
+| 2026-11-21 | [Correos de compra y caso de moderación en reembolsos; Fastify se mantiene](2026-11-21-correos-de-compra-y-caso-de-reembolso.md) | KAN-88 | KAN-155, KAN-156, KAN-169 |
 | 2026-11-20 | [Material para las pruebas de usabilidad](2026-11-20-material-pruebas-de-usabilidad.md) | KAN-88 | KAN-165 |
 | 2026-11-20 | [Pruebas end-to-end del flujo de compra](2026-11-20-pruebas-e2e-flujo-de-compra.md) | KAN-88 | KAN-164 |
 | 2026-11-20 | [CI: fallos intermitentes por la caché de Turborepo](2026-11-20-ci-fallos-intermitentes-tsbuildinfo.md) | — | — |

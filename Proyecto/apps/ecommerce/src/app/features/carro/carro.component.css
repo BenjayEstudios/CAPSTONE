@@ -17,7 +17,7 @@ h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
 
 .cabecera-grupo { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
 .cabecera-grupo h2 { margin: 0; font-size: 21px; }
-.tag { font-size: 12px; font-weight: 600; padding: 2px 8px; background: var(--color-accent-100); color: var(--color-accent-800); white-space: nowrap; }
+.tag { font-size: 12px; font-weight: 600; padding: 2px 8px; background: var(--color-accent-100); color: var(--color-accent-800); white-space: nowrap; border-radius: var(--radius-pill); }
 .subtotal-grupo { margin-left: auto; font-size: 13px; color: var(--color-text-soft); }
 
 /* Cada linea es una grilla; con poco ancho (container query) precio, cantidad y subtotal bajan a una segunda fila. */
@@ -38,7 +38,7 @@ h1 { font-size: clamp(30px, 4vw, 40px); margin: 0 0 6px; }
   .linea > .miniatura { width: 56px; height: 56px; }
 }
 .atenuada { opacity: .55; }
-.miniatura { width: 78px; height: 78px; object-fit: contain; background: var(--color-surface); }
+.miniatura { width: 78px; height: 78px; object-fit: contain; border-radius: var(--radius-sm); background: var(--color-surface); }
 .sin-imagen { display: block; background-image: radial-gradient(color-mix(in srgb, var(--color-text) 12%, transparent) 1px, transparent 1px); background-size: 6px 6px; }
 .producto { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .nombre { font-family: var(--font-heading); font-weight: 600; font-size: 17px; color: var(--color-text); text-decoration: none; }
@@ -59,7 +59,7 @@ a.nombre:hover { text-decoration: underline; }
 .no-disponibles .quitar { margin-left: auto; }
 .nota { border-top: 1px solid var(--color-divider); padding-top: 10px; margin: 0; font-size: 13px; color: var(--color-text-soft); }
 
-.resumen { background: var(--color-surface); padding: 26px; border-radius: var(--radius-md); position: sticky; top: 16px; }
+.resumen { background: var(--color-card); border: 1px solid var(--color-divider); box-shadow: var(--shadow-card); padding: 26px; border-radius: var(--radius-lg); position: sticky; top: 16px; }
 .resumen h2 { font-size: 19px; margin: 0 0 16px; }
 .resumen dl { margin: 0; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
 .resumen dl div { display: flex; gap: 12px; }

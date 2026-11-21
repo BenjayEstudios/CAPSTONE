@@ -19,8 +19,8 @@ interface ErrorApi {
 
 // /checkout (KAN-95): pago unico del carro multiproveedor, en tres pasos
 // (quien compra, entrega, medio de pago) con el resumen "Asi llega tu pedido".
-// Pagar crea la orden (POST /carro/confirmar), inicia la transaccion en Webpay
-// (POST /ordenes/:id/pago) y envia al comprador a Webpay; al volver, el
+// Pagar crea la orden (POST /carro/confirmar), inicia la transaccion en la pasarela
+// (POST /ordenes/:id/pago) y envia al comprador a la pasarela; al volver, el
 // backend redirige a /checkout/resultado.
 @Component({
   selector: "app-checkout",
@@ -272,7 +272,7 @@ export class CheckoutComponent {
       const pago = await this.checkout.iniciarPago(orden.ordenId, "tarjeta");
       // El carro ya quedo convertido en orden: la cabecera debe mostrarlo vacio.
       void this.carro.recargar();
-      this.pasarela.ir(pago.urlPago, pago.token);
+      this.pasarela.ir(pago.urlPago, pago.token, pago.metodo);
     } catch (err) {
       this.enviando.set(false);
       if (ordenId !== null) {

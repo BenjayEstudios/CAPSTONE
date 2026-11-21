@@ -34,7 +34,14 @@ cuando el backend tenga el endpoint, sin tocar pantallas.
 
 ## Pendiente
 
-- **Integración real**, bloqueada por `POST /auth/login` para clientes y
+- **KAN-201, integración con la API real:** `POST /auth/login` ya existe y los
+  15 endpoints que usa la app responden con el contrato (verificado el
+  2026-11-21, [entrada](../cambios/2026-11-21-mobile-endpoints-verificados-contra-la-api.md)).
+  Los datasources remotos y el manejo de 401 ya están en el código. Falta lo
+  que exige un entorno que no hay en la máquina de desarrollo: correr la app
+  con `USE_FAKES=false` en un emulador, probarla contra QA (droplet) y generar
+  el APK de release apuntando a QA.
+- **Integración real (texto anterior, del 2026-10):** estaba bloqueada por `POST /auth/login` para clientes y
   proveedores ([decisión abierta 10](../decisiones/DECISIONES-ABIERTAS.md)):
   sin token, ni los endpoints que ya existen se pueden usar desde la app.
 - **APK apuntando al API productivo** (criterio de KAN-138): falta el dominio

@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest, RouteOptions } from "fastify";
 import { idParamSchema } from "@cotizapp/domain";
-import { confirmarRetornoPago, emitirDocumentosOrden, iniciarPago } from "@cotizapp/application";
-import { DrizzleDocumentoTributarioRepository, DrizzleOrdenRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import { confirmarRetornoPago, emitirDocumentosOrden, iniciarPago, notificarOrdenPagada } from "@cotizapp/application";
+import { DrizzleDocumentoTributarioRepository, DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { logger } from "../../lib/logger.js";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
@@ -11,6 +11,7 @@ import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 // 3. El retorno confirma, marca la orden y redirige al ecommerce con el resultado.
 
 export const RUTA_RETORNO_WEBPAY = "/pagos/webpay/retorno";
+export const RUTA_RETORNO_PAYPAL = "/pagos/paypal/retorno";
 
 export const iniciarPagoRoute: RouteOptions = {
   method: "POST",
@@ -21,21 +22,32 @@ export const iniciarPagoRoute: RouteOptions = {
       ordenRepository: new DrizzleOrdenRepository(request.server.db),
       usuarioRepository: new DrizzleUsuarioRepository(request.server.db),
       pasarela: request.server.pasarelaPago,
-      urlRetorno: request.server.publicBaseUrl + RUTA_RETORNO_WEBPAY
+      urlRetorno: request.server.publicBaseUrl + (request.server.pasarelaPago.nombre === "paypal" ? RUTA_RETORNO_PAYPAL : RUTA_RETORNO_WEBPAY)
     })(Number(request.auth?.sub), idParamSchema.parse(request.params).id, request.body);
     return reply.status(201).send(r);
   }
 };
 
-async function retorno(request: FastifyRequest, reply: FastifyReply) {
+async function retorno(request: FastifyRequest, reply: FastifyReply, datosPasarela?: unknown) {
   const db = request.server.db;
-  const datos = request.method === "POST" ? request.body : request.query;
+  const datos = datosPasarela ?? (request.method === "POST" ? request.body : request.query);
   const r = await confirmarRetornoPago({
     ordenRepository: new DrizzleOrdenRepository(db),
     pasarela: request.server.pasarelaPago,
     // Boleta o factura y guias de despacho (DTE simulados, KAN-153).
-    alAprobar: (ordenId) =>
-      emitirDocumentosOrden({ documentoRepository: new DrizzleDocumentoTributarioRepository(db), emisorRut: process.env.SII_EMISOR_RUT || undefined })(ordenId),
+    alAprobar: async (ordenId) => {
+      await emitirDocumentosOrden({ documentoRepository: new DrizzleDocumentoTributarioRepository(db), emisorRut: process.env.SII_EMISOR_RUT || undefined })(ordenId);
+    },
+    // Correos de confirmacion al comprador y aviso a cada proveedor (KAN-156).
+    alPagar: (ordenId) =>
+      notificarOrdenPagada({
+        ordenRepository: new DrizzleOrdenRepository(db),
+        usuarioRepository: new DrizzleUsuarioRepository(db),
+        proveedorRepository: new DrizzleProveedorRepository(db),
+        servicioCorreo: request.server.servicioCorreo,
+        urlPanelProveedor: `${request.server.ecommerceUrl.replace(/\/$/, "")}/proveedor/ventas`,
+        log: (mensaje, error) => logger.error(mensaje, { error: error instanceof Error ? error.message : String(error) })
+      })(ordenId),
     log: (mensaje, error) => logger.error(mensaje, { error: error instanceof Error ? error.message : String(error) })
   })(datos);
   const base = request.server.ecommerceUrl.replace(/\/$/, "");
@@ -50,4 +62,23 @@ async function retorno(request: FastifyRequest, reply: FastifyReply) {
 export const retornoWebpayGetRoute: RouteOptions = { method: "GET", url: RUTA_RETORNO_WEBPAY, handler: retorno };
 export const retornoWebpayPostRoute: RouteOptions = { method: "POST", url: RUTA_RETORNO_WEBPAY, handler: retorno };
 
-export const pagoRoutes: RouteOptions[] = [iniciarPagoRoute, retornoWebpayGetRoute, retornoWebpayPostRoute];
+/**
+ * PayPal vuelve con GET ?token=<id de la orden de PayPal>&PayerID=... si el
+ * comprador aprobo, o con resultado=cancelado (lo agrega el adaptador a la
+ * cancel_url) si anulo. Se traduce a la forma que entiende confirmarRetornoPago
+ * (token_ws = confirmar; TBK_TOKEN = anulado).
+ */
+export function datosRetornoPayPal(query: unknown): { token_ws?: string; TBK_TOKEN?: string } {
+  const q = (query ?? {}) as { token?: unknown; resultado?: unknown };
+  const token = typeof q.token === "string" && q.token ? q.token : undefined;
+  if (!token) return {};
+  return q.resultado === "cancelado" ? { TBK_TOKEN: token } : { token_ws: token };
+}
+
+export const retornoPayPalRoute: RouteOptions = {
+  method: "GET",
+  url: RUTA_RETORNO_PAYPAL,
+  handler: (request, reply) => retorno(request, reply, datosRetornoPayPal(request.query))
+};
+
+export const pagoRoutes: RouteOptions[] = [iniciarPagoRoute, retornoWebpayGetRoute, retornoWebpayPostRoute, retornoPayPalRoute];

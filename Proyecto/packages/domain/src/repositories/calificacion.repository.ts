@@ -1,4 +1,9 @@
-import type { Calificacion, ResumenCalificacionProveedor } from "../entities/calificacion.entity.js";
+import type {
+  Calificacion,
+  CalificacionRecibida,
+  ResumenCalificacionProveedor,
+  ResumenCalificacionesRecibidas
+} from "../entities/calificacion.entity.js";
 import type { RegistrarCalificacionDto } from "../dtos/calificacion.dto.js";
 
 // Puerto de las calificaciones de proveedores (KAN-142). Implementacion:
@@ -12,4 +17,9 @@ export interface CalificacionRepository {
   resumenPorProveedor(proveedorIds?: number[]): Promise<ResumenCalificacionProveedor[]>;
   // Ultimas calificaciones recibidas por un proveedor (panel "Resenas").
   listarPorProveedor(proveedorId: number, limite?: number): Promise<Calificacion[]>;
+  // KAN-200: promedio, total y distribucion por puntaje de un proveedor.
+  resumenRecibidas(proveedorId: number): Promise<ResumenCalificacionesRecibidas>;
+  // KAN-200: pagina de calificaciones recibidas (mas nueva primero) con el
+  // folio de la orden y la organizacion compradora. `total` ignora la pagina.
+  listarRecibidas(proveedorId: number, p: { pagina: number; tamano: number }): Promise<{ items: CalificacionRecibida[]; total: number }>;
 }

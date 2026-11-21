@@ -57,7 +57,7 @@ export function iniciarPago(deps: DepsInicio) {
       urlRetorno: deps.urlRetorno
     });
     await deps.ordenRepository.registrarInicioPago(oc.orden.id, inicio.token);
-    return { ordenId: oc.orden.id, codigo: oc.orden.codigo, total: oc.orden.total, pasarela: deps.pasarela.nombre, urlPago: inicio.url, token: inicio.token };
+    return { ordenId: oc.orden.id, codigo: oc.orden.codigo, total: oc.orden.total, pasarela: deps.pasarela.nombre, urlPago: inicio.url, token: inicio.token, metodo: inicio.metodo ?? "POST" };
   };
 }
 
@@ -66,6 +66,8 @@ interface DepsRetorno {
   pasarela: PasarelaPago;
   /** Se llama al aprobar (emitirDocumentosOrden). Un error no revierte el pago. */
   alAprobar?: (ordenId: number) => Promise<unknown>;
+  /** Se llama al aprobar (correos, KAN-156). Independiente de alAprobar; un error no revierte el pago. */
+  alPagar?: (ordenId: number) => Promise<unknown>;
   log?: (mensaje: string, error?: unknown) => void;
 }
 
@@ -125,6 +127,13 @@ export function confirmarRetornoPago(deps: DepsRetorno) {
           await deps.alAprobar(orden.id);
         } catch (err) {
           deps.log?.(`Pago aprobado, pero fallo la emision de documentos de la orden ${orden.id}`, err);
+        }
+      }
+      if (aplicado && aprobado && deps.alPagar) {
+        try {
+          await deps.alPagar(orden.id);
+        } catch (err) {
+          deps.log?.(`Pago aprobado, pero fallo el aviso por correo de la orden ${orden.id}`, err);
         }
       }
       return { ordenId: orden.id, resultado: aprobado ? "aprobado" : "rechazado" };
