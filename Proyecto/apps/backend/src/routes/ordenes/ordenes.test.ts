@@ -14,7 +14,8 @@ const ctxUsuario = (tipo: string, orgId: number, permisos: Record<string, string
 const usuarios: Record<number, ReturnType<typeof ctxUsuario>> = {
   5: { ...ctxUsuario("cliente", 4, { ver_ordenes_propias: "total" }), usuario: { id: 5, estado: "activo", organizacionId: 4 } } as never,
   3: { ...ctxUsuario("proveedor", 2, { ver_ordenes_propias: "total" }), usuario: { id: 3, estado: "activo", organizacionId: 2 } } as never,
-  2: ctxUsuario("interna", 1, { crear_producto: "total" })
+  2: ctxUsuario("interna", 1, { crear_producto: "total" }),
+  7: { ...ctxUsuario("proveedor", 2, { ver_ordenes_propias: "total", publicar_precio_stock: "total" }), usuario: { id: 7, estado: "activo", organizacionId: 2 } } as never
 };
 
 const envioMem = { id: 1, ordenId: 100, proveedorId: 2, modalidad: "despacho", estado: "por_despachar" };
@@ -37,6 +38,17 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     }
     async confirmar() {
       throw Object.assign(new Error("stock"), { statusCode: 409, code: "SIN_STOCK", detalle: { lineas: [{ ofertaId: 1 }] } });
+    }
+  },
+  DrizzleAnaliticaRepository: class {
+    async embudoPorProducto() {
+      return [{ ofertaId: 1, productoId: 1, nombre: "Arroz", formato: null, estadoOferta: "publicada", vistas: 10, clicks: 3, conversiones: 0, cajasVendidas: 2, tasaClick: null, tasaConversion: null }];
+    }
+    async stockDelMes() {
+      return [{ ofertaId: 1, productoId: 1, nombre: "Arroz", formato: null, cajasDisponibles: 9, cajasInicioMes: 30 }];
+    }
+    async potencialesPorComuna() {
+      return [{ comunaId: 20, comuna: "Ñuñoa", region: "RM", clientes: 2, cubre: true }];
     }
   },
   DrizzleOrdenRepository: class {
@@ -144,5 +156,20 @@ describe("GET /proveedor/clientes (KAN-106)", () => {
     expect(r.statusCode).toBe(200);
     expect(r.json().items[0]).toMatchObject({ nombre: "Cocinería Paula", tipo: "Persona", recompra: "Por pagar", contacto: null });
     expect(r.body).not.toContain("paula@correo.test");
+  });
+});
+
+describe("GET /proveedor/demanda (KAN-107)", () => {
+  it("sin token 401; sin permiso de proveedor 403; el proveedor ve los tres bloques", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/demanda", headers: bearer("7") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({
+      productos: [{ producto: "Arroz", vistas: 10, clicks: 3, conversion: 30, cajasVendidas: 2 }],
+      restantes: [{ producto: "Arroz", cajas: 9, cajasInicioMes: 30, porcentaje: 30 }],
+      potenciales: [{ comuna: "Ñuñoa", clientes: 2, cubre: true }]
+    });
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda?desde=2020-01-01", headers: bearer("7") })).statusCode).toBe(400);
   });
 });

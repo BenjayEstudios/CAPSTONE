@@ -1,0 +1,90 @@
+<section aria-labelledby="titulo-demanda">
+  <div class="encabezado">
+    <div>
+      <h2 id="titulo-demanda">Demanda y cobertura</h2>
+      <p class="bajada">Qué están mirando los clientes, dónde están y qué te queda por vender.
+        @if (datos(); as d) { Datos del {{ corta(d.desde) }} al {{ corta(d.hasta) }}. }</p>
+    </div>
+    <div class="ventanas" role="group" aria-label="Período">
+      @for (v of ventanas; track v) {
+        <button type="button" class="chip" [class.activo]="dias() === v" [attr.aria-pressed]="dias() === v" (click)="elegir(v)">Últimos {{ v }} días</button>
+      }
+    </div>
+  </div>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando la demanda…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar la demanda. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (datos(); as d) {
+        <div class="columnas">
+          <div class="izquierda">
+            <h3>Más vistos y más clickeados</h3>
+            <p class="nota">Vistas = visitas a la ficha del producto. Click = el cliente abrió tu oferta dentro de la ficha.</p>
+            @if (sinActividad()) {
+              <p class="vacio">Sin visitas ni ventas en este período.@if (dias() === 30) { <button type="button" class="btn-link" (click)="elegir(90)">Mirar los últimos 90 días</button> }</p>
+            }
+            @if (d.productos.length) {
+              <div class="tabla-contenedor">
+                <table class="tabla">
+                  <thead>
+                    <tr><th scope="col">Producto</th><th scope="col" class="num">Vistas</th><th scope="col" class="num">Clicks</th><th scope="col" class="num">Conversión</th><th scope="col" class="num">Cajas vendidas</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (p of d.productos; track p.ofertaId) {
+                      <tr>
+                        <th scope="row"><span class="nombre">{{ p.producto }}</span>@if (p.formato) { <small>{{ p.formato }}</small> }</th>
+                        <td class="num">{{ entero(p.vistas) }}</td>
+                        <td class="num">{{ entero(p.clicks) }}</td>
+                        <td class="num" [class.alta]="(p.conversion ?? 0) >= 22">{{ porcentaje(p.conversion) }}</td>
+                        <td class="num suave">{{ entero(p.cajasVendidas) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            <h3 class="separado">Productos restantes</h3>
+            <p class="nota">Stock en cajas sobre lo que tenías al inicio del mes ({{ corta(d.inicioMes) }}).</p>
+            @if (!d.restantes.length) {
+              <p class="vacio">No tienes ofertas publicadas.</p>
+            }
+            <ul class="barras">
+              @for (r of d.restantes; track r.ofertaId) {
+                <li [class.bajo]="r.porcentaje !== null && r.porcentaje < 20">
+                  <div class="fila">
+                    <span class="nombre">{{ r.producto }}</span>
+                    <span class="detalle">{{ entero(r.cajas) }} de {{ r.cajasInicioMes !== null ? entero(r.cajasInicioMes) : "—" }} cajas</span>
+                    <span class="valor">{{ r.porcentaje !== null ? r.porcentaje + " %" : "—" }}</span>
+                  </div>
+                  <div class="barra" aria-hidden="true"><span [style.width]="ancho(r.porcentaje ?? 0, 100)"></span></div>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <div class="derecha">
+            <h3>Clientes potenciales por ubicación</h3>
+            <p class="nota">Clientes que vieron tus productos y se los compraron a otro proveedor, por la comuna donde reciben.</p>
+            @if (!d.potenciales.length) {
+              <p class="vacio">Nadie vio tus productos y le compró a otro en este período.</p>
+            }
+            <ul class="barras">
+              @for (g of d.potenciales; track g.comunaId) {
+                <li [class.sin-cobertura]="!g.cubre">
+                  <div class="fila">
+                    <span class="nombre">{{ g.comuna }}<small>{{ g.region }}</small></span>
+                    <span class="detalle">{{ g.cubre ? "Despachas" : "Sin cobertura" }}</span>
+                    <span class="valor">{{ entero(g.clientes) }}</span>
+                  </div>
+                  <div class="barra" aria-hidden="true"><span [style.width]="ancho(g.clientes, maxPotenciales())"></span></div>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+    }
+  }
+</section>

@@ -4,7 +4,8 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { AlertasProveedor, VentasProveedor } from "../../core/proveedor/panel-proveedor.service";
 import { rangosDashboard, semanaIso, textoVariacion } from "./dashboard.calculo";
-import { armarAlertas, DashboardProveedorComponent, RELOJ } from "./dashboard.component";
+import { RELOJ } from "../../core/reloj";
+import { armarAlertas, DashboardProveedorComponent } from "./dashboard.component";
 
 const API = environment.apiUrl;
 const HOY = new Date("2026-11-20T15:00:00Z");

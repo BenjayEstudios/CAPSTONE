@@ -100,7 +100,11 @@ Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publ
 
 `features/proveedor/clientes.component.ts`: pestaña "Clientes" (`/proveedor/clientes`). Tabla de `GET /proveedor/clientes`: cliente con su contacto (o "Contacto disponible con su primera orden pagada"), tipo, comuna, órdenes (y las por pagar), comprado, última compra y recompra. "Ver más" de a 50.
 
-El dashboard del proveedor toma la fecha del token `RELOJ` (`dashboard.component.ts`), que los tests reemplazan.
+## Demanda y cobertura (KAN-107)
+
+`features/proveedor/demanda.component.ts`: pestaña "Demanda" (`/proveedor/demanda`). Muestra lo más visto y clickeado (vistas, clicks, conversión y cajas vendidas), los productos restantes frente al inicio del mes y los clientes potenciales por comuna, con "Despachas" o "Sin cobertura" (`GET /proveedor/demanda`). Muestra los últimos 30 días, con un botón para ver los últimos 90.
+
+El dashboard y Demanda toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
 
 ## Tests
 

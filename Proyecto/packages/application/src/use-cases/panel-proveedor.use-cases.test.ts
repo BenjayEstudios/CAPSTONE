@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { AnaliticaRepository, PendientesProveedor, ProveedorDocumento, ProveedorRepository } from "@cotizapp/domain";
-import { alertasProveedor, proximoMartes, ventasProveedor, vigenciaDocumento } from "./panel-proveedor.use-cases.js";
+import {
+  alertasProveedor,
+  conversionClicks,
+  demandaProveedor,
+  porcentajeRestante,
+  proximoMartes,
+  ventasProveedor,
+  vigenciaDocumento
+} from "./panel-proveedor.use-cases.js";
 
 const ahora = () => new Date("2026-11-20T15:00:00Z");
 const semana = (s: string, ventas: number, envios = 1) => ({ semana: s, envios, ventas, despacho: 1000, comision: 100, neto: ventas + 900 });
@@ -61,5 +69,50 @@ describe("alertasProveedor (KAN-101)", () => {
     expect(vigenciaDocumento(null, "2026-11-20")).toEqual({ estado: "al_dia", diasParaVencer: null });
     expect(proximoMartes("2026-11-24")).toBe("2026-11-24");
     expect(proximoMartes("2026-11-25")).toBe("2026-12-01");
+  });
+});
+
+describe("demandaProveedor (KAN-107)", () => {
+  const embudo = (ofertaId: number, nombre: string, vistas: number, clicks: number, cajasVendidas: number, estadoOferta = "publicada") => ({
+    ofertaId, productoId: ofertaId + 100, nombre, formato: null, estadoOferta, vistas, clicks, conversiones: 0, cajasVendidas, tasaClick: null, tasaConversion: null
+  });
+  it("ultimos 30 dias por defecto; ordena por vistas, stock por lo que queda y potenciales por clientes", async () => {
+    const llamadas: unknown[] = [];
+    const analiticaRepository = {
+      embudoPorProducto: async (id: number, r: unknown) => (llamadas.push(["embudo", id, r]), [
+        embudo(1, "Arroz", 120, 30, 12),
+        embudo(2, "Leche", 300, 60, 40),
+        embudo(3, "Borrador sin actividad", 0, 0, 0, "borrador"),
+        embudo(4, "Huevos", 4, 5, 0)
+      ]),
+      stockDelMes: async (id: number, inicio: Date) => (llamadas.push(["stock", id, inicio.toISOString()]), [
+        { ofertaId: 1, productoId: 101, nombre: "Arroz", formato: null, cajasDisponibles: 30, cajasInicioMes: 120 },
+        { ofertaId: 2, productoId: 102, nombre: "Leche", formato: null, cajasDisponibles: 5, cajasInicioMes: 50 },
+        { ofertaId: 4, productoId: 104, nombre: "Huevos", formato: null, cajasDisponibles: 10, cajasInicioMes: null }
+      ]),
+      potencialesPorComuna: async () => [
+        { comunaId: 1, comuna: "Ñuñoa", region: "RM", clientes: 1, cubre: true },
+        { comunaId: 2, comuna: "Concepción", region: "Biobío", clientes: 3, cubre: false }
+      ]
+    } as unknown as AnaliticaRepository;
+    const r = await demandaProveedor({ analiticaRepository, ahora: () => new Date("2026-11-20T15:00:00Z") })({}, 2);
+    expect(r).toMatchObject({ desde: "2026-10-22", hasta: "2026-11-20", inicioMes: "2026-11-01" });
+    expect(llamadas[0]).toEqual(["embudo", 2, { desde: new Date("2026-10-22T00:00:00Z"), hasta: new Date("2026-11-21T00:00:00Z") }]);
+    expect(llamadas[1]).toEqual(["stock", 2, "2026-11-01T00:00:00.000Z"]);
+    expect(r.productos.map((p) => [p.producto, p.conversion, p.cajasVendidas])).toEqual([["Leche", 20, 40], ["Arroz", 25, 12], ["Huevos", 100, 0]]);
+    expect(r.restantes.map((s) => [s.producto, s.porcentaje])).toEqual([["Leche", 10], ["Arroz", 25], ["Huevos", null]]);
+    expect(r.potenciales.map((p) => p.comuna)).toEqual(["Concepción", "Ñuñoa"]);
+  });
+  it("sin organizacion proveedora -> 403", async () => {
+    await expect(demandaProveedor({ analiticaRepository: {} as AnaliticaRepository })({}, Number.NaN)).rejects.toMatchObject({ statusCode: 403 });
+  });
+  it("conversion y porcentaje restante", () => {
+    expect(conversionClicks(0, 3)).toBeNull();
+    expect(conversionClicks(173, 48)).toBe(27.7);
+    expect(conversionClicks(4, 5)).toBe(100);
+    expect(porcentajeRestante(0, 39)).toBe(0);
+    expect(porcentajeRestante(30, 45)).toBe(67);
+    expect(porcentajeRestante(60, 40)).toBe(150);
+    expect(porcentajeRestante(5, 0)).toBeNull();
   });
 });

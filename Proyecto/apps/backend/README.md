@@ -143,6 +143,16 @@ Precio sobre referencia + tope %: una oferta que queda publicada responde `409 P
 
 `GET /proveedor/clientes?pagina=&tamano=` (`ver_ordenes_propias`, solo proveedores): las organizaciones con al menos una orden pagada o esperando pago (sin pago fallido) en la que el proveedor tenga un envio, de la que mas compro a la que menos. Cada fila: `nombre`, `tipo` (Empresa, Persona o Institución, deducido del RUT y el giro; decision abierta #17), `comuna`, `ordenes` (pagadas), `pendientes` (por pagar), `monto` (envios no cancelados del proveedor en ordenes pagadas), `ultimaCompra` y `recompra` (Por pagar, Primera vez, Semanal, Quincenal, Mensual, Esporádica). `contacto` (`razonSocial`, `rut`, `email`, `telefono`) es `null` hasta la primera orden pagada: el dato no sale del backend.
 
+## Demanda y cobertura (KAN-107)
+
+`GET /proveedor/demanda?desde&hasta` (`publicar_precio_stock`; organizacion del token; por defecto los ultimos 30 dias, maximo 366) devuelve:
+
+- `productos`: una fila por oferta (sin borradores sin actividad), de la mas vista a la menos. Trae `vistas` (`vista_producto` del producto), `clicks` (eventos de la oferta), `conversion` (clicks / vistas en %, con tope de 100) y `cajasVendidas` (envios no cancelados de ordenes pagadas, fechados por la orden).
+- `restantes`: las ofertas publicadas con `cajas`, `cajasInicioMes` (ultimo cambio de stock anterior al dia 1 en `oferta_precio_historial`, o las cajas iniciales) y `porcentaje`, de menor a mayor.
+- `potenciales`: por comuna, cuantas organizaciones vieron (con sesion) un producto que el proveedor ofrece y en el rango se lo compraron a otro, ubicadas por la comuna de entrega de esa orden. `cubre` indica si el proveedor despacha ahi segun `proveedor_cobertura`.
+
+Tambien trae `desde`, `hasta` e `inicioMes`. Se arma con `AnaliticaRepository.embudoPorProducto`, `stockDelMes` y `potencialesPorComuna`.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:

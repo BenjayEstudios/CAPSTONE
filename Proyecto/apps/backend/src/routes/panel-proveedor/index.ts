@@ -1,6 +1,6 @@
 import type { RouteOptions } from "fastify";
-import { listarClientes, listarVentas, miCobertura } from "@cotizapp/application";
-import { DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
+import { demandaProveedor, listarClientes, listarVentas, miCobertura } from "@cotizapp/application";
+import { DrizzleAnaliticaRepository, DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
 // Datos propios del proveedor de la sesion para su panel (KAN-102). La
@@ -39,4 +39,14 @@ export const misClientesRoute: RouteOptions = {
     })(Number(request.auth?.sub), request.query)
 };
 
-export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute];
+// Demanda y cobertura (KAN-107): ?desde&hasta (por defecto los ultimos 30
+// dias). Mismo permiso que /proveedor/cobertura: solo cuentas de proveedor.
+export const demandaRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/demanda",
+  preHandler: [requireAuth, requirePermiso("publicar_precio_stock")],
+  handler: async (request) =>
+    demandaProveedor({ analiticaRepository: new DrizzleAnaliticaRepository(request.server.db) })(request.query, Number(request.auth?.organizacionId))
+};
+
+export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute, demandaRoute];

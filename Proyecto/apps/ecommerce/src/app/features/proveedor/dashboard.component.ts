@@ -1,10 +1,8 @@
-import { Component, computed, inject, InjectionToken, signal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { AlertasProveedor, PanelProveedorService, VentasProveedor } from "../../core/proveedor/panel-proveedor.service";
+import { RELOJ } from "../../core/reloj";
 import { formatearClp, formatearEntero } from "../../shared/formato";
 import { rangosDashboard, semanaIso, textoVariacion, ticketPromedio, ultimas12 } from "./dashboard.calculo";
-
-/** La fecha de hoy. Un token para que los tests la fijen antes de crear el componente. */
-export const RELOJ = new InjectionToken<() => Date>("RELOJ", { providedIn: "root", factory: () => () => new Date() });
 
 const MES = new Intl.DateTimeFormat("es-CL", { month: "long", timeZone: "UTC" });
 const DIA_MES = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long", timeZone: "UTC" });

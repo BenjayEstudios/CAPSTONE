@@ -37,12 +37,27 @@ export interface AlertasProveedor {
   ofertas: { publicadas: number; borradores: number };
 }
 
+/** GET /proveedor/demanda (KAN-107). */
+export interface DemandaProveedor {
+  desde: string;
+  hasta: string;
+  inicioMes: string;
+  productos: Array<{ ofertaId: number; productoId: number; producto: string; formato: string | null; vistas: number; clicks: number; conversion: number | null; cajasVendidas: number }>;
+  restantes: Array<{ ofertaId: number; productoId: number; producto: string; formato: string | null; cajas: number; cajasInicioMes: number | null; porcentaje: number | null }>;
+  potenciales: Array<{ comunaId: number; comuna: string; region: string; clientes: number; cubre: boolean }>;
+}
+
 @Injectable({ providedIn: "root" })
 export class PanelProveedorService {
   private readonly api = inject(ApiClient);
 
   ventas(desde: string, hasta: string): Promise<VentasProveedor> {
     return firstValueFrom(this.api.get<VentasProveedor>(`/estadisticas/proveedor/ventas?desde=${desde}&hasta=${hasta}`));
+  }
+
+  /** Demanda y cobertura de los ultimos `dias` (KAN-107). */
+  demanda(desde: string): Promise<DemandaProveedor> {
+    return firstValueFrom(this.api.get<DemandaProveedor>(`/proveedor/demanda?desde=${desde}`));
   }
 
   alertas(): Promise<AlertasProveedor> {
