@@ -57,6 +57,9 @@ documentos, liquidaciones).
 - Proveedor: "Órdenes" (`/proveedor/ventas`), sus envíos con filtros por estado
   y el botón para avanzarlos hasta entregado (KAN-105)
   ([entrada](../cambios/2026-11-20-ordenes-de-venta-del-proveedor.md)).
+- Proveedor: "Clientes" (`/proveedor/clientes`), quien le compró con su
+  recompra; el contacto se libera con la primera orden pagada (KAN-106)
+  ([entrada](../cambios/2026-11-20-tus-clientes-del-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -88,7 +91,7 @@ documentos, liquidaciones).
 | KAN-103 | Mis productos publicados | ✅ [entrada](../cambios/2026-11-20-mis-productos-publicados.md) |
 | KAN-104 | Cómo se compara tu precio | ✅ [entrada](../cambios/2026-11-20-como-se-compara-tu-precio.md) |
 | KAN-105 | Órdenes de venta | ✅ [entrada](../cambios/2026-11-20-ordenes-de-venta-del-proveedor.md) |
-| KAN-106 | Tus clientes | ⏳ |
+| KAN-106 | Tus clientes | ✅ [entrada](../cambios/2026-11-20-tus-clientes-del-proveedor.md) |
 | KAN-107 | Demanda y cobertura (analítica) | ⏳ |
 | KAN-108 | Perfil de empresa | ⏳ |
 | KAN-109 | Cobertura de despacho y puntos de retiro | ⏳ |

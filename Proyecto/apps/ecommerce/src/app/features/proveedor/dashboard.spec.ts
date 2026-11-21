@@ -4,7 +4,7 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { AlertasProveedor, VentasProveedor } from "../../core/proveedor/panel-proveedor.service";
 import { rangosDashboard, semanaIso, textoVariacion } from "./dashboard.calculo";
-import { armarAlertas, DashboardProveedorComponent } from "./dashboard.component";
+import { armarAlertas, DashboardProveedorComponent, RELOJ } from "./dashboard.component";
 
 const API = environment.apiUrl;
 const HOY = new Date("2026-11-20T15:00:00Z");
@@ -53,10 +53,12 @@ describe("Dashboard del proveedor (KAN-101)", () => {
   });
 
   it("pide el mes, el tramo anterior, 12 semanas y las alertas, y muestra KPIs, grafico y top", async () => {
-    TestBed.configureTestingModule({ imports: [DashboardProveedorComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      imports: [DashboardProveedorComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: RELOJ, useValue: () => HOY }]
+    });
     const ctrl = TestBed.inject(HttpTestingController);
     const f = TestBed.createComponent(DashboardProveedorComponent);
-    f.componentInstance.hoy = () => HOY;
     const carga = f.componentInstance.cargar();
     ctrl.match(`${API}/estadisticas/proveedor/ventas?desde=2026-11-01&hasta=2026-11-20`).forEach((r) => r.flush(ventas(228000, 2)));
     ctrl.match(`${API}/estadisticas/proveedor/ventas?desde=2026-10-01&hasta=2026-10-20`).forEach((r) => r.flush(ventas(200000, 2)));
@@ -65,8 +67,6 @@ describe("Dashboard del proveedor (KAN-101)", () => {
       r.flush(ventas(0, 0, semanas, [{ productoId: 1, nombre: "Aceite vegetal maravilla", unidades: 12, ventas: 149880 }]))
     );
     ctrl.match(`${API}/alertas/proveedor`).forEach((r) => r.flush(ALERTAS));
-    // Lo que quede de la carga del constructor (si la fecha real es otra) se descarta.
-    ctrl.match(() => true).forEach((r) => r.flush(r.request.url.includes("alertas") ? ALERTAS : ventas(0, 0)));
     await carga;
     await f.whenStable();
     f.detectChanges();

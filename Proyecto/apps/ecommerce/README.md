@@ -96,6 +96,12 @@ Arriba de la tabla, "Cómo se compara tu precio" (KAN-104): por cada oferta publ
 
 `features/proveedor/ventas.component.ts`: pestaña "Órdenes" (`/proveedor/ventas`). Tabla de los envíos del proveedor (`GET /proveedor/ventas`): folio, cliente, comuna, fecha, líneas, cajas, monto y estado, con filtros por estado y su conteo, y "Ver más" de a 50. Cada fila tiene el botón del siguiente paso (Preparar → Marcar despachado o listo para retiro → Marcar entregado), que llama a `PATCH /ordenes/envios/:id/estado` y recarga. Servicio: `core/proveedor/ventas-proveedor.service.ts`.
 
+## Tus clientes (KAN-106)
+
+`features/proveedor/clientes.component.ts`: pestaña "Clientes" (`/proveedor/clientes`). Tabla de `GET /proveedor/clientes`: cliente con su contacto (o "Contacto disponible con su primera orden pagada"), tipo, comuna, órdenes (y las por pagar), comprado, última compra y recompra. "Ver más" de a 50.
+
+El dashboard del proveedor toma la fecha del token `RELOJ` (`dashboard.component.ts`), que los tests reemplazan.
+
 ## Tests
 
 `pnpm test` corre Karma en ChromeHeadless. Sin Chrome instalado sirve Edge: `CHROME_BIN="C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" pnpm test`.

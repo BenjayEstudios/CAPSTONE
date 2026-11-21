@@ -105,6 +105,30 @@ export interface FiltrosVentas {
   tamano: number;
 }
 
+/**
+ * Una organizacion compradora vista por un proveedor (KAN-106). Cuenta solo
+ * las ordenes en las que hay un envio de ese proveedor.
+ */
+export interface ClienteDeProveedor {
+  organizacionId: number;
+  nombreFantasia: string | null;
+  razonSocial: string;
+  rut: string;
+  giro: string | null;
+  email: string | null;
+  telefono: string | null;
+  /** Comuna de la direccion de la organizacion, o de su ultima entrega con este proveedor. */
+  comuna: string | null;
+  /** Ordenes pagadas (sin pendiente_pago ni reembolsada). */
+  ordenes: number;
+  /** Ordenes esperando pago (pendiente_pago sin pago fallido). */
+  pendientes: number;
+  /** Suma de los envios no cancelados del proveedor en las ordenes pagadas. */
+  monto: number;
+  primeraCompra: Date | null;
+  ultimaCompra: Date | null;
+}
+
 /** Resultado del pago que se persiste en la orden (KAN-95). */
 export interface ResultadoPagoOrden {
   aprobado: boolean;
@@ -132,6 +156,11 @@ export interface OrdenRepository {
    * reciente al mas antiguo, con el conteo por estado del envio (sin el filtro).
    */
   ventasDeProveedor(f: FiltrosVentas): Promise<{ items: VentaProveedor[]; total: number; conteo: Partial<Record<OrdenEnvioEstado, number>> }>;
+  /**
+   * Organizaciones que le compraron al proveedor (al menos una orden pagada o
+   * esperando pago), de la que mas compro a la que menos.
+   */
+  clientesDeProveedor(proveedorId: number, p: { pagina: number; tamano: number }): Promise<{ items: ClienteDeProveedor[]; total: number }>;
   /** Envio (sin alcance) para validar propiedad antes de operar; null si no existe. */
   buscarEnvio(id: number): Promise<OrdenEnvio | null>;
   /**

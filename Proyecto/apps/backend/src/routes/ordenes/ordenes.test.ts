@@ -46,6 +46,10 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
     async buscarPorId() {
       return null;
     }
+    async clientesDeProveedor(proveedorId: number) {
+      const c = { organizacionId: 4, nombreFantasia: null, razonSocial: "Cocinería Paula", rut: "12345678-5", giro: null, email: "paula@correo.test", telefono: null, comuna: "Recoleta", ordenes: 0, pendientes: 1, monto: 0, primeraCompra: null, ultimaCompra: null };
+      return proveedorId === 2 ? { items: [c], total: 1 } : { items: [], total: 0 };
+    }
     async ventasDeProveedor(f: { proveedorId: number; estado?: string }) {
       const v = { envioId: 1, ordenId: 100, folio: "CM-100", cliente: "El Fogón", modalidad: "despacho", comuna: "Santiago", fecha: new Date("2026-11-20T12:00:00Z"), lineas: 2, cajas: 5, monto: 6000, estado: "por_despachar", ordenEstado: "pagada" };
       const items = f.proveedorId === 2 && (!f.estado || f.estado === v.estado) ? [v] : [];
@@ -129,5 +133,16 @@ describe("GET /proveedor/ventas (KAN-105)", () => {
     expect(r.statusCode).toBe(200);
     expect(r.json()).toMatchObject({ total: 1, conteo: { por_despachar: 1 }, items: [{ folio: "CM-100", cajas: 5, siguiente: "en_preparacion" }] });
     expect((await app.inject({ method: "GET", url: "/proveedor/ventas?estado=pagada", headers: bearer("3") })).statusCode).toBe(400);
+  });
+});
+
+describe("GET /proveedor/clientes (KAN-106)", () => {
+  it("sin token 401; cliente 403; sin orden pagada no hay contacto", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/clientes" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/clientes", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/clientes", headers: bearer("3") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().items[0]).toMatchObject({ nombre: "Cocinería Paula", tipo: "Persona", recompra: "Por pagar", contacto: null });
+    expect(r.body).not.toContain("paula@correo.test");
   });
 });

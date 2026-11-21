@@ -157,3 +157,22 @@ Relacionado: el paso 1 del mockup pide nombre, RUT, correo y teléfono, pero
 de la organización. El checkout los muestra desde la cuenta en vez de
 pedirlos. Si un comprador necesita facturar a otro RUT, hay que agregarlo al
 schema.
+
+## 17. Tipo de cliente (empresa, persona o institución)
+
+**Aplica en:** KAN-106 (tus clientes) · **Afecta:** la columna "Tipo" del panel del proveedor
+
+El mockup del proveedor muestra si cada cliente es empresa, persona o
+institución, pero `organizacion` no guarda ese dato y el registro no lo
+pregunta. Hoy se deduce del RUT y del giro (`tipoCliente` en
+`ordenes.use-cases.ts`):
+
+- RUT entre 60.000.000 y 69.999.999 (organismos públicos, corporaciones y
+  fundaciones): institución.
+- RUT bajo 50.000.000 sin giro: persona.
+- Todo lo demás: empresa. Una persona natural con giro (un minimarket) cuenta
+  como empresa, como en el mockup.
+
+Falta decidir si basta con eso o si se agrega una columna `tipo_cliente` a
+`organizacion` que el comprador elija al registrarse. Eso necesita una
+migración y un campo en el registro (KAN-89).

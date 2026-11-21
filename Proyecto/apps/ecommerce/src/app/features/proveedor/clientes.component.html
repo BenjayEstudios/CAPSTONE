@@ -1,0 +1,49 @@
+<section aria-labelledby="titulo-clientes">
+  <h2 id="titulo-clientes">Tus clientes @if (estado() === "ok") { <small>{{ total() }} {{ total() === 1 ? "cliente" : "clientes" }}</small> }</h2>
+  <p class="bajada">Quien te compró al menos una vez, de quien más compró a quien menos. Los datos de contacto se liberan con la primera orden pagada.</p>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus clientes…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tus clientes. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (!clientes().length) {
+        <p class="vacio">Todavía nadie te ha comprado. Tus clientes aparecen aquí con su primera orden.</p>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Cliente</th><th scope="col">Tipo</th><th scope="col">Comuna</th><th scope="col" class="num">Órdenes</th>
+                <th scope="col" class="num">Comprado</th><th scope="col">Última compra</th><th scope="col">Recompra</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of clientes(); track c.organizacionId) {
+                <tr>
+                  <th scope="row">
+                    <span class="nombre">{{ c.nombre }}</span>
+                    @if (c.contacto; as k) {
+                      <small>{{ contacto(k) }}</small>
+                    } @else {
+                      <small class="oculto">Contacto disponible con su primera orden pagada</small>
+                    }
+                  </th>
+                  <td class="suave">{{ c.tipo }}</td>
+                  <td class="suave">{{ c.comuna ?? "—" }}</td>
+                  <td class="num">{{ c.ordenes }}@if (c.pendientes) { <small>+{{ c.pendientes }} por pagar</small> }</td>
+                  <td class="num fuerte">{{ clp(c.monto) }}</td>
+                  <td class="suave">{{ c.ultimaCompra ? fecha(c.ultimaCompra) : "—" }}</td>
+                  <td><span class="tag" [attr.data-tono]="tono(c.recompra)">{{ c.recompra }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (clientes().length < total()) {
+          <p class="mas"><button type="button" class="btn btn-secondary" [disabled]="cargandoMas()" (click)="verMas()">{{ cargandoMas() ? "Cargando…" : "Ver más clientes" }}</button>
+            <span class="suave">{{ clientes().length }} de {{ total() }}</span></p>
+        }
+      }
+    }
+  }
+</section>

@@ -139,6 +139,10 @@ Precio sobre referencia + tope %: una oferta que queda publicada responde `409 P
 
 `GET /proveedor/ventas?estado=&pagina=&tamano=` (`ver_ordenes_propias`, solo organizaciones proveedor; otra = `403 SOLO_PROVEEDORES`): los envios del proveedor de la sesion de ordenes ya pagadas (sin `pendiente_pago`), del mas reciente al mas antiguo. Cada fila: `envioId`, `ordenId`, `folio`, `cliente`, `modalidad`, `comuna` (de la direccion de entrega o del punto de retiro), `fecha` (pago), `lineas`, `cajas`, `monto` (subtotal + despacho del envio), `estado`, `ordenEstado` y `siguiente` (proximo estado hacia la entrega, sin cancelar; `null` si termino o la orden se reembolso). Trae `conteo` por estado del envio (sin el filtro) para los filtros. Solo el tramo del proveedor: nunca el total de la orden. El estado se avanza con `PATCH /ordenes/envios/:id/estado`.
 
+## Tus clientes (KAN-106)
+
+`GET /proveedor/clientes?pagina=&tamano=` (`ver_ordenes_propias`, solo proveedores): las organizaciones con al menos una orden pagada o esperando pago (sin pago fallido) en la que el proveedor tenga un envio, de la que mas compro a la que menos. Cada fila: `nombre`, `tipo` (Empresa, Persona o Institución, deducido del RUT y el giro; decision abierta #17), `comuna`, `ordenes` (pagadas), `pendientes` (por pagar), `monto` (envios no cancelados del proveedor en ordenes pagadas), `ultimaCompra` y `recompra` (Por pagar, Primera vez, Semanal, Quincenal, Mensual, Esporádica). `contacto` (`razonSocial`, `rut`, `email`, `telefono`) es `null` hasta la primera orden pagada: el dato no sale del backend.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:

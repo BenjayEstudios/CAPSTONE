@@ -1,5 +1,5 @@
 import type { RouteOptions } from "fastify";
-import { listarVentas, miCobertura } from "@cotizapp/application";
+import { listarClientes, listarVentas, miCobertura } from "@cotizapp/application";
 import { DrizzleOrdenRepository, DrizzleProveedorRepository, DrizzleUsuarioRepository } from "@cotizapp/infrastructure";
 import { requireAuth, requirePermiso } from "../../plugins/auth.js";
 
@@ -26,4 +26,17 @@ export const misVentasRoute: RouteOptions = {
     })(Number(request.auth?.sub), request.query)
 };
 
-export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute];
+// Tus clientes (KAN-106): quien le compro al proveedor de la sesion. El
+// contacto se entrega solo desde la primera orden pagada. ?pagina=&tamano=.
+export const misClientesRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/clientes",
+  preHandler: [requireAuth, requirePermiso("ver_ordenes_propias")],
+  handler: async (request) =>
+    listarClientes({
+      ordenRepository: new DrizzleOrdenRepository(request.server.db),
+      usuarioRepository: new DrizzleUsuarioRepository(request.server.db)
+    })(Number(request.auth?.sub), request.query)
+};
+
+export const panelProveedorRoutes: RouteOptions[] = [miCoberturaRoute, misVentasRoute, misClientesRoute];

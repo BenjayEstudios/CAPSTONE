@@ -6,7 +6,8 @@ import { SessionState } from "../../core/state/session.state";
 export const PESTANAS_PROVEEDOR: Array<{ ruta: string; etiqueta: string; exacta?: boolean }> = [
   { ruta: "/proveedor", etiqueta: "Panel", exacta: true },
   { ruta: "/proveedor/productos", etiqueta: "Mis productos" },
-  { ruta: "/proveedor/ventas", etiqueta: "Órdenes" }
+  { ruta: "/proveedor/ventas", etiqueta: "Órdenes" },
+  { ruta: "/proveedor/clientes", etiqueta: "Clientes" }
 ];
 
 // Marco del panel del proveedor (KAN-101): franja con la empresa y las

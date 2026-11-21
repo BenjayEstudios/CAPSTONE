@@ -19,6 +19,12 @@ export const listarVentasQuerySchema = z.object({
 });
 export type ListarVentasQueryDto = z.infer<typeof listarVentasQuerySchema>;
 
+// GET /proveedor/clientes (KAN-106).
+export const listarClientesQuerySchema = z.object({
+  pagina: z.coerce.number().int().min(1).default(1),
+  tamano: z.coerce.number().int().min(1).max(100).default(50)
+});
+
 export const cambiarEstadoEnvioSchema = z.object({ estado: z.enum(ORDEN_ENVIO_ESTADOS) });
 export type CambiarEstadoEnvioDto = z.infer<typeof cambiarEstadoEnvioSchema>;
 

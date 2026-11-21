@@ -1,7 +1,10 @@
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, InjectionToken, signal } from "@angular/core";
 import { AlertasProveedor, PanelProveedorService, VentasProveedor } from "../../core/proveedor/panel-proveedor.service";
 import { formatearClp, formatearEntero } from "../../shared/formato";
 import { rangosDashboard, semanaIso, textoVariacion, ticketPromedio, ultimas12 } from "./dashboard.calculo";
+
+/** La fecha de hoy. Un token para que los tests la fijen antes de crear el componente. */
+export const RELOJ = new InjectionToken<() => Date>("RELOJ", { providedIn: "root", factory: () => () => new Date() });
 
 const MES = new Intl.DateTimeFormat("es-CL", { month: "long", timeZone: "UTC" });
 const DIA_MES = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "long", timeZone: "UTC" });
@@ -62,8 +65,7 @@ export function armarAlertas(a: AlertasProveedor): Alerta[] {
 })
 export class DashboardProveedorComponent {
   private readonly panel = inject(PanelProveedorService);
-  /** Reemplazable en los tests. */
-  hoy = (): Date => new Date();
+  private readonly hoy = inject(RELOJ);
 
   readonly mes = signal<VentasProveedor | null>(null);
   readonly anterior = signal<VentasProveedor | null>(null);

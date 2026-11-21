@@ -169,6 +169,32 @@ describeDb("Checkout: opciones de entrega, comunas y pago de la orden", (db) => 
     expect(entregados.conteo).toEqual(r.conteo);
   });
 
+  it("clientesDeProveedor (KAN-106): compradores con ordenes pagadas o esperando pago, con conteos y monto del proveedor", async () => {
+    const r = await new DrizzleOrdenRepository(db()).clientesDeProveedor(ORG.losAndes, { pagina: 1, tamano: 50 });
+    const esperado = await consultar<{ organizacionId: number; ordenes: number; pendientes: number; monto: string }>(
+      db(),
+      sql`SELECT o.organizacion_id AS organizacionId,
+                 COUNT(DISTINCT CASE WHEN o.estado NOT IN ('pendiente_pago', 'reembolsada') THEN o.id END) AS ordenes,
+                 COUNT(DISTINCT CASE WHEN o.estado = 'pendiente_pago' AND o.estado_pago <> 'fallido' THEN o.id END) AS pendientes,
+                 COALESCE(SUM(CASE WHEN o.estado NOT IN ('pendiente_pago', 'reembolsada') AND oe.estado <> 'cancelado'
+                                   THEN oe.subtotal + COALESCE(oe.costo_despacho, 0) END), 0) AS monto
+          FROM orden_envio oe JOIN orden o ON o.id = oe.orden_id
+          WHERE oe.proveedor_id = ${ORG.losAndes} AND (o.estado <> 'pendiente_pago' OR o.estado_pago <> 'fallido')
+          GROUP BY o.organizacion_id`
+    );
+    const porId = <T extends { organizacionId: number }>(l: T[]) => [...l].sort((a, b) => a.organizacionId - b.organizacionId);
+    expect(r.total).toBe(esperado.length);
+    expect(porId(r.items.map((c) => ({ organizacionId: c.organizacionId, ordenes: c.ordenes, pendientes: c.pendientes, monto: c.monto })))).toEqual(
+      porId(esperado.map((e) => ({ organizacionId: e.organizacionId, ordenes: Number(e.ordenes), pendientes: Number(e.pendientes), monto: Number(e.monto) })))
+    );
+    // De la que mas compro a la que menos.
+    expect(r.items.map((c) => c.monto)).toEqual([...r.items.map((c) => c.monto)].sort((a, b) => b - a));
+    const fogon = r.items.find((c) => c.organizacionId === ORG.elFogon)!;
+    expect(fogon).toMatchObject({ rut: "76111222-8", comuna: "Ñuñoa", email: "compras@elfogon.test" });
+    expect(fogon.primeraCompra!.getTime()).toBeLessThanOrEqual(fogon.ultimaCompra!.getTime());
+    expect(await new DrizzleOrdenRepository(db()).clientesDeProveedor(ORG.losAndes, { pagina: 2, tamano: 1 })).toMatchObject({ total: r.total, items: [r.items[1]] });
+  });
+
   it("registrarResultadoPago: aprueba una orden pendiente una sola vez y la encuentra por su token", async () => {
     const repo = new DrizzleOrdenRepository(db());
     const [{ id }] = await consultar<{ id: number }>(db(), sql`SELECT MIN(id) AS id FROM orden`);

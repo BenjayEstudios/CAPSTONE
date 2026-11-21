@@ -1,7 +1,8 @@
-import { and, count, desc, eq, inArray, ne, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import type {
   AlcanceOrdenes,
+  ClienteDeProveedor,
   FiltrosOrdenes,
   FiltrosVentas,
   OrdenEnvioEstado,
@@ -221,6 +222,64 @@ export class DrizzleOrdenRepository implements OrdenRepository {
     );
     const total = f.estado ? (conteo[f.estado] ?? 0) : Object.values(conteo).reduce((t, n) => t + n, 0);
     return { items, total, conteo };
+  }
+
+  // Clientes del proveedor (KAN-106): una fila por organizacion compradora
+  // con al menos una orden pagada o esperando pago en la que el proveedor
+  // tenga un envio. Entra por ix_orden_envio_proveedor_estado y agrupa por
+  // la organizacion de la orden.
+  async clientesDeProveedor(proveedorId: number, p: { pagina: number; tamano: number }) {
+    const pagada = sql`${orden.estado} NOT IN ('pendiente_pago', 'reembolsada')`;
+    const esperandoPago = sql`(${orden.estado} = 'pendiente_pago' AND ${orden.estadoPago} <> 'fallido')`;
+    const where = and(eq(ordenEnvio.proveedorId, proveedorId), or(pagada, esperandoPago));
+    const fechaCompra = sql`CASE WHEN ${pagada} THEN COALESCE(${orden.pagadoEn}, ${orden.creadaEn}) END`;
+    const monto = sql<number>`COALESCE(SUM(CASE WHEN ${pagada} AND ${ordenEnvio.estado} <> 'cancelado' THEN ${ordenEnvio.subtotal} + COALESCE(${ordenEnvio.costoDespacho}, 0) END), 0)`.mapWith(Number);
+
+    const filas = await this.db
+      .select({
+        organizacionId: organizacion.id,
+        nombreFantasia: organizacion.nombreFantasia,
+        razonSocial: organizacion.razonSocial,
+        rut: organizacion.rut,
+        giro: organizacion.giro,
+        email: organizacion.emailContacto,
+        telefono: organizacion.telefono,
+        comunaOrganizacion: comuna.nombre,
+        // Si la organizacion no tiene direccion, la comuna de su ultima entrega con este proveedor.
+        comunaEntrega: sql<string | null>`(
+          SELECT c2.nombre FROM orden o2
+          JOIN orden_envio e2 ON e2.orden_id = o2.id AND e2.proveedor_id = ${proveedorId}
+          JOIN direccion d2 ON d2.id = o2.direccion_entrega_id
+          JOIN comuna c2 ON c2.id = d2.comuna_id
+          WHERE o2.organizacion_id = ${organizacion.id}
+          ORDER BY o2.id DESC LIMIT 1)`,
+        ordenes: sql<number>`COUNT(DISTINCT CASE WHEN ${pagada} THEN ${orden.id} END)`.mapWith(Number),
+        pendientes: sql<number>`COUNT(DISTINCT CASE WHEN ${esperandoPago} THEN ${orden.id} END)`.mapWith(Number),
+        monto,
+        primeraCompra: sql<Date | null>`MIN(${fechaCompra})`.mapWith(orden.pagadoEn),
+        ultimaCompra: sql<Date | null>`MAX(${fechaCompra})`.mapWith(orden.pagadoEn)
+      })
+      .from(ordenEnvio)
+      .innerJoin(orden, eq(orden.id, ordenEnvio.ordenId))
+      .innerJoin(organizacion, eq(organizacion.id, orden.organizacionId))
+      .leftJoin(direccion, eq(direccion.id, organizacion.direccionId))
+      .leftJoin(comuna, eq(comuna.id, direccion.comunaId))
+      .where(where)
+      .groupBy(organizacion.id, comuna.nombre)
+      .orderBy(desc(monto), asc(organizacion.id))
+      .limit(p.tamano)
+      .offset((p.pagina - 1) * p.tamano);
+
+    const [{ total }] = await this.db
+      .select({ total: countDistinct(orden.organizacionId) })
+      .from(ordenEnvio)
+      .innerJoin(orden, eq(orden.id, ordenEnvio.ordenId))
+      .where(where);
+
+    const items = filas.map(
+      ({ comunaOrganizacion, comunaEntrega, ...c }): ClienteDeProveedor => ({ ...c, comuna: comunaOrganizacion ?? comunaEntrega ?? null })
+    );
+    return { items, total };
   }
 
   async buscarPorId(id: number, alcance: AlcanceOrdenes) {
