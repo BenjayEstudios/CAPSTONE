@@ -1,0 +1,52 @@
+<section aria-labelledby="titulo-documentos">
+  <h2 id="titulo-documentos">Documentos</h2>
+  <p class="bajada">Los documentos que exige Cotizapp para vender. El panel te avisa cuando uno vence en 45 días o menos. Cada documento nuevo lo revisa el equipo de Cotizapp.</p>
+
+  @if (aviso(); as a) { <p class="mensaje ok" role="status">{{ a }}</p> }
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus documentos…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tus documentos. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      <ul class="documentos">
+        @for (d of documentos(); track d.tipo) {
+          <li [attr.data-tono]="vigencia(d).tono">
+            <div class="cabeza">
+              <div>
+                <h3>{{ d.nombre }}</h3>
+                @if (d.actual; as a) {
+                  <p class="detalle">
+                    @if (a.venceEn) { Vence el {{ fecha(a.venceEn) }} } @else { Sin fecha de vencimiento }
+                    · <a [href]="a.url" target="_blank" rel="noopener">Ver archivo</a>
+                    @if (d.anteriores) { <span class="suave"> · {{ d.anteriores }} {{ d.anteriores === 1 ? "versión anterior" : "versiones anteriores" }}</span> }
+                  </p>
+                  <p class="revision" [attr.data-revision]="a.revisionEstado">{{ revision(a) }}</p>
+                } @else {
+                  <p class="detalle">Todavía no lo subes.</p>
+                }
+              </div>
+              <div class="lado">
+                <span class="tag" [attr.data-tono]="vigencia(d).tono">{{ vigencia(d).texto }}</span>
+                <button type="button" class="btn" [class.btn-primary]="d.estado !== 'al_dia'" [class.btn-secondary]="d.estado === 'al_dia'"
+                  [attr.aria-expanded]="abierto() === d.tipo" (click)="abrir(d.tipo)">{{ d.actual ? "Subir nueva versión" : "Subir documento" }}</button>
+              </div>
+            </div>
+
+            @if (abierto() === d.tipo) {
+              <form class="subida" (ngSubmit)="subir(d)" novalidate>
+                <label class="field"><span>Archivo (PDF, JPG o PNG, hasta 5 MB)</span>
+                  <input class="input" type="file" accept="application/pdf,image/jpeg,image/png" [name]="'archivo-' + d.tipo" (change)="elegirArchivo(d.tipo, $event)" />
+                </label>
+                <label class="field"><span>Vence el @if (!d.requiereVencimiento) { <small>(opcional)</small> }</span>
+                  <input class="input" type="date" [min]="minimo()" [name]="'vence-' + d.tipo" [(ngModel)]="subidas[d.tipo].venceEn" />
+                </label>
+                <button type="submit" class="btn btn-primary" [disabled]="subiendo() !== null">{{ subiendo() === d.tipo ? "Subiendo…" : "Subir" }}</button>
+              </form>
+            }
+            @if (error()?.tipo === d.tipo) { <p class="mensaje error" role="alert">{{ error()!.texto }}</p> }
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

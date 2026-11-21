@@ -192,3 +192,20 @@ Falta decidir si se agregan las columnas `representante_nombre`,
 `organizacion`. Eso necesita una migración, que se aplicaría en Aiven con el
 deploy. El representante también podría pedirse en el alta del proveedor,
 junto con sus documentos.
+
+## 19. Documentos del proveedor en una URL pública
+
+**Aplica en:** KAN-110 (documentos del proveedor) · **Afecta:** el almacenamiento (`AlmacenArchivos`) y el deploy
+
+Los documentos que sube el proveedor (carpeta tributaria, resolución
+sanitaria, certificado de vigencia) se guardan con el mismo almacén que las
+imágenes de producto. Hoy es disco local, servido en `/uploads`, así que
+cualquiera que tenga la URL puede abrirlos. El nombre lleva un UUID y no se
+puede adivinar, pero la carpeta tributaria tiene datos tributarios de la
+empresa.
+
+Falta decidir cómo se sirven en producción. Una opción es un bucket privado
+con URLs firmadas que expiren. La otra es un endpoint
+`GET /proveedor/documentos/:id/archivo` que revise que quien lo pide sea el
+proveedor dueño o un admin. Cualquiera de las dos se resuelve al implementar
+el adaptador de DigitalOcean Spaces (ver `apps/backend/src/lib/storage.ts`).

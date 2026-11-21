@@ -33,6 +33,7 @@ export * from "./carro.use-cases.js";
 export * from "./ordenes.use-cases.js";
 export * from "./perfil-proveedor.use-cases.js";
 export * from "./cobertura-proveedor.use-cases.js";
+export * from "./documentos-proveedor.use-cases.js";
 export * from "./liquidaciones.use-cases.js";
 export * from "./dashboard.use-cases.js";
 export * from "./documentos-tributarios.use-cases.js";

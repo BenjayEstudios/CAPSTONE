@@ -113,4 +113,16 @@ describeDb("DrizzleProveedorRepository: perfil de empresa (KAN-108)", (db) => {
     expect((await repo().puntosRetiro(LOS_ANDES)).map((p) => p.id)).toEqual([1]);
   });
 
+  it("crearDocumento (KAN-110): queda pendiente de revision, con su vigencia y auditoria; listarDocumentos lo trae", async () => {
+    const d = await repo().crearDocumento(
+      LOS_ANDES,
+      { tipo: "vigencia", url: "http://localhost/uploads/proveedores/2/documentos/vigencia-x.pdf", venceEn: "2026-12-10", vigencia: "por_vencer" },
+      { usuarioId: null, entidad: "proveedor_documento", entidadId: LOS_ANDES, accion: "crear", datosAntes: null, datosDespues: { operacion: "subir_documento", prueba: true } }
+    );
+    expect(d).toMatchObject({ proveedorId: LOS_ANDES, tipo: "vigencia", venceEn: "2026-12-10", vigencia: "por_vencer", revisionEstado: "pendiente", revisadoPor: null });
+    expect((await repo().listarDocumentos(LOS_ANDES)).at(-1)).toMatchObject({ id: d.id, tipo: "vigencia" });
+    const [a] = await consultar<{ n: number }>(db(), sql`SELECT COUNT(*) AS n FROM auditoria_log WHERE entidad = 'proveedor_documento' AND entidad_id = ${d.id}`);
+    expect(Number(a!.n)).toBe(1);
+  });
+
 });

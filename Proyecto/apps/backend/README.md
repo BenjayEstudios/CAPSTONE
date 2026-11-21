@@ -188,6 +188,19 @@ Todo con `publicar_precio_stock`; la organizacion sale del token y una fila de o
 - `DELETE /proveedor/puntos-retiro/:id` (204): solo sin envios; si no, `409 PUNTO_USADO` (se desactiva).
 - `GET /carro/opciones-entrega` agrega `coberturas` (zonas de los proveedores del carro) y `regionCodigo` en cada direccion, para que el checkout solo ofrezca despacho a una comuna cubierta. Es la misma regla de `planificarOrden`.
 
+## Documentos del proveedor (KAN-110)
+
+Con `publicar_precio_stock`; la organizacion sale del token.
+
+- `GET /proveedor/documentos`: una fila por documento exigido (carpeta tributaria, resolucion sanitaria, certificado de vigencia).
+  - Cada fila trae el ultimo subido (`actual`): `venceEn`, `vigencia` calculada hoy (45 dias, como las alertas), `diasParaVencer`, `revisionEstado` y `motivoRechazo`.
+  - Tambien `estado` (`al_dia` | `por_vencer` | `vencido` | `falta`), `requiereVencimiento` y `anteriores`.
+- `POST /proveedor/documentos?tipo=&venceEn=` (multipart, un archivo): PDF, JPG o PNG por firma binaria, hasta `UPLOADS_MAX_MB`.
+  - Lo guarda en `AlmacenArchivos` como `proveedores/{id}/documentos/{tipo}-{uuid}.{ext}` y lo inserta en revision `pendiente` con auditoria (201).
+  - 400 `VENCIMIENTO_REQUERIDO` (resolucion y vigencia), `DOCUMENTO_VENCIDO`, `FORMATO_NO_SOPORTADO`, `ARCHIVO_VACIO` o `ARCHIVO_REQUERIDO`; 413 si es muy grande.
+  - Si falla el registro, borra el archivo.
+- La revision sigue en `PATCH /proveedores/:id/documentos/:documentoId/revision` (admin). Los archivos se sirven por URL publica: decision abierta #19.
+
 ## Catalogo publico y comparador (KAN-145)
 
 Rutas publicas (sin token), distintas del listado de administracion `/productos`:

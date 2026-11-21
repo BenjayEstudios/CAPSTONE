@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
 import type { FastifyRequest, RouteOptions } from "fastify";
 import { idParamSchema } from "@cotizapp/domain";
 import {
+  ErrorAplicacion,
+  misDocumentos,
+  subirDocumento,
   actualizarMiPerfilProveedor,
   actualizarPuntoRetiro,
   actualizarZona,
@@ -152,7 +156,36 @@ export const eliminarPuntoRetiroRoute: RouteOptions = {
   }
 };
 
+// Documentos del proveedor (KAN-110). El archivo va en multipart; tipo y
+// vencimiento en la query. Queda en revision pendiente para el admin.
+export const misDocumentosRoute: RouteOptions = {
+  method: "GET",
+  url: "/proveedor/documentos",
+  preHandler: soloProveedor,
+  handler: async (request) => misDocumentos({ proveedorRepository: new DrizzleProveedorRepository(request.server.db) })(proveedorDe(request))
+};
+export const subirDocumentoRoute: RouteOptions = {
+  method: "POST",
+  url: "/proveedor/documentos",
+  preHandler: soloProveedor,
+  handler: async (request, reply) => {
+    const parte = await request.file();
+    if (!parte) throw new ErrorAplicacion(400, "ARCHIVO_REQUERIDO", "Falta el archivo (multipart/form-data)");
+    // toBuffer lanza 413 FST_REQ_FILE_TOO_LARGE si supera limits.fileSize.
+    const contenido = await parte.toBuffer();
+    const r = await subirDocumento({
+      proveedorRepository: new DrizzleProveedorRepository(request.server.db),
+      almacenArchivos: request.server.almacenArchivos,
+      generarId: randomUUID,
+      tamanoMaximoBytes: request.server.uploadsMaxBytes
+    })(usuarioDe(request), proveedorDe(request), request.query, contenido);
+    return reply.status(201).send(r);
+  }
+};
+
 export const panelProveedorRoutes: RouteOptions[] = [
+  misDocumentosRoute,
+  subirDocumentoRoute,
   miCoberturaRoute,
   misVentasRoute,
   misClientesRoute,

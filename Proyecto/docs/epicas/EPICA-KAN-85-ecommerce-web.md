@@ -69,6 +69,9 @@ documentos, liquidaciones).
 - Proveedor: "Cobertura" (`/proveedor/cobertura`), zonas de despacho por región o
   comuna y puntos de retiro; el checkout solo ofrece despacho a comunas cubiertas (KAN-109)
   ([entrada](../cambios/2026-11-20-cobertura-y-puntos-de-retiro.md)).
+- Proveedor: "Documentos" (`/proveedor/documentos`), subida de carpeta tributaria,
+  resolución sanitaria y certificado de vigencia con su estado y revisión (KAN-110)
+  ([entrada](../cambios/2026-11-20-documentos-del-proveedor.md)).
 - La vista de status quedó en `/estado`. Lint y tests (karma).
 - En producción se sirve desde la imagen de Nginx (KAN-158).
 
@@ -104,7 +107,7 @@ documentos, liquidaciones).
 | KAN-107 | Demanda y cobertura (analítica) | ✅ [entrada](../cambios/2026-11-20-demanda-y-cobertura-del-proveedor.md) |
 | KAN-108 | Perfil de empresa | ✅ [entrada](../cambios/2026-11-20-perfil-de-empresa-del-proveedor.md) |
 | KAN-109 | Cobertura de despacho y puntos de retiro | ✅ [entrada](../cambios/2026-11-20-cobertura-y-puntos-de-retiro.md) |
-| KAN-110 | Documentos del proveedor | ⏳ |
+| KAN-110 | Documentos del proveedor | ✅ [entrada](../cambios/2026-11-20-documentos-del-proveedor.md) |
 | KAN-111 | Liquidaciones | ⏳ |
 
 ## Dependencias

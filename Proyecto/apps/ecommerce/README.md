@@ -120,7 +120,14 @@ En el checkout, `checkout.component.ts` usa `coberturas` de `GET /carro/opciones
 - **Dirección:** se sigue pidiendo mientras algún distribuidor pueda despachar, para que el comprador elija una comuna cubierta.
 - **Costo:** sale de la zona que cubre la comuna elegida.
 
-El dashboard y Demanda toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
+## Documentos del proveedor (KAN-110)
+
+`features/proveedor/documentos.component.ts`: pestaña "Documentos" (`/proveedor/documentos`).
+- **Tarjetas:** una por documento exigido, con "Al día", "Vence en N días", "Vencido" o "Falta", la fecha de vencimiento, el enlace al archivo y la revisión del admin.
+- **Subida:** el formulario envía el archivo en `FormData` (`POST /proveedor/documentos?tipo=&venceEn=`). Antes de enviar revisa que haya archivo, el tamaño y el vencimiento.
+- **Al subir:** avisa que el documento queda pendiente de revisión.
+
+El dashboard, Demanda y Documentos toman la fecha del token `RELOJ` (`core/reloj.ts`), que los tests reemplazan.
 
 ## Tests
 

@@ -145,6 +145,30 @@ export interface PuntoRetiroProveedor {
   direccion: DireccionPerfil;
 }
 
+export type TipoDocumento = "carpeta_tributaria" | "resolucion_sanitaria" | "vigencia";
+
+/** El documento vigente de un tipo (el ultimo subido). */
+export interface DocumentoSubido {
+  id: number;
+  url: string;
+  venceEn: string | null;
+  vigencia: "al_dia" | "por_vencer" | "vencido";
+  diasParaVencer: number | null;
+  revisionEstado: "pendiente" | "aprobado" | "rechazado";
+  motivoRechazo: string | null;
+  revisadoEn: string | null;
+}
+
+/** GET /proveedor/documentos (KAN-110): uno por documento exigido. */
+export interface DocumentoExigido {
+  tipo: TipoDocumento;
+  nombre: string;
+  requiereVencimiento: boolean;
+  estado: "al_dia" | "por_vencer" | "vencido" | "falta";
+  actual: DocumentoSubido | null;
+  anteriores: number;
+}
+
 @Injectable({ providedIn: "root" })
 export class PanelProveedorService {
   private readonly api = inject(ApiClient);
@@ -193,6 +217,20 @@ export class PanelProveedorService {
 
   eliminarPuntoRetiro(id: number): Promise<unknown> {
     return firstValueFrom(this.api.delete(`/proveedor/puntos-retiro/${id}`));
+  }
+
+  // ---- Documentos (KAN-110)
+  documentos(): Promise<{ items: DocumentoExigido[] }> {
+    return firstValueFrom(this.api.get<{ items: DocumentoExigido[] }>("/proveedor/documentos"));
+  }
+
+  /** El archivo va en multipart; tipo y vencimiento en la query. */
+  subirDocumento(tipo: TipoDocumento, archivo: File, venceEn: string | null): Promise<DocumentoSubido & { tipo: TipoDocumento; nombre: string }> {
+    const datos = new FormData();
+    datos.append("archivo", archivo, archivo.name);
+    const q = new URLSearchParams({ tipo });
+    if (venceEn) q.set("venceEn", venceEn);
+    return firstValueFrom(this.api.post(`/proveedor/documentos?${q}`, datos));
   }
 
   perfil(): Promise<PerfilProveedor> {

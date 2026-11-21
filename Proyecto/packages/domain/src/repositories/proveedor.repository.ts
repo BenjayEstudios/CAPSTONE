@@ -1,5 +1,5 @@
 import type { Proveedor, ProveedorEstado, ProveedorListado } from "../entities/proveedor.entity.js";
-import type { ProveedorDocumento, ProveedorDocumentoRevision } from "../entities/proveedor-documento.entity.js";
+import type { ProveedorDocumento, ProveedorDocumentoRevision, ProveedorDocumentoTipo, ProveedorDocumentoVigencia } from "../entities/proveedor-documento.entity.js";
 
 export interface FiltrosProveedores {
   estado?: ProveedorEstado;
@@ -163,6 +163,12 @@ export interface ProveedorRepository {
   /** null si no existe o no es tipo proveedor. */
   buscarPorId(id: number): Promise<Proveedor | null>;
   listarDocumentos(proveedorId: number): Promise<ProveedorDocumento[]>;
+  /** KAN-110: un documento subido por el proveedor; queda en revision pendiente. */
+  crearDocumento(
+    proveedorId: number,
+    documento: { tipo: ProveedorDocumentoTipo; url: string; venceEn: string | null; vigencia: ProveedorDocumentoVigencia },
+    auditoria: RegistroAuditoria
+  ): Promise<ProveedorDocumento>;
   buscarDocumento(documentoId: number): Promise<ProveedorDocumento | null>;
   revisarDocumento(documentoId: number, revision: RevisionDocumento, auditoria: RegistroAuditoria): Promise<ProveedorDocumento>;
   cambiarEstado(

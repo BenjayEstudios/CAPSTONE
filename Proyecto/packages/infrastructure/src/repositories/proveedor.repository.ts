@@ -384,6 +384,19 @@ export class DrizzleProveedorRepository implements ProveedorRepository {
     return f ? toProveedor(f) : null;
   }
 
+  async crearDocumento(
+    proveedorId: number,
+    d: { tipo: ProveedorDocumento["tipo"]; url: string; venceEn: string | null; vigencia: ProveedorDocumento["vigencia"] },
+    auditoria: RegistroAuditoria
+  ): Promise<ProveedorDocumento> {
+    const id = await this.db.transaction(async (tx) => {
+      const [r] = await tx.insert(proveedorDocumento).values({ proveedorId, tipo: d.tipo, url: d.url, venceEn: d.venceEn, estado: d.vigencia, revisionEstado: "pendiente" });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+    return (await this.buscarDocumento(id))!;
+  }
+
   async listarDocumentos(proveedorId: number): Promise<ProveedorDocumento[]> {
     const filas = await this.db
       .select(docSelect)

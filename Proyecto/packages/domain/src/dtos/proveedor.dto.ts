@@ -113,3 +113,16 @@ export const cambiosPuntoRetiroSchema = z
   })
   .strict()
   .refine((o) => Object.keys(o).length > 0, "No hay cambios");
+
+// POST /proveedor/documentos?tipo=&venceEn= (KAN-110): el archivo va en el
+// cuerpo multipart; tipo y vencimiento en la query (un campo de formulario
+// llega despues del archivo segun como lo arme el cliente).
+export const subirDocumentoQuerySchema = z
+  .object({
+    tipo: z.enum(["carpeta_tributaria", "resolucion_sanitaria", "vigencia"]),
+    venceEn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "formato AAAA-MM-DD")
+      .optional()
+  })
+  .strict();
