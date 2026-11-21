@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CorreoSaliente, RegistroAuditoria, UsuarioAdmin, UsuarioAdminRepository, UsuarioConContexto, UsuarioRepository } from "@cotizapp/domain";
-import { actualizarUsuario, crearUsuario, reactivarUsuario, suspenderUsuario } from "./usuarios.use-cases.js";
+import { actualizarUsuario, buscarOrganizaciones, crearUsuario, listarUsuarios, reactivarUsuario, suspenderUsuario } from "./usuarios.use-cases.js";
 
 function mk(id: number, over: Partial<UsuarioAdmin> = {}, admin = false): { u: UsuarioAdmin; admin: boolean } {
   return {
@@ -18,11 +18,19 @@ function entorno(filas: Array<{ u: UsuarioAdmin; admin: boolean }>) {
   const auditoria: RegistroAuditoria[] = [];
   const creados: Array<Record<string, unknown>> = [];
   const correos: CorreoSaliente[] = [];
+  const consultas: Array<Record<string, unknown>> = [];
   const find = (id: number) => filas.find((f) => f.u.id === id);
   const usuarioAdminRepository: UsuarioAdminRepository = {
-    listar: async () => ({ items: filas.map((f) => f.u), total: filas.length }),
+    listar: async (f) => {
+      consultas.push({ ...f });
+      return { items: filas.map((x) => x.u), total: filas.length, totalExacto: true, hayMas: false };
+    },
     obtener: async (id) => find(id)?.u ?? null,
-    opciones: async () => ({ roles: [], organizaciones: [] }),
+    opciones: async () => ({ roles: [] }),
+    buscarOrganizaciones: async (f) => {
+      consultas.push({ ...f });
+      return [];
+    },
     existeRol: async (id) => id < 10,
     existeOrganizacion: async (id) => id < 10,
     contarActivosConPermisoTotal: async () => filas.filter((f) => f.admin && f.u.estado === "activo").length,
@@ -52,7 +60,7 @@ function entorno(filas: Array<{ u: UsuarioAdmin; admin: boolean }>) {
     }
   } as unknown as UsuarioRepository;
   const servicioCorreo = { falla: false, enviar: async (c: CorreoSaliente) => { if (servicioCorreo.falla) throw new Error("x"); correos.push(c); } };
-  return { usuarioAdminRepository, usuarioRepository, servicioCorreo, auditoria, creados, correos };
+  return { usuarioAdminRepository, usuarioRepository, servicioCorreo, auditoria, creados, correos, consultas };
 }
 
 const base = { nombre: "Nuevo", email: "Nuevo@T.cl", rolId: 2, organizacionId: 1 };
@@ -124,5 +132,36 @@ describe("suspender / reactivar / actualizar", () => {
     await actualizarUsuario(e)(2, { nombre: "Otro" }, 1);
     expect(e.auditoria[0]).toMatchObject({ datosAntes: { nombre: "U2" }, datosDespues: { nombre: "Otro" } });
     await expect(actualizarUsuario(e)(9, { nombre: "x" }, 1)).rejects.toMatchObject({ statusCode: 404 });
+  });
+});
+
+describe("listarUsuarios", () => {
+  it("aplica valores por defecto y entrega paginacion acotada", async () => {
+    const e = entorno([mk(1), mk(2)]);
+    const r = await listarUsuarios(e)({});
+    expect(e.consultas[0]).toMatchObject({ pagina: 1, tamano: 20, orden: "reciente" });
+    expect(r).toMatchObject({ pagina: 1, tamano: 20, total: 2, totalExacto: true, totalPaginas: 1, hayMas: false });
+  });
+  it("totalPaginas nunca es menor que la pagina pedida (conteo acotado)", async () => {
+    const e = entorno([mk(1)]);
+    expect((await listarUsuarios(e)({ pagina: 7 })).totalPaginas).toBe(7);
+  });
+  it("rechaza orden, tamano y pagina fuera de rango", async () => {
+    const e = entorno([mk(1)]);
+    await expect(listarUsuarios(e)({ orden: "ultimo_acceso" })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(listarUsuarios(e)({ tamano: 101 })).rejects.toMatchObject({ statusCode: 400 });
+    await expect(listarUsuarios(e)({ pagina: 0 })).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe("buscarOrganizaciones", () => {
+  it("limita por defecto a 20 y acepta id para mostrar la organizacion ya elegida", async () => {
+    const e = entorno([]);
+    expect(await buscarOrganizaciones(e)({ q: "panad" })).toEqual({ items: [] });
+    await buscarOrganizaciones(e)({ id: "4" });
+    expect(e.consultas).toEqual([{ q: "panad", limite: 20 }, { id: 4, limite: 20 }]);
+  });
+  it("rechaza un limite excesivo (nunca se devuelve la tabla entera)", async () => {
+    await expect(buscarOrganizaciones(entorno([]))({ limite: 500 })).rejects.toMatchObject({ statusCode: 400 });
   });
 });

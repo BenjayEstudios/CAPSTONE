@@ -1,25 +1,38 @@
 <div class="app">
-  <header class="header">
-    <div class="regla"></div>
-    <div class="barra">
-      <button type="button" class="btn btn-secondary menu-btn" (click)="menuAbierto.set(!menuAbierto())"
-        [attr.aria-expanded]="menuAbierto()" aria-controls="sidebar">Menú</button>
-      <span class="marca">{{ brand.nombre }}</span>
-      <span class="meta producto">{{ brand.producto }}</span>
-      <span class="spacer"></span>
-      <span class="meta fecha">{{ fecha }}</span>
-      <span class="meta">{{ usuario()?.nombre }} · {{ usuario()?.rol }}</span>
-      <button type="button" class="btn btn-secondary" (click)="cerrarSesion()">Cerrar sesión</button>
-    </div>
-    <div class="regla fina"></div>
+  <header class="topbar">
+    <button type="button" class="menu-btn" (click)="menuAbierto.set(!menuAbierto())"
+      [attr.aria-expanded]="menuAbierto()" aria-controls="sidebar" aria-label="Abrir menú">☰</button>
+    <app-marca [nombre]="brand.nombre" [tamano]="32" />
   </header>
 
   <div class="cuerpo">
-    <nav id="sidebar" class="sidebar" [class.abierto]="menuAbierto()" aria-label="Módulos">
-      @for (m of modulos(); track m.path) {
-        <a [routerLink]="'/' + m.path" routerLinkActive="activo" (click)="menuAbierto.set(false)">{{ m.label }}</a>
-      }
-    </nav>
+    <aside id="sidebar" class="sidebar" [class.abierto]="menuAbierto()">
+      <div class="marca-lateral">
+        <app-marca [nombre]="brand.nombre" [claro]="true" [tamano]="40" />
+        <span class="producto">Administración</span>
+      </div>
+
+      <nav class="menu" aria-label="Módulos">
+        @for (m of modulos(); track m.path) {
+          <a [routerLink]="'/' + m.path" routerLinkActive="activo" (click)="menuAbierto.set(false)">
+            <span class="punto" aria-hidden="true"></span>{{ m.label }}
+          </a>
+        }
+      </nav>
+
+      <div class="usuario-card">
+        <div class="usuario" [title]="usuario()?.nombre ?? ''">
+          <span class="avatar" aria-hidden="true">{{ inicial() }}</span>
+          <span class="usuario-datos">
+            <span class="usuario-nombre">{{ usuario()?.nombre }}</span>
+            <span class="usuario-rol">{{ usuario()?.rol }}</span>
+          </span>
+        </div>
+        <button type="button" class="salir" (click)="cerrarSesion()">Salir</button>
+      </div>
+      <app-ondas class="ondas-lateral" [alto]="56" />
+    </aside>
+
     <main class="contenido">
       @if (sinSecciones()) {
         <p class="aviso-sin-secciones" role="status">Tu rol no tiene secciones habilitadas. Pide a un administrador que revise tus permisos.</p>

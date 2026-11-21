@@ -1,19 +1,21 @@
 .cabecera { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-.cabecera h2 { font-size: 34px; margin: 0; }
+.cabecera h2 { margin: 0; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; }
 .filtros { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 .filtros .field { min-width: 180px; }
 .filtros .grow { flex: 1 1 260px; }
-.tabla-wrap { overflow-x: auto; }
+.tabla-wrap { overflow-x: auto; background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); }
 .tabla-wrap.cargando { opacity: .6; }
 .tabla { width: 100%; border-collapse: collapse; font-size: 14px; }
-.tabla th, .tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--color-divider); }
-.tabla th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; border-bottom: 2px solid var(--color-text); }
+.tabla th, .tabla td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--color-divider); }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla th { font-size: 12px; font-weight: 600; color: var(--color-text-soft); background: var(--color-surface); border-bottom: 1px solid var(--color-divider); }
 .num { text-align: right !important; font-variant-numeric: tabular-nums; }
-.badge { display: inline-block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); }
 .badge.borrador { background: var(--color-surface); color: var(--color-text); }
-.badge.publicado { background: var(--color-accent-100); color: var(--color-accent-800); }
+.badge.publicado { background: var(--color-ok-100); color: var(--color-ok-800); }
 .badge.archivado { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .estado { padding: 24px 0; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
-.mensaje { padding: 10px 12px; font-size: 14px; border-left: 3px solid var(--color-accent-2); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.mensaje { padding: 10px 12px; font-size: 14px; border: 1px solid color-mix(in srgb, var(--color-accent-2) 35%, transparent); border-radius: var(--radius-md); background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .paginacion { display: flex; align-items: center; gap: 8px; justify-content: flex-end; margin-top: 14px; font-size: 13px; }
 .paginacion span { margin-right: auto; }

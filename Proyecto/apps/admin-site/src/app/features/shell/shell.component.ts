@@ -4,13 +4,15 @@ import { AuthService } from "../../core/auth/auth.service";
 import { BRAND } from "../../core/config/brand";
 import { MODULOS } from "../../core/navigation/modulos.config";
 import { SessionState } from "../../core/state/session.state";
+import { MarcaComponent } from "../../shared/ui/marca.component";
+import { OndasComponent } from "../../shared/ui/ondas.component";
 
-// Layout compartido: header (nombre, rol, cerrar sesion) + sidebar de modulos
-// filtrados por permisos + contenido.
+// Layout compartido: sidebar azul marino (marca, modulos filtrados por
+// permisos, usuario y cerrar sesion) + contenido.
 @Component({
   selector: "app-shell",
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, MarcaComponent, OndasComponent],
   templateUrl: "./shell.component.html",
   styleUrl: "./shell.component.css"
 })
@@ -22,6 +24,8 @@ export class ShellComponent {
   readonly brand = BRAND;
   readonly usuario = this.session.usuario;
   readonly menuAbierto = signal(false);
+  /** Inicial del nombre para el avatar del header. */
+  readonly inicial = computed(() => (this.usuario()?.nombre ?? "?").trim().charAt(0) || "?");
   readonly modulos = computed(() => MODULOS.filter((m) => m.permiso === null || this.session.tienePermiso(m.permiso)));
   /** Sin ninguna seccion con permiso (solo queda el Dashboard, que es siempre visible). */
   readonly sinSecciones = computed(() => this.modulos().every((m) => m.permiso === null));

@@ -60,12 +60,14 @@
       </div>
       <div class="field">
         <label for="u-org">Organización</label>
-        <select id="u-org" class="input" [disabled]="p !== 'crear' && esPropio(p)" (change)="fOrg.set($any($event.target).value)">
-          <option value="" [selected]="fOrg() === ''">Selecciona…</option>
-          @for (o of opciones().organizaciones; track o.id) {
-            <option [value]="o.id" [selected]="fOrg() === '' + o.id">{{ o.razonSocial }} ({{ o.tipo }})</option>
-          }
-        </select>
+        <app-organizacion-selector
+          idCampo="u-org"
+          placeholder="Busca por nombre o RUT…"
+          [valor]="fOrg()"
+          [etiquetaInicial]="fOrgEtiqueta()"
+          [deshabilitado]="p !== 'crear' && esPropio(p)"
+          (elegida)="onOrganizacionForm($event)"
+        />
       </div>
       @if (p === "crear") {
         <div class="field">
@@ -112,8 +114,8 @@
 
 <div class="filtros">
   <div class="field grow">
-    <label for="f-q">Buscar por nombre o email</label>
-    <input id="f-q" class="input" type="search" [value]="q()" (input)="onBusqueda($any($event.target).value)" />
+    <label for="f-q">Buscar por nombre, apellido o email</label>
+    <input id="f-q" class="input" type="search" placeholder="Ej.: garcía, ana@empresa…" [value]="q()" (input)="onBusqueda($any($event.target).value)" />
   </div>
   <div class="field">
     <label for="f-rol">Rol</label>
@@ -124,14 +126,16 @@
       }
     </select>
   </div>
-  <div class="field">
+  <div class="field org">
     <label for="f-org">Organización</label>
-    <select id="f-org" class="input" (change)="onFiltro('organizacionId', $any($event.target).value)">
-      <option value="" [selected]="organizacionId() === ''">Todas</option>
-      @for (o of opciones().organizaciones; track o.id) {
-        <option [value]="o.id" [selected]="organizacionId() === '' + o.id">{{ o.razonSocial }}</option>
-      }
-    </select>
+    <app-organizacion-selector
+      idCampo="f-org"
+      placeholder="Todas · busca por nombre o RUT"
+      [valor]="organizacionId()"
+      [etiquetaInicial]="orgEtiqueta()"
+      (elegida)="onOrganizacionFiltro($event)"
+      (etiquetaResuelta)="orgEtiqueta.set($event)"
+    />
   </div>
   <div class="field">
     <label for="f-estado">Estado</label>
@@ -142,7 +146,33 @@
       }
     </select>
   </div>
+  <div class="field">
+    <label for="f-orden">Ordenar por</label>
+    <select id="f-orden" class="input" (change)="onOrden($any($event.target).value)">
+      @for (o of ordenes; track o) {
+        <option [value]="o" [selected]="orden() === o">{{ etiquetasOrden[o] }}</option>
+      }
+    </select>
+  </div>
 </div>
+
+@if (hayFiltros()) {
+  <div class="chips" role="group" aria-label="Filtros activos">
+    @if (q()) {
+      <button type="button" class="chip" (click)="quitarFiltro('q')" [attr.aria-label]="'Quitar búsqueda ' + q()">Búsqueda: “{{ q() }}” <span aria-hidden="true">×</span></button>
+    }
+    @if (rolId()) {
+      <button type="button" class="chip" (click)="quitarFiltro('rolId')" [attr.aria-label]="'Quitar filtro de rol ' + nombreRolFiltro()">Rol: {{ nombreRolFiltro() }} <span aria-hidden="true">×</span></button>
+    }
+    @if (organizacionId()) {
+      <button type="button" class="chip" (click)="quitarFiltro('organizacionId')" aria-label="Quitar filtro de organización">Organización: {{ orgEtiqueta() || "#" + organizacionId() }} <span aria-hidden="true">×</span></button>
+    }
+    @if (estado()) {
+      <button type="button" class="chip" (click)="quitarFiltro('estado')" aria-label="Quitar filtro de estado">Estado: {{ etiquetaEstadoFiltro() }} <span aria-hidden="true">×</span></button>
+    }
+    <button type="button" class="enlace" (click)="limpiarFiltros()">Limpiar filtros</button>
+  </div>
+}
 
 @if (error()) {
   <p class="mensaje" role="alert">
@@ -151,13 +181,16 @@
 } @else if (cargando() && items().length === 0) {
   <p class="estado" role="status">Cargando usuarios…</p>
 } @else if (items().length === 0) {
-  <p class="estado">No hay usuarios que coincidan con los filtros.</p>
+  <p class="estado">
+    {{ hayFiltros() ? "No hay usuarios que coincidan con los filtros." : "Aún no hay usuarios." }}
+    @if (hayFiltros()) { <button type="button" class="btn btn-secondary" (click)="limpiarFiltros()">Limpiar filtros</button> }
+  </p>
 } @else {
   <div class="tabla-wrap" [class.cargando]="cargando()">
     <table class="tabla">
       <thead>
         <tr>
-          <th>Usuario</th><th>Rol</th><th>Organización</th><th>Último acceso</th><th>2FA</th><th>Estado</th>
+          <th scope="col" [attr.aria-sort]="ariaOrdenNombre()"><button type="button" class="orden" (click)="ordenarPorNombre()">Usuario <span aria-hidden="true">{{ iconoOrdenNombre() }}</span></button></th><th>Rol</th><th>Organización</th><th>Último acceso</th><th>2FA</th><th>Estado</th>
           @if (puedeEscribir()) { <th>Acciones</th> }
         </tr>
       </thead>
@@ -196,9 +229,18 @@
   </div>
 
   <nav class="paginacion" aria-label="Paginación">
-    <span>{{ total() }} usuarios · página {{ pagina() }} de {{ totalPaginas() }}</span>
+    <span aria-live="polite">{{ resumen() }}</span>
+    <label class="tam">Filas
+      <select class="input" (change)="onTamano($any($event.target).value)">
+        @for (t of tamanos; track t) {
+          <option [value]="t" [selected]="tamano() === t">{{ t }}</option>
+        }
+      </select>
+    </label>
+    <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(1)" aria-label="Primera página">«</button>
     <button type="button" class="btn btn-secondary" [disabled]="pagina() <= 1" (click)="irAPagina(pagina() - 1)">Anterior</button>
-    <button type="button" class="btn btn-secondary" [disabled]="pagina() >= totalPaginas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
+    <span class="pag">Página {{ pagina() }}</span>
+    <button type="button" class="btn btn-secondary" [disabled]="!hayMas()" (click)="irAPagina(pagina() + 1)">Siguiente</button>
   </nav>
 }
 

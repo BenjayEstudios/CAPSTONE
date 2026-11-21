@@ -43,7 +43,8 @@ flutter test test/some_test.dart  # single file
 Docker Compose (MySQL + backend + ecommerce + admin-site, hot-reload):
 
 ```bash
-cp apps/backend/.env.example apps/backend/.env
+# compose reads apps/backend/.env, apps/ecommerce/.env and apps/admin-site/.env (all untracked).
+# README mentions apps/backend/.env.example, but it is not in the repo — copy an existing .env or ask Infraestructura.
 docker compose up
 docker compose up -d backend      # recreate just one service after editing its .env
 ```
@@ -56,7 +57,7 @@ pnpm db:generate   # generate SQL migration from schema
 pnpm db:migrate     # apply against DATABASE_URL
 ```
 
-Env vars: `apps/backend/.env` is read by the backend (only `DATABASE_URL` is actually used; `DB_HOST`/`DB_PORT`/etc. are informational). Angular apps do **not** read `.env` — their dev config lives in `src/environments/environment.development.ts`, not `.env`.
+Env vars: `apps/backend/.env` is read by the backend; the full list is the Zod schema in `apps/backend/src/config/env.ts` (only `DATABASE_URL` and `JWT_SECRET` are required; `DB_HOST`/`DB_PORT`/etc. are informational). `docker-compose.yml` overrides `DATABASE_URL` (host `mysql`), `UPLOADS_DIR`, `MAIL_DRIVER=consola` and `MAIL_OUT_DIR` for the backend container, so the `.env` values for those don't apply under Docker. The env schema defaults `PORT` to 3000, but the apps expect the backend on :8000 — set it in `.env`. Angular apps do **not** read `.env` — their dev config lives in `src/environments/environment.development.ts`, not `.env`.
 
 ## Architecture
 
@@ -68,7 +69,7 @@ packages/application     use cases; dependencies passed in via parameter/constru
 packages/infrastructure  Drizzle schema + repository implementations (the only layer that knows about MySQL)
 apps/backend             Fastify HTTP interface; routes are the composition root that wires a concrete repository + calls a use case
 apps/ecommerce           Angular — single app serving both customers/SMEs and distributors (role-based routing/guards, shared session)
-apps/admin-site          Angular — internal site administration, separate deploy from ecommerce (scaffold only, no features yet)
+apps/admin-site          Angular 18 — internal site administration, separate deploy from ecommerce; features/ already has moderacion, usuarios, ordenes, liquidaciones, reembolsos, dashboard, roles, auditoria, catalogo, categorias, proveedores (`features/README.md` is stale — it still says none are implemented; lazy routes, shell + login with 2FA step)
 apps/mobile              Flutter — distributor-only (stats, visits, ratings); standard Flutter Clean Architecture (lib/features/<feature>/{data,domain,presentation}), Riverpod for DI/state
 ```
 
@@ -93,7 +94,10 @@ Route handlers never contain business logic directly — they build a concrete r
 
 Resolved entirely in `apps/backend` (neither `domain` nor `application` know a JWT exists), as composable Fastify `preHandler`s in `src/plugins/auth.ts`:
 - `requireAuth` — verifies `Bearer <token>` against `JWT_SECRET`, populates `request.auth = { sub, organizacionId, rol }`, else 401.
-- `requireRol(...roles)` — composes after `requireAuth`, checks `request.auth.rol`, else 403.
+- `requireRol(...roles)` — composes after `requireAuth`, checks `request.auth.rol` (from the JWT), else 403.
+- `requirePermiso(...requisitos)` — the guard most admin routes use. Reads the user's role/state **from the DB, not the JWT**, and checks the `rol.permisos` matrix (levels `ninguno|parcial|total`; `{ codigo, minimo: "total" }` to require a level). Any one requirement satisfying is enough (OR). Errors are serialized by `src/lib/error-handler.ts`.
+
+Admin login lives in `src/routes/auth/` (`login-admin`, `me`, `mfa`): 2FA by email with a signed challenge. Mail goes through `src/lib/mail.ts` (`MAIL_DRIVER=consola` writes each message to `MAIL_OUT_DIR` instead of sending; `smtp` uses nodemailer). Uploaded images go through `src/lib/storage.ts` (`STORAGE_DRIVER=local`, `UPLOADS_DIR`).
 
 Apply by adding to a route's `preHandler: [...]` array — never a global hook with an exception list. `JWT_SECRET` is validated at startup via Zod (`src/config/env.ts`); the server refuses to start if missing rather than failing on first protected request.
 
@@ -112,11 +116,15 @@ Apply by adding to a route's `preHandler: [...]` array — never a global hook w
 
 ### Database
 
-MySQL. Full ER model (DBML) in `DataBase/dbDiagram.sql` — the Drizzle schema under `packages/infrastructure/src/db/schema` must translate it table by table; only `categoria` is translated so far. Key entities: `organizacion`, `usuario`, `rol`, `categoria`, `producto`, `oferta` (volume/quantity pricing, not unit price), `carro`, `orden`, `orden_linea`, `orden_envio`, `documento_tributario`, `liquidacion` (simulated per-distributor payout split), `proveedor_documento`, `proveedor_cobertura`, `evento_analitico`, `auditoria_log`, `moderacion_caso`.
+MySQL. Full ER model (DBML) in `DataBase/dbDiagram.sql` — the Drizzle schema under `packages/infrastructure/src/db/schema` is translated table by table (all tables used so far are in the schema dir; migrations `0000`–`0003` in `packages/infrastructure/migrations`). `DataBase/init/01-schema.sql` + `02-seed.sql` bootstrap the Docker MySQL **only on an empty volume** (first start or after `docker compose down -v`); `01-schema.sql` is generated by hand with `pnpm exec drizzle-kit export --sql` and must be regenerated whenever the schema changes. `drizzle-kit migrate` has not worked against the local Docker DB — the notes in `ApuntesSeba/estado-de-sesion.md` record applying migrations with the `mysql` client instead. Seed users: `pnpm db:seed` in `packages/infrastructure`. Key entities: `organizacion`, `usuario`, `rol`, `categoria`, `producto`, `oferta` (volume/quantity pricing, not unit price), `carro`, `orden`, `orden_linea`, `orden_envio`, `documento_tributario`, `liquidacion` (simulated per-distributor payout split), `proveedor_documento`, `proveedor_cobertura`, `evento_analitico`, `auditoria_log`, `moderacion_caso`.
 
 ### Payments
 
-Webpay/MercadoPago sandbox, consumed only from `apps/backend` (card data never touches our own backend). No native split from the gateway — the payout split across distributors is simulated in our own DB (`liquidacion` table).
+Webpay/MercadoPago sandbox, consumed only from `apps/backend` (card data never touches our own backend). No native split from the gateway — the payout split across distributors is simulated in our own DB (`liquidacion` table). The gateway integration (KAN-148) is **not implemented yet** (blocked on Webpay-vs-MercadoPago decision and sandbox credentials). Settlement amounts: net = (subtotal + shipping) − commission, NULL commission = 0; run the payout job with `pnpm --filter=@cotizapp/backend job:liquidaciones` (no scheduler wired).
+
+### Testing notes
+
+Backend/packages use vitest. `apps/admin-site` and `apps/ecommerce` use Karma + Jasmine with `ChromeHeadlessCI` (`--no-sandbox`); `karma.conf.js` falls back to `/usr/bin/chromium` when `CHROME_BIN` is unset (Docker). Use `ng test --browsers=Chrome` to watch locally.
 
 ### Hot-reload mechanics
 

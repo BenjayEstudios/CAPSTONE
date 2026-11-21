@@ -2,20 +2,22 @@ import { DatePipe, NgTemplateOutlet } from "@angular/common";
 import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { Subject, debounceTime, distinctUntilChanged } from "rxjs";
+import { Subject, debounceTime } from "rxjs";
 import { SessionState } from "../../core/state/session.state";
 import {
-  CrearUsuarioRespuesta, EstadoUsuario, MfaEstado, OpcionesUsuario, UsuarioItem
+  CrearUsuarioRespuesta, EstadoUsuario, MfaEstado, OpcionesUsuario, OrdenUsuarios, OrganizacionOpcion, UsuarioItem
 } from "../../core/models/usuarios.models";
+import { OrganizacionSelectorComponent } from "./organizacion-selector.component";
 import { UsuariosService } from "./usuarios.service";
-import { ETIQUETA_ESTADO, ETIQUETA_MFA, mensajeErrorUsuario, validarFormulario } from "./usuarios.util";
-
-const TAMANO = 20;
+import {
+  ETIQUETA_ESTADO, ETIQUETA_MFA, ETIQUETA_ORDEN, ORDENES, TAMANOS_PAGINA, TAMANO_POR_DEFECTO,
+  leerOrden, leerPagina, leerTamano, mensajeErrorUsuario, resumenResultados, siguienteOrdenPorNombre, validarFormulario
+} from "./usuarios.util";
 
 @Component({
   selector: "app-usuarios",
   standalone: true,
-  imports: [DatePipe, NgTemplateOutlet],
+  imports: [DatePipe, NgTemplateOutlet, OrganizacionSelectorComponent],
   templateUrl: "./usuarios.component.html",
   styleUrl: "./usuarios.component.css"
 })
@@ -30,6 +32,9 @@ export class UsuariosComponent {
 
   readonly etiquetasEstado = ETIQUETA_ESTADO;
   readonly etiquetasMfa = ETIQUETA_MFA;
+  readonly etiquetasOrden = ETIQUETA_ORDEN;
+  readonly ordenes = ORDENES;
+  readonly tamanos = TAMANOS_PAGINA;
   readonly estados: EstadoUsuario[] = ["invitado", "activo", "suspendido"];
   readonly mfaEstados: MfaEstado[] = ["inactivo", "opcional", "pendiente", "activo"];
 
@@ -41,13 +46,28 @@ export class UsuariosComponent {
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
   readonly total = signal(0);
-  readonly totalPaginas = signal(0);
+  readonly totalExacto = signal(true);
+  readonly hayMas = signal(false);
   readonly estado = signal("");
   readonly rolId = signal("");
   readonly organizacionId = signal("");
+  readonly orgEtiqueta = signal(""); // nombre de la organizacion filtrada (la URL solo trae el id)
   readonly q = signal("");
+  readonly orden = signal<OrdenUsuarios>("reciente");
+  readonly tamano = signal(TAMANO_POR_DEFECTO);
   readonly pagina = signal(1);
-  readonly opciones = signal<OpcionesUsuario>({ roles: [], organizaciones: [] });
+  readonly opciones = signal<OpcionesUsuario>({ roles: [] });
+
+  readonly resumen = computed(() =>
+    resumenResultados({ pagina: this.pagina(), tamano: this.tamano(), cantidad: this.items().length, total: this.total(), totalExacto: this.totalExacto() })
+  );
+  readonly hayFiltros = computed(() => !!(this.q() || this.rolId() || this.organizacionId() || this.estado()));
+  readonly nombreRolFiltro = computed(() => this.opciones().roles.find((r) => String(r.id) === this.rolId())?.nombre ?? `Rol ${this.rolId()}`);
+  readonly etiquetaEstadoFiltro = computed(() => ETIQUETA_ESTADO[this.estado() as EstadoUsuario] ?? this.estado());
+  readonly iconoOrdenNombre = computed(() => (this.orden() === "nombre_asc" ? "▲" : this.orden() === "nombre_desc" ? "▼" : ""));
+  readonly ariaOrdenNombre = computed(() =>
+    this.orden() === "nombre_asc" ? "ascending" : this.orden() === "nombre_desc" ? "descending" : "none"
+  );
 
   // Formulario crear / editar
   readonly panel = signal<"crear" | UsuarioItem | null>(null);
@@ -55,6 +75,7 @@ export class UsuariosComponent {
   readonly fEmail = signal("");
   readonly fRol = signal("");
   readonly fOrg = signal("");
+  readonly fOrgEtiqueta = signal("");
   readonly fRut = signal("");
   readonly fTelefono = signal("");
   readonly fModo = signal<"invitacion" | "clave_temporal">("invitacion");
@@ -75,15 +96,19 @@ export class UsuariosComponent {
     this.svc.opciones().subscribe({ next: (o) => this.opciones.set(o), error: () => undefined });
 
     this.busqueda$
-      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .pipe(debounceTime(350), takeUntilDestroyed(this.destroyRef))
       .subscribe((q) => this.navegar({ q: q.trim() || null, pagina: null }));
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((p) => {
       this.estado.set(p.get("estado") ?? "");
       this.rolId.set(p.get("rolId") ?? "");
-      this.organizacionId.set(p.get("organizacionId") ?? "");
+      const org = p.get("organizacionId") ?? "";
+      if (org !== this.organizacionId()) this.orgEtiqueta.set("");
+      this.organizacionId.set(org);
       this.q.set(p.get("q") ?? "");
-      this.pagina.set(Math.max(1, Number(p.get("pagina")) || 1));
+      this.orden.set(leerOrden(p.get("orden")));
+      this.tamano.set(leerTamano(p.get("tamano")));
+      this.pagina.set(leerPagina(p.get("pagina")));
       this.cargar();
     });
   }
@@ -95,8 +120,29 @@ export class UsuariosComponent {
   onFiltro(clave: "estado" | "rolId" | "organizacionId", v: string): void {
     this.navegar({ [clave]: v || null, pagina: null });
   }
+  onOrganizacionFiltro(o: OrganizacionOpcion | null): void {
+    this.orgEtiqueta.set(o?.razonSocial ?? "");
+    this.navegar({ organizacionId: o ? String(o.id) : null, pagina: null });
+  }
+  onOrden(v: string): void {
+    this.navegar({ orden: leerOrden(v) === "reciente" ? null : leerOrden(v), pagina: null });
+  }
+  ordenarPorNombre(): void {
+    const sig = siguienteOrdenPorNombre(this.orden());
+    this.navegar({ orden: sig === "reciente" ? null : sig, pagina: null });
+  }
+  onTamano(v: string): void {
+    const n = leerTamano(v);
+    this.navegar({ tamano: n === TAMANO_POR_DEFECTO ? null : n, pagina: null });
+  }
+  quitarFiltro(clave: "q" | "rolId" | "organizacionId" | "estado"): void {
+    this.navegar({ [clave]: null, pagina: null });
+  }
+  limpiarFiltros(): void {
+    this.navegar({ q: null, rolId: null, organizacionId: null, estado: null, pagina: null });
+  }
   irAPagina(n: number): void {
-    if (n < 1 || n > this.totalPaginas() || n === this.pagina()) return;
+    if (n < 1 || n === this.pagina() || (n > this.pagina() && !this.hayMas())) return;
     this.navegar({ pagina: n === 1 ? null : n });
   }
   reintentar(): void {
@@ -115,6 +161,7 @@ export class UsuariosComponent {
     this.fEmail.set(u.email);
     this.fRol.set(String(u.rol.id));
     this.fOrg.set(String(u.organizacion.id));
+    this.fOrgEtiqueta.set(u.organizacion.razonSocial);
     this.fTelefono.set(u.telefono ?? "");
     this.fMfa.set(u.mfaEstado);
     this.panel.set(u);
@@ -124,6 +171,10 @@ export class UsuariosComponent {
   }
   esPropio(u: UsuarioItem): boolean {
     return u.id === this.miId();
+  }
+  onOrganizacionForm(o: OrganizacionOpcion | null): void {
+    this.fOrg.set(o ? String(o.id) : "");
+    this.fOrgEtiqueta.set(o?.razonSocial ?? "");
   }
 
   guardar(): void {
@@ -234,6 +285,7 @@ export class UsuariosComponent {
     this.fEmail.set("");
     this.fRol.set("");
     this.fOrg.set("");
+    this.fOrgEtiqueta.set("");
     this.fRut.set("");
     this.fTelefono.set("");
     this.fModo.set("invitacion");
@@ -255,15 +307,22 @@ export class UsuariosComponent {
         rolId: this.rolId(),
         organizacionId: this.organizacionId(),
         q: this.q(),
+        orden: this.orden(),
         pagina: this.pagina(),
-        tamano: TAMANO
+        tamano: this.tamano()
       })
       .subscribe({
         next: (r) => {
           if (id !== this.solicitud) return;
+          // Pagina fuera de rango (p. ej. se suspendio/filtro la ultima fila): vuelve a la primera.
+          if (r.items.length === 0 && this.pagina() > 1) {
+            this.navegar({ pagina: null });
+            return;
+          }
           this.items.set(r.items);
           this.total.set(r.total);
-          this.totalPaginas.set(r.totalPaginas);
+          this.totalExacto.set(r.totalExacto);
+          this.hayMas.set(r.hayMas);
           this.cargando.set(false);
         },
         error: (e) => {

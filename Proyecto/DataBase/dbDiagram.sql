@@ -187,6 +187,8 @@ Table organizacion {
 
   indexes {
     tipo
+    razon_social
+    // FULLTEXT (razon_social, nombre_fantasia): selector con busqueda (migracion 0003)
   }
 
   Note: '''
@@ -215,6 +217,8 @@ Table usuario {
 
   indexes {
     estado
+    nombre
+    // FULLTEXT (nombre, email): busqueda del listado (migracion 0003; DBML no modela FULLTEXT)
   }
 
   Note: 'Cuenta de acceso: una organización, un rol.'

@@ -1,0 +1,102 @@
+<header class="cabecera">
+  <h2>Importar catálogo desde Excel</h2>
+  <a class="btn btn-secondary" routerLink="..">Volver al catálogo</a>
+</header>
+
+<section class="panel">
+  <ol class="pasos">
+    <li>
+      Descarga la plantilla vacía para cargar productos nuevos, o el <strong>catálogo actual</strong> para editar en masa lo que ya existe. El <strong>SKU</strong> es la llave: si ya existe se
+      <strong>actualiza</strong> el producto, si no se <strong>crea</strong>. En una actualización, las celdas vacías no se modifican.
+    </li>
+    <li>Sube la planilla y revisa la simulación: no se guarda nada hasta que confirmes.</li>
+    <li>Confirma la importación. Las filas con error se omiten y puedes corregirlas y volver a cargar el archivo.</li>
+  </ol>
+
+  <div class="controles">
+    <button type="button" class="btn btn-secondary" [disabled]="trabajando() !== null" (click)="descargarPlantilla()">
+      {{ trabajando() === "descargando" ? "Descargando…" : "Descargar plantilla vacía" }}
+    </button>
+    <button type="button" class="btn btn-secondary" [disabled]="trabajando() !== null" (click)="descargarPlantilla(true)">
+      Descargar catálogo actual
+    </button>
+
+    <div class="field grow">
+      <label for="archivo">Planilla (.xlsx)</label>
+      <input
+        #entrada
+        id="archivo"
+        class="input"
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        (change)="onArchivo(entrada)"
+      />
+    </div>
+
+    <button type="button" class="btn btn-primary" [disabled]="!archivo() || trabajando() !== null" (click)="validar()">
+      {{ trabajando() === "validando" ? "Validando…" : "Validar archivo" }}
+    </button>
+  </div>
+</section>
+
+@if (error()) {
+  <p class="mensaje" role="alert">{{ error() }}</p>
+}
+
+@if (resultado(); as r) {
+  <section class="panel" aria-live="polite">
+    @if (!r.simulacion) {
+      <p class="exito" role="status">
+        Importación terminada: {{ r.resumen.crear }} creados y {{ r.resumen.actualizar }} actualizados.
+        @if (r.resumen.errores > 0) { {{ r.resumen.errores }} filas con error no se guardaron. }
+      </p>
+    } @else {
+      <p class="aviso">Simulación: todavía no se guardó nada.</p>
+    }
+
+    <ul class="resumen">
+      <li class="crear"><strong>{{ r.resumen.crear }}</strong> {{ r.simulacion ? "por crear" : "creados" }}</li>
+      <li class="actualizar"><strong>{{ r.resumen.actualizar }}</strong> {{ r.simulacion ? "por actualizar" : "actualizados" }}</li>
+      <li class="sin_cambios"><strong>{{ r.resumen.sinCambios }}</strong> sin cambios</li>
+      <li class="error"><strong>{{ r.resumen.errores }}</strong> con error</li>
+    </ul>
+
+    @if (r.simulacion) {
+      <div class="confirmar">
+        <button type="button" class="btn btn-primary" [disabled]="!puedeImportar()" (click)="importar()">
+          {{ trabajando() === "importando" ? "Importando…" : "Importar " + (r.resumen.crear + r.resumen.actualizar) + " productos" }}
+        </button>
+        @if (r.resumen.errores > 0) {
+          <span class="nota">Las {{ r.resumen.errores }} filas con error se omitirán.</span>
+        }
+        @if (r.resumen.crear + r.resumen.actualizar === 0) {
+          <span class="nota">No hay nada que guardar.</span>
+        }
+      </div>
+    }
+
+    @if (r.resumen.errores > 0) {
+      <label class="solo-errores">
+        <input type="checkbox" [checked]="soloErrores()" (change)="soloErrores.set(!soloErrores())" /> Mostrar solo errores
+      </label>
+    }
+
+    <div class="tabla-wrap">
+      <table class="tabla">
+        <thead>
+          <tr><th class="num">Fila</th><th>SKU</th><th>Resultado</th><th>Detalle</th></tr>
+        </thead>
+        <tbody>
+          @for (f of filasVisibles(); track f.fila) {
+            <tr>
+              <td class="num">{{ f.fila }}</td>
+              <td>{{ f.sku ?? "—" }}</td>
+              <td><span class="badge" [class]="'badge ' + f.accion">{{ etiqueta[f.accion] }}</span></td>
+              <td>{{ f.error?.mensaje ?? "" }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+}

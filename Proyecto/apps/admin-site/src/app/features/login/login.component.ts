@@ -4,6 +4,8 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { AuthError, AuthService } from "../../core/auth/auth.service";
 import { BRAND } from "../../core/config/brand";
 import { RUTA_INICIO } from "../../core/navigation/modulos.config";
+import { MarcaComponent } from "../../shared/ui/marca.component";
+import { OndasComponent } from "../../shared/ui/ondas.component";
 
 // Codigos de AuthError tras los cuales hay que volver a empezar (paso 1).
 export const ERRORES_MFA_REINICIAN = ["MFA_INVALIDO", "MFA_DEMASIADOS_INTENTOS"];
@@ -15,7 +17,7 @@ export const ERRORES_MFA_REINICIAN = ["MFA_INVALIDO", "MFA_DEMASIADOS_INTENTOS"]
 @Component({
   selector: "app-login",
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, MarcaComponent, OndasComponent],
   templateUrl: "./login.component.html",
   styleUrl: "./login.component.css"
 })
