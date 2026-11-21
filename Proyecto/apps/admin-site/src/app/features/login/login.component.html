@@ -26,11 +26,31 @@
     <span class="circulo circulo-b" aria-hidden="true"></span>
     <div class="login">
       <span class="paso"><span class="paso-punto" aria-hidden="true"></span>Paso {{ enMfa() ? 2 : 1 }} de 2</span>
-      <h2 class="titulo">{{ enMfa() ? "Verificación" : "Ingresar" }}</h2>
-      <p class="sub">{{ enMfa() ? "Enviamos un código de 6 dígitos a tu correo. Vence en 5 minutos." : "Ingresa con tu cuenta del equipo Cotizapp." }}</p>
+      @if (!enMfa()) {
+        <h2 class="titulo">Ingresar</h2>
+        <p class="sub">Ingresa con tu cuenta del equipo Cotizapp.</p>
+      } @else if (enrolamiento()) {
+        <h2 class="titulo">Activa la verificación</h2>
+        <p class="sub">Tu cuenta exige verificación en dos pasos. Configúrala una sola vez con tu teléfono.</p>
+      } @else {
+        <h2 class="titulo">Verificación</h2>
+        <p class="sub">Abre tu app autenticadora y escribe el código de 6 dígitos de Cotizapp.</p>
+      }
 
       @if (enMfa()) {
-      <form class="form" (ngSubmit)="verificar()" novalidate>
+      <form class="form" [formGroup]="formMfa" (ngSubmit)="verificar()" novalidate>
+        @if (enrolamiento(); as e) {
+          <div class="enrolamiento">
+            <ol class="instrucciones">
+              <li>Instala una app autenticadora en tu teléfono: Google Authenticator, Microsoft Authenticator o Authy.</li>
+              <li>En la app, agrega una cuenta y escanea este código.</li>
+              <li>Escribe el código de 6 dígitos que muestra la app.</li>
+            </ol>
+            <img class="qr" [src]="e.qrDataUrl" width="200" height="200" alt="Código QR para configurar la app autenticadora" />
+            <p class="secreto-ayuda">¿No puedes escanearlo? Ingresa esta clave en la app:</p>
+            <code class="secreto">{{ secretoAgrupado() }}</code>
+          </div>
+        }
         @if (aviso()) {
           <p class="mensaje aviso" role="status">{{ aviso() }}</p>
         }
@@ -38,18 +58,15 @@
           <p class="mensaje error" role="alert">{{ error() }}</p>
         }
         <div class="field">
-          <label for="codigo">Código de verificación</label>
+          <label for="codigo">Código de la app</label>
           <input #inputCodigo id="codigo" class="input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-            autocomplete="one-time-code" [formControl]="codigo" />
+            autocomplete="one-time-code" formControlName="codigo" />
           @if (codigo.touched && codigo.invalid) {
             <span class="ayuda">Ingresa los 6 dígitos del código.</span>
           }
         </div>
         <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
-          {{ cargando() ? "Verificando..." : "Verificar" }}
-        </button>
-        <button type="button" class="btn btn-secondary btn-block" (click)="reenviar()" [disabled]="cargando() || enfriamiento() > 0">
-          {{ enfriamiento() > 0 ? "Reenviar código (" + enfriamiento() + " s)" : "Reenviar código" }}
+          {{ cargando() ? "Verificando..." : enrolamiento() ? "Activar y entrar" : "Verificar" }}
         </button>
         <button type="button" class="btn btn-secondary btn-block" (click)="volverAEmpezar()">Volver</button>
       </form>
@@ -81,7 +98,7 @@
         <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
           {{ cargando() ? "Ingresando..." : "Ingresar →" }}
         </button>
-        <p class="nota-2fa">Te pediremos un código de verificación enviado a tu correo.</p>
+        <p class="nota-2fa">Después te pediremos el código de 6 dígitos de tu app autenticadora.</p>
       </form>
       }
     </div>

@@ -43,6 +43,6 @@ export const organizacion = mysqlTable(
     creadaEn: datetime("creada_en").notNull().default(sql`CURRENT_TIMESTAMP`)
   },
   // organizacion_razon_social_idx: busqueda por prefijo. El FULLTEXT organizacion_busqueda_ft
-  // (razon_social, nombre_fantasia) del selector con busqueda vive en la migracion 0001.
+  // (razon_social, nombre_fantasia) del selector con busqueda vive en la migracion 0003.
   (t) => [index("organizacion_tipo_idx").on(t.tipo), index("organizacion_razon_social_idx").on(t.razonSocial)]
 );

@@ -26,13 +26,17 @@
   @if (abierto()) {
     <ul class="lista" role="listbox" [id]="idCampo() + '-lista'" [attr.aria-busy]="cargando()">
       @for (o of opciones(); track o.id; let i = $index) {
+        <!-- El teclado se maneja en el input (aria-activedescendant): tabindex="-1" deja la opcion
+             fuera del orden de Tab, como pide el patron combobox, y keydown.enter cubre el foco directo. -->
         <li
           role="option"
+          tabindex="-1"
           [id]="idOpcion(i)"
           [class.activa]="i === activa()"
           [attr.aria-selected]="i === activa()"
           (mousedown)="$event.preventDefault()"
           (click)="elegir(o)"
+          (keydown.enter)="elegir(o)"
           (mousemove)="activa.set(i)"
         >
           <span class="nombre">{{ o.razonSocial }}</span>
