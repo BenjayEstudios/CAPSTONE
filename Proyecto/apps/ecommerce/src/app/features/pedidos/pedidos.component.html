@@ -1,0 +1,69 @@
+<div class="contenedor pedidos">
+  <h1>Mis pedidos</h1>
+  <p class="intro">Cada compra es una orden con un solo pago. Aquí ves cómo va la parte de cada distribuidor.</p>
+
+  @if (!session.esComprador()) {
+    <div class="vacio">
+      <h2>Los pedidos son de las cuentas de comprador</h2>
+      <a routerLink="/catalogo" class="btn btn-secondary">Ver el catálogo</a>
+    </div>
+  } @else {
+    <div class="filtros" role="group" aria-label="Filtrar por estado">
+      @for (f of filtros; track f.etiqueta) {
+        <button type="button" class="chip" [class.activo]="estado() === f.estado" [attr.aria-pressed]="estado() === f.estado" (click)="filtrar(f.estado)">{{ f.etiqueta }}</button>
+      }
+    </div>
+
+    @if (error()) {
+      <p class="mensaje error" role="alert">No pudimos cargar tus pedidos. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p>
+    } @else if (!resultado()) {
+      <p class="cargando">Cargando tus pedidos…</p>
+    }
+    @if (!error() && resultado(); as r) {
+      @if (!r.items.length) {
+        <div class="vacio">
+          @if (estado()) {
+            <h2>No tienes pedidos en este estado</h2>
+            <button type="button" class="btn btn-secondary" (click)="filtrar(null)">Ver todos</button>
+          } @else {
+            <h2>Todavía no tienes pedidos</h2>
+            <p>Cuando pagues un carro, la orden aparece aquí con el estado de cada distribuidor.</p>
+            <a routerLink="/catalogo" class="btn btn-primary">Ir al catálogo</a>
+          }
+        </div>
+      } @else {
+        <ul class="lista" [class.atenuada]="cargando()">
+          @for (o of r.items; track o.id) {
+            <li>
+              <a class="pedido" [routerLink]="['/pedidos', o.id]">
+                <div class="cabecera">
+                  <span class="folio">{{ o.codigo }}</span>
+                  <span class="estado" [attr.data-tono]="tonoOrden(o)">{{ estadoOrden(o) }}</span>
+                </div>
+                <div class="datos">
+                  <span>{{ fecha(o) }}</span>
+                  <span>{{ distribuidores(o) }}</span>
+                  <strong class="total">{{ clp(o.total) }}</strong>
+                </div>
+                <ul class="envios" aria-label="Envíos">
+                  @for (e of o.envios; track e.id) {
+                    <li><span class="proveedor">{{ e.proveedorNombre }}</span> <span class="estado-envio">{{ e.modalidad === "retiro" ? "Retiro" : "Despacho" }} · {{ estadoEnvio(e.estado) }}</span></li>
+                  }
+                </ul>
+                <span class="ver">Ver detalle →</span>
+              </a>
+            </li>
+          }
+        </ul>
+
+        @if (r.totalPaginas > 1) {
+          <nav class="paginas" aria-label="Páginas">
+            <button type="button" class="btn btn-secondary" [disabled]="r.pagina <= 1" (click)="irAPagina(r.pagina - 1)">Anterior</button>
+            <span>Página {{ r.pagina }} de {{ r.totalPaginas }}</span>
+            <button type="button" class="btn btn-secondary" [disabled]="r.pagina >= r.totalPaginas" (click)="irAPagina(r.pagina + 1)">Siguiente</button>
+          </nav>
+        }
+      }
+    }
+  }
+</div>

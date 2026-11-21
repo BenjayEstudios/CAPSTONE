@@ -9,7 +9,7 @@ import {
   type UsuarioSesionDto
 } from "@cotizapp/domain";
 import { ErrorAplicacion } from "../errors.js";
-import { emitirDesafioMfa, type DepsMfa } from "./mfa-admin.use-case.js";
+import { emitirDesafioMfa, exigeMfa, type DepsMfa } from "./mfa-admin.use-case.js";
 
 // Hash descartable para gastar el mismo tiempo de bcrypt cuando el email no
 // existe (evita distinguir "no existe" de "clave mala" por tiempos).
@@ -34,7 +34,7 @@ export function aSesionUsuario(ctx: UsuarioConContexto): UsuarioSesionDto {
 export function loginAdmin(deps: {
   usuarioRepository: UsuarioRepository;
   firmarToken: (claims: TokenClaims) => string;
-  // Sin esto, un usuario con mfa_estado=activo es rechazado (nunca se omite el 2FA).
+  // Sin esto, un usuario que exige 2FA es rechazado (nunca se omite el 2FA).
   mfa?: DepsMfa;
   ahora?: () => Date;
 }) {
@@ -55,13 +55,14 @@ export function loginAdmin(deps: {
     if (ctx.usuario.estado !== "activo" && ctx.usuario.estado !== "invitado") throw credencialesInvalidas();
     if (ctx.organizacion.tipo !== "interna") throw credencialesInvalidas();
 
-    // 2FA por correo: paso 1 valida la clave y envia el codigo; la sesion se
-    // emite recien en verificarMfaAdmin.
-    if (ctx.usuario.mfaEstado === "activo") {
+    // 2FA TOTP: paso 1 valida la clave y devuelve un desafio (codigo o
+    // enrolamiento); la sesion se emite recien en verificarMfaAdmin o
+    // confirmarEnrolamientoMfa.
+    if (exigeMfa(ctx)) {
       if (!deps.mfa) {
         throw new ErrorAplicacion(403, "MFA_NO_IMPLEMENTADO", "El segundo factor de autenticacion no esta disponible");
       }
-      return { mfaRequerido: true, desafio: await emitirDesafioMfa(deps.mfa, ctx) };
+      return emitirDesafioMfa(deps.mfa, ctx);
     }
 
     await deps.usuarioRepository.registrarUltimoAcceso(ctx.usuario.id, ahora());

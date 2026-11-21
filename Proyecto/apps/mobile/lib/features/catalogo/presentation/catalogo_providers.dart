@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/fake/fake_providers.dart';
 import '../../../core/network/api_client.dart';
 import '../data/catalogo_datasource.dart';
 import '../data/catalogo_fake_datasource.dart';
@@ -13,7 +14,9 @@ import '../domain/producto.dart';
 // Composition root del catálogo. GET /productos y /productos/:id aún no
 // existen en el backend: con USE_FAKES=true todo sale del seed.
 final catalogoDatasourceProvider = Provider<CatalogoDatasource>((ref) {
-  if (ref.watch(appConfigProvider).usarFakes) return const CatalogoFakeDatasource();
+  if (ref.watch(appConfigProvider).usarFakes) {
+    return CatalogoFakeDatasource(latencia: ref.watch(latenciaFakeProvider), backend: ref.watch(fakeBackendProvider));
+  }
   return CatalogoRemoteDatasource(ref.watch(apiClientProvider));
 });
 

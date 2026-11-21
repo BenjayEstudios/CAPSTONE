@@ -14,9 +14,9 @@ cambia el resumen, esta tabla. La entrada de qué se hizo va en
 
 | Épica | Contenido | Responsable | Estado |
 |---|---|---|---|
-| [KAN-85](EPICA-KAN-85-ecommerce-web.md) | Ecommerce web: sitio de compra del cliente y panel web del proveedor | Benjamín González | ⏳ Pendiente (solo la vista de status) |
+| [KAN-85](EPICA-KAN-85-ecommerce-web.md) | Ecommerce web: sitio de compra del cliente y panel web del proveedor | Benjamín González | ✅ Todos sus tickets listos: el lado del cliente (cuenta, inicio, catálogo, búsqueda, ficha con comparador, carro, checkout con Webpay, confirmación, mis pedidos y calificaciones, KAN-89 a 99) y el panel del proveedor (alta, dashboard, publicar oferta, mis productos, cómo se compara tu precio, órdenes de venta, clientes, demanda, perfil de empresa, cobertura, documentos y liquidaciones, KAN-100 a 111) |
 | [KAN-86](EPICA-KAN-86-admin-site.md) | Página administradora | Sebastián Ramírez | ⏳ Pendiente (scaffold con lint y tests) |
-| [KAN-87](EPICA-KAN-87-app-mobile.md) | App mobile para comprador y distribuidor | Samuel Alarcón | 🔄 Base, login y catálogo listos con fakes; faltan carro, pedidos y distribuidor |
+| [KAN-87](EPICA-KAN-87-app-mobile.md) | App mobile para comprador y distribuidor | Samuel Alarcón | 🔄 Los 14 tickets listos contra fakes y APK de demo; falta la integración real (bloqueada por `POST /auth/login`) |
 | [KAN-88](EPICA-KAN-88-plataforma.md) | Plataforma: BD, API, infraestructura, pagos, QA | Equipo | 🔄 BD casi completa e infra servible; API sin empezar |
 
 Leyenda: ✅ listo · 🔄 en curso o parcial · ⏳ pendiente.

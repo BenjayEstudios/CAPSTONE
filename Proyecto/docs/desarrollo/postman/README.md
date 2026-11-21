@@ -8,6 +8,8 @@ Zod y IDs del seed.
 |---|---|
 | `cotizapp-api.postman_collection.json` | La colección (formato v2.1). Se importa en Postman. |
 | `generar-coleccion.py` | Script que genera el JSON. Es la fuente: se edita esto y se regenera, no el JSON a mano. |
+| `flujo-compra.postman_collection.json` | Prueba end-to-end del flujo de compra con asserts (KAN-164). La corre el CI con Newman. |
+| `generar-flujo-compra.mjs` | Genera la de arriba (`node docs/desarrollo/postman/generar-flujo-compra.mjs`). |
 
 ## Usarla
 
@@ -68,3 +70,30 @@ python3 docs/desarrollo/postman/generar-coleccion.py
 
 Imprime la cantidad de requests. Cada carpeta corresponde a un módulo de
 `apps/backend/src/routes/` y su descripción indica el permiso que exige.
+
+## Flujo de compra end-to-end (KAN-164)
+
+`flujo-compra.postman_collection.json` recorre el flujo central con asserts en cada paso:
+
+1. Registro de un comprador nuevo (correo y RUT válidos al azar) e ingreso.
+2. Búsqueda en el catálogo y comparación de las ofertas de un producto.
+3. Carro con las dos ofertas más baratas de proveedores distintos y opciones de entrega.
+4. Confirmación del carro: la orden queda pendiente de pago.
+5. Pago iniciado, retorno de la pasarela (303 con `pago=aprobado`), y la orden pagada con un envío por proveedor.
+6. El proveedor del primer envío ve solo su tramo y lo pasa a preparación.
+7. El comprador ve la orden en preparación.
+
+Necesita el seed y el backend con `PASARELA=simulada`: la pasarela simulada
+aprueba sin Transbank, porque Webpay real pide la tarjeta en su página. Cada
+corrida crea un comprador nuevo, así que se puede repetir sobre la misma base.
+
+```bash
+# en una terminal: el backend con la pasarela simulada
+PASARELA=simulada pnpm --filter @cotizapp/backend dev
+# en otra, desde Proyecto/
+pnpm e2e                                   # contra http://localhost:8000
+pnpm e2e --env-var baseUrl=http://otro:8000
+```
+
+En Postman se importa como cualquier colección y se corre con *Run collection*.
+

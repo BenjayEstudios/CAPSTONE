@@ -1,5 +1,5 @@
-import { Component, computed, ElementRef, inject, OnDestroy, signal, viewChild } from "@angular/core";
-import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, computed, ElementRef, inject, signal, viewChild } from "@angular/core";
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AuthError, AuthService } from "../../core/auth/auth.service";
 import { BRAND } from "../../core/config/brand";
@@ -7,11 +7,13 @@ import { RUTA_INICIO } from "../../core/navigation/modulos.config";
 import { MarcaComponent } from "../../shared/ui/marca.component";
 import { OndasComponent } from "../../shared/ui/ondas.component";
 
-export const ENFRIAMIENTO_REENVIO_SEG = 30;
-
 // Codigos de AuthError tras los cuales hay que volver a empezar (paso 1).
 export const ERRORES_MFA_REINICIAN = ["MFA_INVALIDO", "MFA_DEMASIADOS_INTENTOS"];
 
+// Login del panel con 2FA TOTP (KAN-144):
+// 1. correo y clave;
+// 2a. usuario enrolado: codigo de 6 digitos de su app autenticadora;
+// 2b. primer ingreso con 2FA exigido: QR para configurar la app y su primer codigo.
 @Component({
   selector: "app-login",
   standalone: true,
@@ -19,7 +21,7 @@ export const ERRORES_MFA_REINICIAN = ["MFA_INVALIDO", "MFA_DEMASIADOS_INTENTOS"]
   templateUrl: "./login.component.html",
   styleUrl: "./login.component.css"
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -30,11 +32,16 @@ export class LoginComponent implements OnDestroy {
     clave: ["", [Validators.required]]
   });
   readonly codigo = inject(FormBuilder).nonNullable.control("", [Validators.required, Validators.pattern(/^\d{6}$/)]);
+  // Grupo del paso 2: sin [formGroup] el <form> no tiene directiva de Angular,
+  // (ngSubmit) nunca se emite y el navegador hace un submit nativo que recarga la pagina.
+  readonly formMfa = new FormGroup({ codigo: this.codigo });
   /** Paso 2 visible mientras haya un desafio 2FA pendiente. */
   readonly enMfa = computed(() => this.auth.desafioMfa() !== null);
-  readonly enfriamiento = signal(0);
+  /** QR y secreto mientras el usuario configura su app (null si ya estaba enrolado). */
+  readonly enrolamiento = this.auth.enrolamiento;
+  /** Secreto en grupos de 4 para copiarlo a mano sin errores. */
+  readonly secretoAgrupado = computed(() => this.enrolamiento()?.secreto.match(/.{1,4}/g)?.join(" ") ?? "");
   readonly inputCodigo = viewChild<ElementRef<HTMLInputElement>>("inputCodigo");
-  private temporizador: ReturnType<typeof setInterval> | null = null;
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(
@@ -53,15 +60,15 @@ export class LoginComponent implements OnDestroy {
     this.aviso.set(null);
     try {
       const r = await this.auth.login(this.form.getRawValue());
-      if (r === "mfa") {
+      if (r === "enrolar") await this.auth.iniciarEnrolamiento();
+      if (r !== "sesion") {
         this.codigo.reset("");
-        this.iniciarEnfriamiento();
         setTimeout(() => this.inputCodigo()?.nativeElement.focus());
         return;
       }
       await this.router.navigateByUrl(this.destino());
     } catch (err) {
-      this.error.set(err instanceof AuthError ? err.message : "Ocurrió un error inesperado.");
+      this.manejarErrorMfa(err);
     } finally {
       this.cargando.set(false);
     }
@@ -76,24 +83,7 @@ export class LoginComponent implements OnDestroy {
     this.error.set(null);
     try {
       await this.auth.verificarMfa(this.codigo.value);
-      this.detenerEnfriamiento();
       await this.router.navigateByUrl(this.destino());
-    } catch (err) {
-      this.manejarErrorMfa(err);
-    } finally {
-      this.cargando.set(false);
-    }
-  }
-
-  async reenviar(): Promise<void> {
-    if (this.enfriamiento() > 0 || this.cargando()) return;
-    this.cargando.set(true);
-    this.error.set(null);
-    try {
-      await this.auth.reenviarMfa();
-      this.codigo.reset("");
-      this.aviso.set("Enviamos un nuevo código a tu correo.");
-      this.iniciarEnfriamiento();
     } catch (err) {
       this.manejarErrorMfa(err);
     } finally {
@@ -103,43 +93,18 @@ export class LoginComponent implements OnDestroy {
 
   volverAEmpezar(): void {
     this.auth.cancelarMfa();
-    this.detenerEnfriamiento();
     this.codigo.reset("");
     this.error.set(null);
     this.aviso.set(null);
   }
 
-  ngOnDestroy(): void {
-    this.detenerEnfriamiento();
-  }
-
   private manejarErrorMfa(err: unknown): void {
     if (err instanceof AuthError) {
+      if (ERRORES_MFA_REINICIAN.includes(err.code)) this.volverAEmpezar();
       this.error.set(err.message);
-      if (ERRORES_MFA_REINICIAN.includes(err.code)) this.volverAEmpezarConservandoError(err.message);
     } else {
       this.error.set("Ocurrió un error inesperado.");
     }
-  }
-
-  private volverAEmpezarConservandoError(mensaje: string): void {
-    this.volverAEmpezar();
-    this.error.set(mensaje);
-  }
-
-  private iniciarEnfriamiento(): void {
-    this.detenerEnfriamiento();
-    this.enfriamiento.set(ENFRIAMIENTO_REENVIO_SEG);
-    this.temporizador = setInterval(() => {
-      this.enfriamiento.update((n) => Math.max(0, n - 1));
-      if (this.enfriamiento() === 0) this.detenerEnfriamiento();
-    }, 1000);
-  }
-
-  private detenerEnfriamiento(): void {
-    if (this.temporizador) clearInterval(this.temporizador);
-    this.temporizador = null;
-    this.enfriamiento.set(0);
   }
 
   // Solo rutas internas, para evitar redirecciones abiertas.

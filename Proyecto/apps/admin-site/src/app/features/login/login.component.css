@@ -49,3 +49,9 @@
   .sol { left: auto; right: 24px; bottom: 90px; width: 110px; height: 110px; }
   .lado-form { padding: 24px 16px 40px; }
 }
+.enrolamiento { display: flex; flex-direction: column; gap: 10px; }
+.instrucciones { margin: 0; padding-left: 20px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+/* El QR va sobre blanco en ambos temas: los lectores necesitan contraste oscuro sobre claro. */
+.qr { align-self: center; background: #fff; padding: 8px; border: 1px solid color-mix(in srgb, var(--color-text) 20%, transparent); max-width: 100%; height: auto; }
+.secreto-ayuda { margin: 0; font-size: 13px; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.secreto { font-size: 14px; letter-spacing: .06em; word-break: break-all; padding: 8px 10px; background: color-mix(in srgb, var(--color-text) 6%, transparent); }

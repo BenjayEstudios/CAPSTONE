@@ -1,4 +1,4 @@
-import { and, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import type {
   FiltrosProveedores,
   Proveedor,
@@ -7,10 +7,22 @@ import type {
   ProveedorListado,
   ProveedorRepository,
   RegistroAuditoria,
-  RevisionDocumento
+  RevisionDocumento,
+  CondicionesEntregaProveedor,
+  CambiosPerfilProveedor,
+  CambiosPuntoRetiro,
+  NuevaZona,
+  PuntoRetiroProveedor,
+  DireccionPerfil,
+  NuevaDireccionPerfil,
+  PerfilProveedor
 } from "@cotizapp/domain";
-import type { DbClient } from "../db/client.js";
+import { consultar, type DbClient } from "../db/client.js";
 import { auditoriaLog } from "../db/schema/auditoria-log.schema.js";
+import { comuna } from "../db/schema/comuna.schema.js";
+import { direccion } from "../db/schema/direccion.schema.js";
+import { puntoRetiro } from "../db/schema/punto-retiro.schema.js";
+import { proveedorCobertura } from "../db/schema/proveedor-cobertura.schema.js";
 import { organizacion } from "../db/schema/organizacion.schema.js";
 import { proveedorDocumento } from "../db/schema/proveedor-documento.schema.js";
 import { usuario } from "../db/schema/usuario.schema.js";
@@ -91,6 +103,230 @@ function toDocumento(f: {
 export class DrizzleProveedorRepository implements ProveedorRepository {
   constructor(private readonly db: DbClient) {}
 
+  private async direccionPerfil(db: Pick<DbClient, "select">, id: number | null): Promise<DireccionPerfil | null> {
+    if (id === null) return null;
+    const [d] = await db
+      .select({ calle: direccion.calle, numero: direccion.numero, complemento: direccion.complemento, comunaId: direccion.comunaId, comuna: comuna.nombre, region: comuna.regionNombre })
+      .from(direccion)
+      .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+      .where(eq(direccion.id, id));
+    return d ?? null;
+  }
+
+  // Perfil de empresa (KAN-108). Cinco lecturas chicas por PK o por la FK del
+  // proveedor: organizacion, su direccion, el punto de retiro principal (el
+  // activo de menor id) con su direccion, las regiones con cobertura y el equipo.
+  async perfil(proveedorId: number): Promise<PerfilProveedor | null> {
+    const [org] = await this.db.select().from(organizacion).where(and(eq(organizacion.id, proveedorId), eq(organizacion.tipo, "proveedor")));
+    if (!org) return null;
+    const [punto] = await this.db
+      .select()
+      .from(puntoRetiro)
+      .where(and(eq(puntoRetiro.proveedorId, proveedorId), eq(puntoRetiro.activo, 1)))
+      .orderBy(asc(puntoRetiro.id))
+      .limit(1);
+    const regiones = await consultar<{ region: string }>(
+      this.db,
+      sql`SELECT DISTINCT (SELECT MIN(r.region_nombre) FROM comuna r WHERE r.region_codigo = pc.region_codigo) AS region, pc.region_codigo
+          FROM proveedor_cobertura pc WHERE pc.proveedor_id = ${proveedorId} ORDER BY pc.region_codigo`
+    );
+    const equipo = await this.db
+      .select({ nombre: usuario.nombre, email: usuario.email, telefono: usuario.telefono })
+      .from(usuario)
+      .where(and(eq(usuario.organizacionId, proveedorId), eq(usuario.estado, "activo")))
+      .orderBy(asc(usuario.id));
+    const bodegaDir = punto ? await this.direccionPerfil(this.db, punto.direccionId) : null;
+    return {
+      id: org.id,
+      razonSocial: org.razonSocial,
+      rut: org.rut,
+      nombreFantasia: org.nombreFantasia,
+      giro: org.giro,
+      emailContacto: org.emailContacto,
+      telefono: org.telefono,
+      direccion: await this.direccionPerfil(this.db, org.direccionId),
+      bodega: punto && bodegaDir ? { id: punto.id, nombre: punto.nombre, horario: punto.horario, direccion: bodegaDir } : null,
+      plazoEstandarHoras: org.plazoEstandarHoras,
+      plazoFueraRegionHoras: org.plazoFueraRegionHoras,
+      horaCorte: org.horaCorte ? org.horaCorte.slice(0, 5) : null,
+      despachoGratisDesde: org.despachoGratisDesde,
+      ofreceDespacho: org.ofreceDespacho === 1,
+      ofreceRetiro: org.ofreceRetiro === 1,
+      banco: org.banco,
+      cuentaBancaria: org.cuentaBancaria,
+      estado: org.estado,
+      comisionPct: num(org.comisionPct),
+      entregasATiempoPct: num(org.entregasATiempoPct),
+      creadaEn: org.creadaEn,
+      regiones: regiones.map((r) => r.region).filter(Boolean),
+      equipo
+    };
+  }
+
+  // Una direccion nueva nunca pisa la anterior: la puede citar un retiro o
+  // una orden pasada (y en el seed la bodega comparte fila con la direccion
+  // comercial). Se inserta y se apunta a ella.
+  async actualizarPerfil(proveedorId: number, cambios: CambiosPerfilProveedor, auditoria: RegistroAuditoria): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const insertarDireccion = async (d: NuevaDireccionPerfil) => {
+        const [r] = await tx.insert(direccion).values({ calle: d.calle, numero: d.numero, complemento: d.complemento, comunaId: d.comunaId });
+        return r.insertId;
+      };
+      const { direccion: dir, bodega, horaCorte, ofreceDespacho, ofreceRetiro, ...resto } = cambios;
+      const set: Partial<typeof organizacion.$inferInsert> = { ...resto };
+      if (horaCorte !== undefined) set.horaCorte = horaCorte === null ? null : `${horaCorte}:00`;
+      if (ofreceDespacho !== undefined) set.ofreceDespacho = ofreceDespacho ? 1 : 0;
+      if (ofreceRetiro !== undefined) set.ofreceRetiro = ofreceRetiro ? 1 : 0;
+      if (dir) set.direccionId = await insertarDireccion(dir);
+      if (Object.keys(set).length) await tx.update(organizacion).set(set).where(eq(organizacion.id, proveedorId));
+      if (bodega) {
+        const direccionId = await insertarDireccion(bodega);
+        const [punto] = await tx
+          .select({ id: puntoRetiro.id })
+          .from(puntoRetiro)
+          .where(and(eq(puntoRetiro.proveedorId, proveedorId), eq(puntoRetiro.activo, 1)))
+          .orderBy(asc(puntoRetiro.id))
+          .limit(1)
+          .for("update");
+        if (punto) await tx.update(puntoRetiro).set({ nombre: bodega.nombre, horario: bodega.horario, direccionId }).where(eq(puntoRetiro.id, punto.id));
+        else await tx.insert(puntoRetiro).values({ proveedorId, nombre: bodega.nombre, horario: bodega.horario, direccionId, activo: 1 });
+      }
+      await tx.insert(auditoriaLog).values(auditoria);
+    });
+  }
+
+  // ---- Cobertura y puntos de retiro (KAN-109)
+
+  async crearZona(proveedorId: number, zona: NuevaZona, auditoria: RegistroAuditoria): Promise<number> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.insert(proveedorCobertura).values({ proveedorId, ...zona });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+  }
+
+  async actualizarZona(proveedorId: number, id: number, cambios: { costoDespacho?: number; plazoHoras?: number | null }, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx
+        .update(proveedorCobertura)
+        .set(cambios)
+        .where(and(eq(proveedorCobertura.id, id), eq(proveedorCobertura.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  async eliminarZona(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.delete(proveedorCobertura).where(and(eq(proveedorCobertura.id, id), eq(proveedorCobertura.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  // Todos los puntos del proveedor (activos primero); "usado" = lo cita algun
+  // envio (orden_envio.punto_retiro_id), y entonces no se puede borrar.
+  async puntosRetiro(proveedorId: number): Promise<PuntoRetiroProveedor[]> {
+    const filas = await this.db
+      .select({
+        id: puntoRetiro.id,
+        nombre: puntoRetiro.nombre,
+        horario: puntoRetiro.horario,
+        activo: puntoRetiro.activo,
+        calle: direccion.calle,
+        numero: direccion.numero,
+        complemento: direccion.complemento,
+        comunaId: direccion.comunaId,
+        comuna: comuna.nombre,
+        region: comuna.regionNombre,
+        usado: sql<number>`EXISTS (SELECT 1 FROM orden_envio oe WHERE oe.punto_retiro_id = ${puntoRetiro.id})`.mapWith(Number)
+      })
+      .from(puntoRetiro)
+      .innerJoin(direccion, eq(direccion.id, puntoRetiro.direccionId))
+      .innerJoin(comuna, eq(comuna.id, direccion.comunaId))
+      .where(eq(puntoRetiro.proveedorId, proveedorId))
+      .orderBy(desc(puntoRetiro.activo), asc(puntoRetiro.id));
+    return filas.map((f) => ({
+      id: f.id,
+      nombre: f.nombre,
+      horario: f.horario,
+      activo: f.activo === 1,
+      usado: f.usado === 1,
+      direccion: { calle: f.calle, numero: f.numero, complemento: f.complemento, comunaId: f.comunaId, comuna: f.comuna, region: f.region }
+    }));
+  }
+
+  async crearPuntoRetiro(
+    proveedorId: number,
+    punto: { nombre: string; horario: string | null; activo: boolean; direccion: NuevaDireccionPerfil },
+    auditoria: RegistroAuditoria
+  ): Promise<number> {
+    return this.db.transaction(async (tx) => {
+      const [d] = await tx.insert(direccion).values(punto.direccion);
+      const [r] = await tx.insert(puntoRetiro).values({ proveedorId, nombre: punto.nombre, horario: punto.horario, activo: punto.activo ? 1 : 0, direccionId: d.insertId });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+  }
+
+  async actualizarPuntoRetiro(proveedorId: number, id: number, cambios: CambiosPuntoRetiro, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [actual] = await tx
+        .select({ id: puntoRetiro.id })
+        .from(puntoRetiro)
+        .where(and(eq(puntoRetiro.id, id), eq(puntoRetiro.proveedorId, proveedorId)))
+        .for("update");
+      if (!actual) return false;
+      const set: Partial<typeof puntoRetiro.$inferInsert> = {};
+      if (cambios.nombre !== undefined) set.nombre = cambios.nombre;
+      if (cambios.horario !== undefined) set.horario = cambios.horario;
+      if (cambios.activo !== undefined) set.activo = cambios.activo ? 1 : 0;
+      if (cambios.direccion) set.direccionId = (await tx.insert(direccion).values(cambios.direccion))[0].insertId;
+      if (Object.keys(set).length) await tx.update(puntoRetiro).set(set).where(eq(puntoRetiro.id, id));
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  // Solo un punto sin envios (el caso de uso lo revisa; la FK de orden_envio
+  // lo impediria igual). Su direccion queda: no estorba y es barato.
+  async eliminarPuntoRetiro(proveedorId: number, id: number, auditoria: RegistroAuditoria): Promise<boolean> {
+    return this.db.transaction(async (tx) => {
+      const [r] = await tx.delete(puntoRetiro).where(and(eq(puntoRetiro.id, id), eq(puntoRetiro.proveedorId, proveedorId)));
+      if (r.affectedRows === 0) return false;
+      await tx.insert(auditoriaLog).values(auditoria);
+      return true;
+    });
+  }
+
+  async cobertura(proveedorId: number): Promise<CondicionesEntregaProveedor> {
+    const [org] = await this.db
+      .select({ horaCorte: organizacion.horaCorte, despachoGratisDesde: organizacion.despachoGratisDesde, plazoEstandarHoras: organizacion.plazoEstandarHoras, ofreceDespacho: organizacion.ofreceDespacho, ofreceRetiro: organizacion.ofreceRetiro })
+      .from(organizacion)
+      .where(eq(organizacion.id, proveedorId));
+    // La region se nombra desde cualquier comuna con ese codigo (comuna_id NULL = toda la region).
+    const zonas = await consultar<{ id: number; comunaId: number | null; comuna: string | null; regionCodigo: string; region: string; costoDespacho: number; plazoHoras: number | null }>(
+      this.db,
+      sql`
+        SELECT pc.id AS id, pc.comuna_id AS comunaId, c.nombre AS comuna, pc.region_codigo AS regionCodigo,
+               (SELECT MIN(r.region_nombre) FROM comuna r WHERE r.region_codigo = pc.region_codigo) AS region,
+               pc.costo_despacho AS costoDespacho, pc.plazo_horas AS plazoHoras
+        FROM proveedor_cobertura pc LEFT JOIN comuna c ON c.id = pc.comuna_id
+        WHERE pc.proveedor_id = ${proveedorId}
+        ORDER BY pc.region_codigo, pc.comuna_id IS NOT NULL, c.nombre`
+    );
+    return {
+      horaCorte: org?.horaCorte ? org.horaCorte.slice(0, 5) : null,
+      despachoGratisDesde: org?.despachoGratisDesde ?? null,
+      plazoEstandarHoras: org?.plazoEstandarHoras ?? null,
+      ofreceDespacho: org?.ofreceDespacho === 1,
+      ofreceRetiro: org?.ofreceRetiro === 1,
+      zonas: zonas.map((z) => ({ ...z, id: Number(z.id), costoDespacho: Number(z.costoDespacho), plazoHoras: z.plazoHoras === null ? null : Number(z.plazoHoras) }))
+    };
+  }
+
   async listar(f: FiltrosProveedores): Promise<{ items: ProveedorListado[]; total: number }> {
     const cond: SQL[] = [eq(organizacion.tipo, "proveedor")];
     if (f.estado) cond.push(eq(organizacion.estado, f.estado));
@@ -146,6 +382,19 @@ export class DrizzleProveedorRepository implements ProveedorRepository {
       .where(and(eq(organizacion.id, id), eq(organizacion.tipo, "proveedor")))
       .limit(1);
     return f ? toProveedor(f) : null;
+  }
+
+  async crearDocumento(
+    proveedorId: number,
+    d: { tipo: ProveedorDocumento["tipo"]; url: string; venceEn: string | null; vigencia: ProveedorDocumento["vigencia"] },
+    auditoria: RegistroAuditoria
+  ): Promise<ProveedorDocumento> {
+    const id = await this.db.transaction(async (tx) => {
+      const [r] = await tx.insert(proveedorDocumento).values({ proveedorId, tipo: d.tipo, url: d.url, venceEn: d.venceEn, estado: d.vigencia, revisionEstado: "pendiente" });
+      await tx.insert(auditoriaLog).values({ ...auditoria, entidadId: r.insertId });
+      return r.insertId;
+    });
+    return (await this.buscarDocumento(id))!;
   }
 
   async listarDocumentos(proveedorId: number): Promise<ProveedorDocumento[]> {

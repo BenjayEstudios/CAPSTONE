@@ -92,7 +92,7 @@ export function crearUsuario(
 
     const clave = deps.generarClave();
     const hashClave = await bcrypt.hash(clave, RONDAS_BCRYPT);
-    // mfa "activo" = 2FA exigido pero aun sin configurar -> "pendiente" (el login rechaza "activo" hasta implementar 2FA).
+    // mfa "activo" = 2FA exigido pero aun sin configurar -> "pendiente": en su primer ingreso el login le pide enrolar su app TOTP.
     const mfaEstado = d.mfa === "activo" ? "pendiente" : d.mfa === "opcional" ? "opcional" : "inactivo";
 
     const id = await deps.usuarioAdminRepository.crear(

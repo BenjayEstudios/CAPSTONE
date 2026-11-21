@@ -1,0 +1,85 @@
+<section class="dashboard" aria-labelledby="titulo-ventas">
+  <h2 id="titulo-ventas">Ventas de {{ nombreMes() }}</h2>
+  <p class="bajada">Cifras al {{ diaDeHoy() }}, comparadas con el mismo tramo de {{ nombreMesAnterior() }}.</p>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus ventas…</p> }
+    @case ("error") {
+      <p class="mensaje error" role="alert">No pudimos cargar tu panel. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p>
+    }
+    @default {
+      <div class="kpis">
+        @for (k of kpis(); track k.etiqueta) {
+          <div class="kpi">
+            <p class="etiqueta-kpi">{{ k.etiqueta }}</p>
+            <p class="valor"><span class="tinta" [attr.data-valor]="k.valor">{{ k.valor }}</span></p>
+            <p class="detalle">{{ k.detalle }}</p>
+          </div>
+        }
+      </div>
+
+      <div class="columnas">
+        <section class="bloque grafico" aria-labelledby="titulo-semanal">
+          <header>
+            <h3 id="titulo-semanal">Venta semanal</h3>
+            <span>últimas 12 semanas, en miles de pesos</span>
+          </header>
+          @if (maximo() > 0) {
+            <div class="barras" role="img" [attr.aria-label]="'Venta semanal de las últimas 12 semanas. Máximo ' + clp(maximo()) + '.'">
+              <span class="eje">{{ miles(maximo()) }}</span>
+              @for (b of barras(); track b.semana) {
+                <div class="columna" [class.actual]="b.actual" tabindex="0" [attr.aria-label]="b.etiqueta + ': ' + clp(b.ventas)">
+                  <div class="area"><div class="barra" [style.height.%]="b.alto"></div></div>
+                  <span class="rotulo">{{ b.actual ? "Esta" : b.etiqueta }}</span>
+                  <span class="tooltip" role="tooltip">
+                    <strong>{{ b.etiqueta }} · desde el {{ b.desde }}</strong>
+                    {{ clp(b.ventas) }} en {{ b.envios }} {{ b.envios === 1 ? "envío" : "envíos" }}
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="vacio">Todavía no tienes ventas en estas 12 semanas.</p>
+          }
+          <table class="visualmente-oculto">
+            <caption>Venta semanal de las últimas 12 semanas</caption>
+            <thead><tr><th scope="col">Semana</th><th scope="col">Ventas</th><th scope="col">Envíos</th></tr></thead>
+            <tbody>
+              @for (b of barras(); track b.semana) {
+                <tr><th scope="row">{{ b.etiqueta }} (desde el {{ b.desde }})</th><td>{{ clp(b.ventas) }}</td><td>{{ b.envios }}</td></tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <div class="lateral">
+          <section class="bloque" aria-labelledby="titulo-top">
+            <header><h3 id="titulo-top">Tus productos más vendidos</h3><span>12 semanas</span></header>
+            @if (productos().length) {
+              <ol class="top">
+                @for (p of productos(); track p.productoId) {
+                  <li><span class="nombre">{{ p.nombre }}</span><span class="cajas">{{ p.unidades }} {{ p.unidades === 1 ? "caja" : "cajas" }}</span><span class="monto">{{ clp(p.ventas) }}</span></li>
+                }
+              </ol>
+            } @else {
+              <p class="vacio">Aún no vendes productos en este período.</p>
+            }
+          </section>
+
+          <section class="bloque" aria-labelledby="titulo-atencion">
+            <header><h3 id="titulo-atencion">Requiere atención</h3></header>
+            @if (avisos().length) {
+              <ul class="avisos">
+                @for (a of avisos(); track $index) {
+                  <li><span class="tag" [attr.data-tono]="a.tono">{{ a.etiqueta }}</span>{{ a.texto }}</li>
+                }
+              </ul>
+            } @else {
+              <p class="vacio">Todo al día: sin documentos por vencer, stock bajo ni envíos pendientes.</p>
+            }
+          </section>
+        </div>
+      </div>
+    }
+  }
+</section>

@@ -118,4 +118,46 @@ describeDb("DrizzleAnaliticaRepository", (db) => {
       { semana: "2025-01-06", envios: 0, ventas: 0, despacho: 0, comision: 0, neto: 0 }
     ]);
   });
+
+  it("embudoPorProducto (KAN-107): las cajas vendidas por producto suman lo mismo que ventasPorProducto", async () => {
+    const embudo = await repo().embudoPorProducto(LOS_ANDES, RANGO);
+    const ventas = await repo().ventasPorProducto(LOS_ANDES, RANGO, 100);
+    for (const v of ventas) {
+      const cajas = embudo.filter((e) => e.productoId === v.productoId).reduce((t, e) => t + e.cajasVendidas, 0);
+      expect(cajas, v.nombre).toBe(v.unidades);
+    }
+    expect(embudo.every((e) => e.ofertaId > 0 && ["borrador", "publicada", "pausada"].includes(e.estadoOferta))).toBe(true);
+  });
+
+  it("stockDelMes (KAN-107): ofertas publicadas; las cajas del inicio del mes salen del ultimo cambio anterior al mes", async () => {
+    const [arroz] = await consultar<{ id: number }>(db(), sql`SELECT id FROM oferta WHERE proveedor_id = ${LOS_ANDES} AND producto_id = 3`);
+    await db().execute(sql`INSERT INTO oferta_precio_historial (oferta_id, cajas_anteriores, cajas_nuevas, cambiado_en)
+                           VALUES (${arroz!.id}, 45, 77, '2026-10-15 10:00:00'), (${arroz!.id}, 77, 99, '2026-11-05 10:00:00')`);
+    const stock = await repo().stockDelMes(LOS_ANDES, new Date("2026-11-01T00:00:00Z"));
+    const esperado = await consultar<{ id: number; cajasDisponibles: number; cajasIniciales: number | null }>(
+      db(),
+      sql`SELECT id, cajas_disponibles AS cajasDisponibles, cajas_iniciales AS cajasIniciales FROM oferta WHERE proveedor_id = ${LOS_ANDES} AND estado = 'publicada'`
+    );
+    expect(stock).toHaveLength(esperado.length);
+    for (const e of esperado) {
+      const fila = stock.find((x) => x.ofertaId === e.id)!;
+      expect(fila.cajasDisponibles).toBe(e.cajasDisponibles);
+      expect(fila.cajasInicioMes).toBe(e.id === arroz!.id ? 77 : e.cajasIniciales);
+    }
+  });
+
+  it("potencialesPorComuna (KAN-107): vieron con sesion iniciada y le compraron el producto a otro, por comuna de entrega", async () => {
+    // En el seed, El Fogon (Ñuñoa) y Dulce Hogar (Las Condes) miran productos
+    // de Los Andes y tambien les compran a Valle Central y FrigoSur.
+    expect(await repo().potencialesPorComuna(LOS_ANDES, RANGO)).toEqual([
+      { comunaId: 14, comuna: "Las Condes", region: "Metropolitana de Santiago", clientes: 1, cubre: true },
+      { comunaId: 20, comuna: "Ñuñoa", region: "Metropolitana de Santiago", clientes: 1, cubre: true }
+    ]);
+    // Las Palmas cubre otras comunas.
+    expect((await repo().potencialesPorComuna(LAS_PALMAS, RANGO)).every((p) => !p.cubre)).toBe(true);
+    // Una vista anonima no se puede ligar a una compra: sin usuario en sus eventos, Dulce Hogar no cuenta.
+    await db().execute(sql`UPDATE evento_analitico SET usuario_id = NULL
+                           WHERE usuario_id IN (SELECT id FROM usuario WHERE organizacion_id = 7)`);
+    expect((await repo().potencialesPorComuna(LOS_ANDES, RANGO)).map((p) => p.comuna)).toEqual(["Ñuñoa"]);
+  });
 });

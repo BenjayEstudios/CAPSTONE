@@ -1,0 +1,82 @@
+<section aria-labelledby="titulo-liquidaciones">
+  <h2 id="titulo-liquidaciones">Liquidaciones</h2>
+  <p class="bajada">Cotizapp liquida cada martes lo que entregaste la semana anterior (lunes a domingo): el monto de tus envíos menos la comisión.</p>
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus liquidaciones…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tus liquidaciones. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (porCobrar(); as c) {
+        <div class="por-cobrar">
+          <div>
+            <p class="etiqueta">Por cobrar</p>
+            <p class="monto">{{ clp(c.total) }}</p>
+          </div>
+          <dl>
+            <div><dt>Entregado, aún sin liquidar</dt><dd>{{ clp(c.entregadoSinLiquidar) }}</dd></div>
+            <div><dt>Liquidaciones por pagar</dt><dd>{{ clp(c.liquidacionesPendientes) }}</dd></div>
+            <div class="proxima"><dt>Próxima liquidación</dt><dd>{{ diaSemana(c.proximaLiquidacion) }}</dd></div>
+          </dl>
+        </div>
+      }
+
+      @if (!liquidaciones().length) {
+        <p class="vacio">Todavía no tienes liquidaciones. La primera llega el martes siguiente a tu primera entrega.</p>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Período</th><th scope="col" class="num">Bruto</th><th scope="col" class="num">Comisión</th><th scope="col" class="num">Neto</th>
+                <th scope="col">Estado</th><th scope="col">Fecha de pago</th><th scope="col"><span class="visualmente-oculto">Detalle</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of liquidaciones(); track l.id) {
+                <tr [class.abierta]="abierta() === l.id">
+                  <th scope="row">{{ periodo(l.periodoDesde, l.periodoHasta) }}</th>
+                  <td class="num">{{ clp(l.montoBruto) }}</td>
+                  <td class="num suave">−{{ clp(l.comision) }}</td>
+                  <td class="num fuerte">{{ clp(l.montoNeto) }}</td>
+                  <td><span class="tag" [attr.data-tono]="l.estado === 'pagada' ? 'ok' : 'aviso'">{{ l.estado === "pagada" ? "Pagada" : "Por pagar" }}</span></td>
+                  <td class="suave">{{ fechaPago(l.pagadaEn) }}</td>
+                  <td class="accion"><button type="button" class="btn-link" [attr.aria-expanded]="abierta() === l.id" (click)="alternar(l)">{{ abierta() === l.id ? "Cerrar" : "Ver envíos" }}</button></td>
+                </tr>
+                @if (abierta() === l.id) {
+                  <tr class="detalle">
+                    <td colspan="7">
+                      @switch (estadoDetalle()) {
+                        @case ("cargando") { <p class="suave">Cargando los envíos…</p> }
+                        @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar el detalle.</p> }
+                        @default {
+                          @if (detalle(); as d) {
+                            <table class="envios">
+                              <caption class="visualmente-oculto">Envíos de la liquidación del {{ periodo(d.periodoDesde, d.periodoHasta) }}</caption>
+                              <thead><tr><th scope="col">Orden</th><th scope="col">Entregado</th><th scope="col" class="num">Bruto</th><th scope="col" class="num">Comisión</th><th scope="col" class="num">Neto</th></tr></thead>
+                              <tbody>
+                                @for (e of d.envios; track e.envioId) {
+                                  <tr><th scope="row">{{ e.ordenCodigo }}</th><td class="suave">{{ corta(e.entregadoEn) }}</td><td class="num">{{ clp(e.montoBruto) }}</td><td class="num suave">−{{ clp(e.comision) }}</td><td class="num">{{ clp(e.montoNeto) }}</td></tr>
+                                } @empty {
+                                  <tr><td colspan="5" class="suave">Sin envíos.</td></tr>
+                                }
+                              </tbody>
+                              <tfoot><tr><th scope="row" colspan="2">{{ d.envios.length }} {{ d.envios.length === 1 ? "envío" : "envíos" }}</th><td class="num">{{ clp(d.montoBruto) }}</td><td class="num suave">−{{ clp(d.comision) }}</td><td class="num fuerte">{{ clp(d.montoNeto) }}</td></tr></tfoot>
+                            </table>
+                          }
+                        }
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (liquidaciones().length < total()) {
+          <p class="mas"><button type="button" class="btn btn-secondary" [disabled]="cargandoMas()" (click)="verMas()">{{ cargandoMas() ? "Cargando…" : "Ver más liquidaciones" }}</button>
+            <span class="suave">{{ liquidaciones().length }} de {{ total() }}</span></p>
+        }
+      }
+    }
+  }
+</section>

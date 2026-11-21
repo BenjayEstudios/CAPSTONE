@@ -35,11 +35,44 @@ export interface VentaProducto {
 export interface EmbudoProducto {
   productoId: number;
   nombre: string;
+  /** Aditivo (KAN-107): la oferta del proveedor, su formato, su estado y las cajas vendidas en el rango. */
+  ofertaId: number;
+  formato: string | null;
+  estadoOferta: "borrador" | "publicada" | "pausada";
+  cajasVendidas: number;
   vistas: number;
   clicks: number;
   conversiones: number;
   tasaClick: number | null;
   tasaConversion: number | null;
+}
+
+/** Stock de una oferta publicada frente al del inicio del mes (KAN-107). */
+export interface StockDelMes {
+  ofertaId: number;
+  productoId: number;
+  nombre: string;
+  formato: string | null;
+  cajasDisponibles: number;
+  /**
+   * Cajas al inicio del mes: el ultimo cambio de stock antes del mes en
+   * oferta_precio_historial; si la oferta es del mes o no tiene historial,
+   * sus cajas iniciales.
+   */
+  cajasInicioMes: number | null;
+}
+
+/**
+ * Compradores que vieron un producto que el proveedor ofrece y en el rango se
+ * lo compraron a otro proveedor, por la comuna donde recibieron (KAN-107).
+ */
+export interface PotencialesComuna {
+  comunaId: number;
+  comuna: string;
+  region: string;
+  clientes: number;
+  /** El proveedor despacha a esa comuna (por comuna o por region). */
+  cubre: boolean;
 }
 
 export interface KpisPlataforma {
@@ -63,4 +96,27 @@ export interface KpisPlataforma {
 export interface TerminoSinResultados {
   termino: string;
   veces: number;
+}
+
+// Oferta publicada con pocas cajas (bloque "Requiere atencion", KAN-101/137).
+export interface StockBajo {
+  ofertaId: number;
+  productoId: number;
+  producto: string;
+  cajasDisponibles: number;
+  cajasIniciales: number | null;
+}
+
+// Lo pendiente de un proveedor para su panel (KAN-101) y las alertas de la
+// app (KAN-137). Montos en CLP.
+export interface PendientesProveedor {
+  stockBajo: StockBajo[];
+  // Neto (subtotal + despacho - comision) de envios entregados sin liquidar.
+  entregadoSinLiquidar: number;
+  // Suma de monto_neto de liquidaciones pendientes de pago.
+  liquidacionesPendientes: number;
+  // Envios por despachar de ordenes pagadas.
+  enviosPorDespachar: number;
+  ofertasPublicadas: number;
+  ofertasBorrador: number;
 }

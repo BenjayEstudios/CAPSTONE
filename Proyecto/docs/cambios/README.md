@@ -10,6 +10,51 @@ qué, y qué archivos toca.
 
 | Fecha | Cambio | Épica | Ticket |
 |---|---|---|---|
+| 2026-11-21 | [Correos de compra y caso de moderación en reembolsos; Fastify se mantiene](2026-11-21-correos-de-compra-y-caso-de-reembolso.md) | KAN-88 | KAN-155, KAN-156, KAN-169 |
+| 2026-11-20 | [Material para las pruebas de usabilidad](2026-11-20-material-pruebas-de-usabilidad.md) | KAN-88 | KAN-165 |
+| 2026-11-20 | [Pruebas end-to-end del flujo de compra](2026-11-20-pruebas-e2e-flujo-de-compra.md) | KAN-88 | KAN-164 |
+| 2026-11-20 | [CI: fallos intermitentes por la caché de Turborepo](2026-11-20-ci-fallos-intermitentes-tsbuildinfo.md) | — | — |
+| 2026-11-20 | [Panel del proveedor: liquidaciones](2026-11-20-liquidaciones-del-proveedor.md) | KAN-85 | KAN-111 |
+| 2026-11-20 | [Panel del proveedor: documentos](2026-11-20-documentos-del-proveedor.md) | KAN-85 | KAN-110 |
+| 2026-11-20 | [Panel del proveedor: cobertura de despacho y puntos de retiro](2026-11-20-cobertura-y-puntos-de-retiro.md) | KAN-85 | KAN-109 |
+| 2026-11-20 | [Panel del proveedor: perfil de empresa](2026-11-20-perfil-de-empresa-del-proveedor.md) | KAN-85 | KAN-108 |
+| 2026-11-20 | [Panel del proveedor: demanda y cobertura](2026-11-20-demanda-y-cobertura-del-proveedor.md) | KAN-85 | KAN-107 |
+| 2026-11-20 | [Panel del proveedor: tus clientes](2026-11-20-tus-clientes-del-proveedor.md) | KAN-85 | KAN-106 |
+| 2026-11-20 | [Panel del proveedor: órdenes de venta](2026-11-20-ordenes-de-venta-del-proveedor.md) | KAN-85 | KAN-105 |
+| 2026-11-20 | [Panel del proveedor: cómo se compara tu precio](2026-11-20-como-se-compara-tu-precio.md) | KAN-85 | KAN-104 |
+| 2026-11-20 | [Panel del proveedor: mis productos publicados](2026-11-20-mis-productos-publicados.md) | KAN-85 | KAN-103 |
+| 2026-11-20 | [Panel del proveedor: asignarme un producto](2026-11-20-asignarme-un-producto.md) | KAN-85 | KAN-102 |
+| 2026-11-20 | [Panel del proveedor: dashboard de ventas](2026-11-20-panel-proveedor-dashboard.md) | KAN-85 | KAN-101 (y API de KAN-133, 137) |
+| 2026-11-20 | [Registro y alta de proveedor](2026-11-20-registro-de-proveedor.md) | KAN-85 | KAN-100 |
+| 2026-11-20 | [Calificar al proveedor tras la entrega](2026-11-20-calificar-proveedor.md) | KAN-85 | KAN-99 |
+| 2026-11-20 | [Ecommerce: mis pedidos y seguimiento](2026-11-20-ecommerce-mis-pedidos.md) | KAN-85 | KAN-98 |
+| 2026-11-20 | [Ecommerce: confirmación y detalle consolidado de la compra](2026-11-20-ecommerce-confirmacion-de-compra.md) | KAN-85 | KAN-96 |
+| 2026-11-20 | [Ecommerce: checkout único con Webpay](2026-11-20-ecommerce-checkout-con-webpay.md) | KAN-85 | KAN-95 (avanza KAN-148) |
+| 2026-11-20 | [Ecommerce: carro multiproveedor](2026-11-20-ecommerce-carro-multiproveedor.md) | KAN-85 | KAN-94 |
+| 2026-11-20 | [Ecommerce: ficha de producto y comparador](2026-11-20-ecommerce-ficha-y-comparador.md) | KAN-85 | KAN-92, 93 |
+| 2026-11-20 | [Ecommerce: catálogo con filtros y búsqueda](2026-11-20-ecommerce-catalogo-y-busqueda.md) | KAN-85 | KAN-90, 91 |
+| 2026-11-20 | [Ecommerce: inicio](2026-11-20-ecommerce-inicio.md) | KAN-85 | KAN-89 |
+| 2026-11-20 | [Ecommerce: registro e ingreso del comprador](2026-11-20-ecommerce-registro-e-ingreso-de-comprador.md) | KAN-85 | KAN-97 |
+| 2026-11-20 | [Ofertas del proveedor](2026-11-20-ofertas-del-proveedor.md) | KAN-88 | KAN-146 |
+| 2026-11-20 | [Catálogo público, búsqueda y comparador](2026-11-20-catalogo-publico-y-comparador.md) | KAN-88 | KAN-145 |
+| 2026-11-20 | [Droplet de dev creado en Digital Ocean](2026-11-20-droplet-de-dev-creado.md) | KAN-88 | KAN-161 |
+| 2026-11-19 | [QA adicional en Oracle Cloud Always Free](2026-11-19-qa-en-oracle-cloud-always-free.md) | KAN-88 | KAN-161 |
+| 2026-11-19 | [Deploy con imágenes en GHCR y migraciones](2026-11-19-deploy-con-imagenes-en-ghcr-y-migraciones.md) | KAN-88 | KAN-161 |
+| 2026-11-18 | [2FA TOTP para usuarios internos](2026-11-18-2fa-totp-para-internos.md) | KAN-88 | KAN-144 |
+| 2026-11-18 | [Login único, registro y recuperación de clave](2026-11-18-login-registro-y-recuperacion-de-clave.md) | KAN-88 | KAN-144 |
+| 2026-11-18 | [Mobile: build de release para la demo](2026-11-18-mobile-build-de-release.md) | KAN-87 | KAN-138 |
+| 2026-11-18 | [Mobile: alertas del distribuidor](2026-11-18-mobile-alertas-del-distribuidor.md) | KAN-87 | KAN-137 |
+| 2026-11-18 | [Mobile: calificaciones recibidas del distribuidor](2026-11-18-mobile-calificaciones-recibidas.md) | KAN-87 | KAN-135 |
+| 2026-11-18 | [Mobile: visitas y conversión del distribuidor](2026-11-18-mobile-visitas-y-conversion.md) | KAN-87 | KAN-134 |
+| 2026-11-18 | [Mobile: estadísticas de venta del distribuidor](2026-11-18-mobile-estadisticas-de-venta.md) | KAN-87 | KAN-133 |
+| 2026-11-18 | [Mobile: órdenes vigentes del distribuidor](2026-11-18-mobile-ordenes-vigentes.md) | KAN-87 | KAN-136 |
+| 2026-11-18 | [Mobile: mis pedidos](2026-11-18-mobile-mis-pedidos.md) | KAN-87 | KAN-132 |
+| 2026-11-18 | [Mobile: checkout y pago](2026-11-18-mobile-checkout-y-pago.md) | KAN-87 | KAN-131 |
+| 2026-11-18 | [Mobile: carro multiproveedor (y FakeBackend)](2026-11-18-mobile-carro-multiproveedor.md) | KAN-87 | KAN-130 |
+| 2026-11-18 | [Archivos subidos en un volumen, servidos por Nginx](2026-11-18-almacenamiento-de-archivos-en-volumen.md) | KAN-88 | KAN-157 |
+| 2026-11-18 | [Recuperar lo de KAN-140 que perdió la consolidación](2026-11-18-recuperar-kan140-tras-consolidacion.md) | KAN-88 | KAN-140 |
+| 2026-11-18 | [Aiven y la base local alineadas con el esquema inicial](2026-11-18-alinear-aiven-con-esquema-inicial.md) | KAN-88 | KAN-139 |
+| 2026-11-18 | [admin-site en producción, en su propio subdominio](2026-11-18-admin-site-en-produccion.md) | KAN-88 | KAN-168 |
 | 2026-10-24 | [Colección de Postman de la API](2026-10-24-coleccion-de-postman.md) | KAN-88 | — |
 | 2026-10-24 | [Guía de CRUD de punta a punta](2026-10-24-guia-de-crud-de-punta-a-punta.md) | KAN-86 | KAN-118 |
 | 2026-10-23 | [Consultas de analítica para los paneles](2026-10-23-consultas-de-analitica.md) | KAN-88 | KAN-143 |

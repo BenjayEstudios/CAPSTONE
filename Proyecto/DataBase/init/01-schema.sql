@@ -87,6 +87,7 @@ CREATE TABLE `usuario` (
 	`telefono` varchar(24),
 	`hash_clave` char(60) NOT NULL,
 	`mfa_estado` enum('activo','pendiente','opcional','inactivo') NOT NULL DEFAULT 'inactivo',
+	`mfa_secreto` varchar(255),
 	`ultimo_acceso` datetime,
 	`estado` enum('activo','invitado','suspendido') NOT NULL DEFAULT 'invitado',
 	CONSTRAINT `usuario_id` PRIMARY KEY(`id`),
@@ -361,11 +362,7 @@ ALTER TABLE `evento_analitico` ADD CONSTRAINT `evento_analitico_comuna_id_comuna
 CREATE INDEX `comuna_nombre_idx` ON `comuna` (`nombre`);
 CREATE INDEX `comuna_region_codigo_idx` ON `comuna` (`region_codigo`);
 CREATE INDEX `organizacion_tipo_idx` ON `organizacion` (`tipo`);
-CREATE INDEX `organizacion_razon_social_idx` ON `organizacion` (`razon_social`);
-CREATE FULLTEXT INDEX `organizacion_busqueda_ft` ON `organizacion` (`razon_social`, `nombre_fantasia`);
 CREATE INDEX `usuario_estado_idx` ON `usuario` (`estado`);
-CREATE INDEX `usuario_nombre_idx` ON `usuario` (`nombre`);
-CREATE FULLTEXT INDEX `usuario_busqueda_ft` ON `usuario` (`nombre`, `email`);
 CREATE INDEX `producto_estado_idx` ON `producto` (`estado`);
 CREATE INDEX `ix_oferta_comparador` ON `oferta` (`producto_id`,`precio_unitario`);
 CREATE INDEX `oferta_estado_idx` ON `oferta` (`estado`);

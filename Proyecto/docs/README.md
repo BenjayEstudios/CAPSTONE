@@ -11,6 +11,7 @@ Toda la documentación del proyecto, por tema. Cada carpeta tiene su propio
 | [diseno/](diseno/IDENTIDAD-VISUAL.md) | Identidad visual: paleta, de dónde sale y dónde está implementada. |
 | [cambios/](cambios/README.md) | Bitácora cronológica: qué cambió, por qué y qué toca. |
 | [desarrollo/](desarrollo/README.md) | Cuentas de prueba, operación de la base y lo que hace falta para trabajar en el proyecto. |
+| [qa/](qa/README.md) | Material de las pruebas de usabilidad con usuarios piloto: guion, formulario de retroalimentación y plantilla del informe de hallazgos. |
 | [jira/](jira/README.md) | Export del backlog de Jira (fuente de las épicas). |
 
 ## Dónde escribir cada cosa

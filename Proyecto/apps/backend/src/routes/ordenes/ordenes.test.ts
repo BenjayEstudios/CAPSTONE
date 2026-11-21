@@ -14,7 +14,8 @@ const ctxUsuario = (tipo: string, orgId: number, permisos: Record<string, string
 const usuarios: Record<number, ReturnType<typeof ctxUsuario>> = {
   5: { ...ctxUsuario("cliente", 4, { ver_ordenes_propias: "total" }), usuario: { id: 5, estado: "activo", organizacionId: 4 } } as never,
   3: { ...ctxUsuario("proveedor", 2, { ver_ordenes_propias: "total" }), usuario: { id: 3, estado: "activo", organizacionId: 2 } } as never,
-  2: ctxUsuario("interna", 1, { crear_producto: "total" })
+  2: ctxUsuario("interna", 1, { crear_producto: "total" }),
+  7: { ...ctxUsuario("proveedor", 2, { ver_ordenes_propias: "total", publicar_precio_stock: "total" }), usuario: { id: 7, estado: "activo", organizacionId: 2 } } as never
 };
 
 const envioMem = { id: 1, ordenId: 100, proveedorId: 2, modalidad: "despacho", estado: "por_despachar" };
@@ -39,12 +40,64 @@ vi.mock("@cotizapp/infrastructure", async (orig) => ({
       throw Object.assign(new Error("stock"), { statusCode: 409, code: "SIN_STOCK", detalle: { lineas: [{ ofertaId: 1 }] } });
     }
   },
+  DrizzleProveedorRepository: class {
+    async perfil() {
+      return {
+        id: 2, razonSocial: "Distribuidora Los Andes Ltda.", rut: "76543210-3", nombreFantasia: "Los Andes", giro: null, emailContacto: "v@x.test", telefono: null,
+        direccion: null, bodega: null, plazoEstandarHoras: 24, plazoFueraRegionHoras: 72, horaCorte: "14:00", despachoGratisDesde: null,
+        ofreceDespacho: true, ofreceRetiro: false, banco: null, cuentaBancaria: null, estado: "activa", comisionPct: 8, entregasATiempoPct: 96.5,
+        creadaEn: new Date("2026-03-01T00:00:00Z"), regiones: [], equipo: []
+      };
+    }
+    async actualizarPerfil() {}
+    async cobertura() {
+      return { horaCorte: "14:00", despachoGratisDesde: null, plazoEstandarHoras: 24, ofreceDespacho: true, ofreceRetiro: true,
+        zonas: [{ id: 7, comunaId: null, comuna: null, regionCodigo: "13", region: "RM", costoDespacho: 4990, plazoHoras: 24 }] };
+    }
+    async crearZona() {
+      return 99;
+    }
+    async eliminarZona() {
+      return true;
+    }
+    async puntosRetiro() {
+      return [{ id: 1, nombre: "Bodega", horario: null, activo: true, usado: true, direccion: { calle: "X", numero: null, complemento: null, comunaId: 20, comuna: "Ñuñoa", region: "RM" } }];
+    }
+    async eliminarPuntoRetiro() {
+      return true;
+    }
+  },
+  DrizzleComunaRepository: class {
+    async listar() {
+      return [{ id: 20, nombre: "Ñuñoa", regionCodigo: "13", regionNombre: "RM" }];
+    }
+  },
+  DrizzleAnaliticaRepository: class {
+    async embudoPorProducto() {
+      return [{ ofertaId: 1, productoId: 1, nombre: "Arroz", formato: null, estadoOferta: "publicada", vistas: 10, clicks: 3, conversiones: 0, cajasVendidas: 2, tasaClick: null, tasaConversion: null }];
+    }
+    async stockDelMes() {
+      return [{ ofertaId: 1, productoId: 1, nombre: "Arroz", formato: null, cajasDisponibles: 9, cajasInicioMes: 30 }];
+    }
+    async potencialesPorComuna() {
+      return [{ comunaId: 20, comuna: "Ñuñoa", region: "RM", clientes: 2, cubre: true }];
+    }
+  },
   DrizzleOrdenRepository: class {
     async listar() {
       return { items: [], total: 0 };
     }
     async buscarPorId() {
       return null;
+    }
+    async clientesDeProveedor(proveedorId: number) {
+      const c = { organizacionId: 4, nombreFantasia: null, razonSocial: "Cocinería Paula", rut: "12345678-5", giro: null, email: "paula@correo.test", telefono: null, comuna: "Recoleta", ordenes: 0, pendientes: 1, monto: 0, primeraCompra: null, ultimaCompra: null };
+      return proveedorId === 2 ? { items: [c], total: 1 } : { items: [], total: 0 };
+    }
+    async ventasDeProveedor(f: { proveedorId: number; estado?: string }) {
+      const v = { envioId: 1, ordenId: 100, folio: "CM-100", cliente: "El Fogón", modalidad: "despacho", comuna: "Santiago", fecha: new Date("2026-11-20T12:00:00Z"), lineas: 2, cajas: 5, monto: 6000, estado: "por_despachar", ordenEstado: "pagada" };
+      const items = f.proveedorId === 2 && (!f.estado || f.estado === v.estado) ? [v] : [];
+      return { items, total: items.length, conteo: { por_despachar: 1 } };
     }
     async buscarEnvio(id: number) {
       return id === 1 ? envioMem : null;
@@ -66,10 +119,11 @@ beforeAll(async () => {
   vi.stubEnv("JWT_SECRET", SECRET);
   const { carroRoutes } = await import("../carro/index.js");
   const { ordenRoutes } = await import("./index.js");
+  const { panelProveedorRoutes } = await import("../panel-proveedor/index.js");
   const { errorHandler } = await import("../../lib/error-handler.js");
   app = Fastify();
   app.setErrorHandler(errorHandler);
-  [...carroRoutes, ...ordenRoutes].forEach((r) => app.route(r));
+  [...carroRoutes, ...ordenRoutes, ...panelProveedorRoutes].forEach((r) => app.route(r));
 });
 
 describe("rutas de carro", () => {
@@ -112,5 +166,81 @@ describe("rutas de ordenes", () => {
     expect(inv.statusCode).toBe(409);
     expect(inv.json().error.code).toBe("TRANSICION_INVALIDA");
     expect((await app.inject({ method: "PATCH", url: "/ordenes/envios/7/estado", headers: bearer("3"), payload: { estado: "cancelado" } })).statusCode).toBe(404);
+  });
+});
+
+describe("GET /proveedor/ventas (KAN-105)", () => {
+  it("sin token 401; cliente 403; proveedor ve sus envios con el siguiente paso", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/ventas?estado=por_despachar", headers: bearer("3") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ total: 1, conteo: { por_despachar: 1 }, items: [{ folio: "CM-100", cajas: 5, siguiente: "en_preparacion" }] });
+    expect((await app.inject({ method: "GET", url: "/proveedor/ventas?estado=pagada", headers: bearer("3") })).statusCode).toBe(400);
+  });
+});
+
+describe("GET /proveedor/clientes (KAN-106)", () => {
+  it("sin token 401; cliente 403; sin orden pagada no hay contacto", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/clientes" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/clientes", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/clientes", headers: bearer("3") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().items[0]).toMatchObject({ nombre: "Cocinería Paula", tipo: "Persona", recompra: "Por pagar", contacto: null });
+    expect(r.body).not.toContain("paula@correo.test");
+  });
+});
+
+describe("GET /proveedor/demanda (KAN-107)", () => {
+  it("sin token 401; sin permiso de proveedor 403; el proveedor ve los tres bloques", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda", headers: bearer("5") })).statusCode).toBe(403);
+    const r = await app.inject({ method: "GET", url: "/proveedor/demanda", headers: bearer("7") });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({
+      productos: [{ producto: "Arroz", vistas: 10, clicks: 3, conversion: 30, cajasVendidas: 2 }],
+      restantes: [{ producto: "Arroz", cajas: 9, cajasInicioMes: 30, porcentaje: 30 }],
+      potenciales: [{ comuna: "Ñuñoa", clientes: 2, cubre: true }]
+    });
+    expect((await app.inject({ method: "GET", url: "/proveedor/demanda?desde=2020-01-01", headers: bearer("7") })).statusCode).toBe(400);
+  });
+});
+
+describe("GET/PATCH /proveedor/perfil (KAN-108)", () => {
+  it("sin token 401; sin permiso de proveedor 403; el proveedor lee y guarda", async () => {
+    expect((await app.inject({ method: "GET", url: "/proveedor/perfil" })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: "/proveedor/perfil", headers: bearer("5") })).statusCode).toBe(403);
+    const g = await app.inject({ method: "GET", url: "/proveedor/perfil", headers: bearer("7") });
+    expect(g.statusCode).toBe(200);
+    expect(g.json()).toMatchObject({ razonSocial: "Distribuidora Los Andes Ltda.", horaCorte: "14:00" });
+    const ok = await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { horaCorte: "15:00" } });
+    expect(ok.statusCode).toBe(200);
+    const ninguna = await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { ofreceDespacho: false } });
+    expect(ninguna.statusCode).toBe(409);
+    expect(ninguna.json().error.code).toBe("SIN_MODALIDAD");
+    expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("7"), payload: { rut: "1-9" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "PATCH", url: "/proveedor/perfil", headers: bearer("5"), payload: { horaCorte: "15:00" } })).statusCode).toBe(403);
+  });
+});
+
+describe("cobertura y puntos de retiro (KAN-109)", () => {
+  it("zonas: 401, 403, crear 201, repetida 409, borrar 204, ajena 404", async () => {
+    expect((await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", payload: {} })).statusCode).toBe(401);
+    expect((await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("5"), payload: { comunaId: 20, costoDespacho: 1 } })).statusCode).toBe(403);
+    const ok = await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("7"), payload: { comunaId: 20, costoDespacho: 3990, plazoHoras: 24 } });
+    expect(ok.statusCode).toBe(201);
+    expect(ok.json()).toEqual({ id: 99 });
+    const dup = await app.inject({ method: "POST", url: "/proveedor/cobertura/zonas", headers: bearer("7"), payload: { regionCodigo: "13", costoDespacho: 1 } });
+    expect(dup.statusCode).toBe(409);
+    expect((await app.inject({ method: "DELETE", url: "/proveedor/cobertura/zonas/7", headers: bearer("7") })).statusCode).toBe(204);
+    expect((await app.inject({ method: "DELETE", url: "/proveedor/cobertura/zonas/8", headers: bearer("7") })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/proveedor/cobertura/regiones", headers: bearer("7") })).json()).toEqual([{ codigo: "13", nombre: "RM", comunas: [{ id: 20, nombre: "Ñuñoa" }] }]);
+  });
+  it("puntos: lista, y uno con retiros no se borra (409 PUNTO_USADO)", async () => {
+    const l = await app.inject({ method: "GET", url: "/proveedor/puntos-retiro", headers: bearer("7") });
+    expect(l.json().items[0]).toMatchObject({ id: 1, usado: true });
+    const del = await app.inject({ method: "DELETE", url: "/proveedor/puntos-retiro/1", headers: bearer("7") });
+    expect(del.statusCode).toBe(409);
+    expect(del.json().error.code).toBe("PUNTO_USADO");
   });
 });

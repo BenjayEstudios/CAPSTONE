@@ -1,131 +1,173 @@
-import { createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { describe, expect, it } from "vitest";
-import type { CorreoSaliente, DesafioMfaClaims, UsuarioConContexto, UsuarioRepository } from "@cotizapp/domain";
+import type { CuentaRepository, DesafioMfaClaims, UsuarioConContexto, UsuarioMfaEstado, UsuarioRepository } from "@cotizapp/domain";
 import { loginAdmin } from "./login-admin.use-case.js";
-import { crearControlMfa, reenviarMfaAdmin, verificarMfaAdmin, type DepsMfa } from "./mfa-admin.use-case.js";
+import { login } from "./login.use-case.js";
+import {
+  confirmarEnrolamientoMfa,
+  crearControlMfa,
+  iniciarEnrolamientoMfa,
+  verificarMfaAdmin,
+  type DepsMfa
+} from "./mfa-admin.use-case.js";
 
 const CLAVE = "clave-de-prueba-123";
 const hashClave = bcrypt.hashSync(CLAVE, 4);
+// Codigos validos del fake: "111111" calza en el paso 100 y "222222" en el 101.
+const PASOS: Record<string, number> = { "111111": 100, "222222": 101 };
 
-function ctx(mfaEstado: "activo" | "inactivo" | "pendiente" | "opcional" = "activo"): UsuarioConContexto {
-  return {
+function montar(o: { mfaEstado?: UsuarioMfaEstado; mfaSecreto?: string | null; tipoOrg?: "interna" | "cliente"; estado?: "activo" | "suspendido" } = {}) {
+  const c: UsuarioConContexto = {
     usuario: {
-      id: 7, organizacionId: 3, rolId: 1, nombre: "Ana", email: "ana@test.cl", rut: null, telefono: null,
-      hashClave, mfaEstado, ultimoAcceso: null, estado: "activo"
+      id: 7, organizacionId: 3, rolId: 1, nombre: "Ana", email: "ana@test.cl", rut: null, telefono: null, hashClave,
+      mfaEstado: o.mfaEstado ?? "activo", mfaSecreto: o.mfaSecreto === undefined ? "cifrado:SECRETO" : o.mfaSecreto,
+      ultimoAcceso: null, estado: o.estado ?? "activo"
     },
     rol: { id: 1, codigo: "soporte", nombre: "Soporte", descripcion: null, esSistema: false, permisos: {}, permisosActualizadoPor: null, permisosActualizadoEn: null },
-    organizacion: { id: 3, tipo: "interna", estado: "activa" }
+    organizacion: { id: 3, tipo: o.tipoOrg ?? "interna", estado: "activa", nombre: "Cotizapp" }
   };
-}
-
-function montar(mfaEstado: Parameters<typeof ctx>[0] = "activo") {
-  const c = ctx(mfaEstado);
   const accesos: number[] = [];
-  const repo: UsuarioRepository = {
+  const usuarios: UsuarioRepository = {
     buscarPorEmail: async (e) => (e === c.usuario.email ? c : null),
     buscarPorId: async (id) => (id === c.usuario.id ? c : null),
-    registrarUltimoAcceso: async (id) => {
-      accesos.push(id);
+    registrarUltimoAcceso: async (id) => void accesos.push(id)
+  };
+  const cuentas: CuentaRepository = {
+    crear: async () => ({ ok: false, conflicto: "email" }),
+    actualizarClave: async () => {},
+    guardarSecretoMfaPendiente: async (_id, cifrado) => {
+      c.usuario.mfaSecreto = cifrado;
+      c.usuario.mfaEstado = "pendiente";
+    },
+    activarMfa: async () => {
+      c.usuario.mfaEstado = "activo";
     }
   };
-  const correos: CorreoSaliente[] = [];
-  let expirado = false;
+  let generados = 0;
   const mfa: DepsMfa = {
-    generarCodigo: () => String(randomInt(0, 1_000_000)).padStart(6, "0"),
-    nuevoId: () => randomUUID(),
-    hashCodigo: (sub, cod) => createHmac("sha256", "secreto-test").update(sub + ":" + cod).digest("hex"),
-    igualesSeguro: (a, b) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b)),
-    servicioCorreo: { enviar: async (m) => void correos.push(m) },
-    firmarDesafio: (cl) => "x.".concat(Buffer.from(JSON.stringify(cl)).toString("base64url")),
+    // Cada llamada genera uno distinto: asi se nota si un re-ingreso cambia el QR.
+    generarSecreto: () => (++generados === 1 ? "NUEVO" : `NUEVO${generados}`),
+    verificarCodigo: (secreto, codigo) => (secreto === "SECRETO" || secreto.startsWith("NUEVO") ? PASOS[codigo] ?? null : null),
+    cifrar: (s) => `cifrado:${s}`,
+    descifrar: (s) => (s.startsWith("cifrado:") ? s.slice(8) : null),
+    otpauthUrl: (email, s) => `otpauth://totp/Cotizapp:${email}?secret=${s}`,
+    qrDataUrl: async (t) => `data:image/png;base64,${Buffer.from(t).toString("base64")}`,
+    nuevoId: (() => { let n = 0; return () => `jti-${++n}`; })(),
+    firmarDesafio: (cl) => "x." + Buffer.from(JSON.stringify(cl)).toString("base64url"),
     verificarDesafio: (t) => {
-      if (expirado || !t.startsWith("x.")) return null;
-      try {
-        return JSON.parse(Buffer.from(t.slice(2), "base64url").toString()) as DesafioMfaClaims;
-      } catch {
-        return null;
-      }
+      if (!t.startsWith("x.")) return null;
+      try { return JSON.parse(Buffer.from(t.slice(2), "base64url").toString()) as DesafioMfaClaims; } catch { return null; }
     },
     control: crearControlMfa()
   };
   const firmarToken = (cl: object) => JSON.stringify(cl);
-  const login = () => loginAdmin({ usuarioRepository: repo, firmarToken, mfa })({ email: "ana@test.cl", clave: CLAVE });
-  const verificar = verificarMfaAdmin({ usuarioRepository: repo, mfa, firmarToken });
-  const reenviar = reenviarMfaAdmin({ usuarioRepository: repo, mfa });
-  const codigoEnviado = () => /codigo de verificacion es: (\d{6})/.exec(correos[correos.length - 1]!.texto)![1]!;
-  return { login, verificar, reenviar, correos, accesos, codigoEnviado, expirar: () => (expirado = true) };
+  return {
+    c, accesos, mfa,
+    login: () => loginAdmin({ usuarioRepository: usuarios, firmarToken, mfa })({ email: "ana@test.cl", clave: CLAVE }),
+    verificar: verificarMfaAdmin({ usuarioRepository: usuarios, mfa, firmarToken }),
+    enrolar: iniciarEnrolamientoMfa({ usuarioRepository: usuarios, cuentaRepository: cuentas, mfa }),
+    confirmar: confirmarEnrolamientoMfa({ usuarioRepository: usuarios, cuentaRepository: cuentas, mfa, firmarToken }),
+    loginUnico: () => login({ usuarioRepository: usuarios, firmarToken, mfa })({ email: "ana@test.cl", clave: CLAVE })
+  };
 }
 
-describe("2FA por correo", () => {
-  it("paso 1 no entrega token y envia codigo; paso 2 correcto emite sesion", async () => {
+const desafioDe = (r: unknown) => (r as { desafio: string }).desafio;
+
+describe("2FA TOTP: cuando se exige", () => {
+  it("activo con secreto -> pide codigo; pendiente o activo sin secreto -> pide enrolar", async () => {
+    expect(await montar().login()).toMatchObject({ mfaRequerido: true, enrolar: false });
+    expect(await montar({ mfaEstado: "pendiente", mfaSecreto: null }).login()).toMatchObject({ mfaRequerido: true, enrolar: true });
+    expect(await montar({ mfaEstado: "activo", mfaSecreto: null }).login()).toMatchObject({ mfaRequerido: true, enrolar: true });
+  });
+
+  it("opcional o inactivo -> sesion directa; un no interno nunca recibe 2FA en el login unico", async () => {
+    for (const mfaEstado of ["opcional", "inactivo"] as const) {
+      expect(await montar({ mfaEstado, mfaSecreto: null }).login()).toHaveProperty("token");
+    }
+    expect(await montar({ tipoOrg: "cliente" }).loginUnico()).toHaveProperty("token");
+    expect(await montar().loginUnico()).toMatchObject({ mfaRequerido: true });
+  });
+});
+
+describe("2FA TOTP: verificacion", () => {
+  it("codigo correcto emite sesion y registra el acceso", async () => {
     const m = montar();
-    const r = await m.login();
-    expect(r).toMatchObject({ mfaRequerido: true });
-    expect("token" in r).toBe(false);
-    expect(m.accesos).toEqual([]);
-    expect(JSON.stringify(r)).not.toContain(m.codigoEnviado());
-    const s = await m.verificar({ desafio: (r as { desafio: string }).desafio, codigo: m.codigoEnviado() });
-    expect(JSON.parse(s.token)).toEqual({ sub: "7", organizacionId: 3, rol: "soporte" });
+    const r = await m.verificar({ desafio: desafioDe(await m.login()), codigo: "111111" });
+    expect(JSON.parse(r.token)).toEqual({ sub: "7", organizacionId: 3, rol: "soporte" });
     expect(m.accesos).toEqual([7]);
   });
 
-  it("codigo incorrecto -> 401 generico y no registra acceso", async () => {
+  it("un codigo ya aceptado no sirve de nuevo en su ventana, aunque llegue con otro desafio", async () => {
     const m = montar();
-    const { desafio } = (await m.login()) as { desafio: string };
-    const malo = m.codigoEnviado() === "000000" ? "111111" : "000000";
-    await expect(m.verificar({ desafio, codigo: malo })).rejects.toMatchObject({ statusCode: 401, code: "MFA_INVALIDO" });
-    expect(m.accesos).toEqual([]);
+    await m.verificar({ desafio: desafioDe(await m.login()), codigo: "111111" });
+    await expect(m.verificar({ desafio: desafioDe(await m.login()), codigo: "111111" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+    expect(await m.verificar({ desafio: desafioDe(await m.login()), codigo: "222222" })).toHaveProperty("token");
   });
 
-  it("desafio expirado o manipulado -> 401", async () => {
+  it("5 fallos bloquean (429) aunque despues llegue el codigo correcto", async () => {
     const m = montar();
-    const { desafio } = (await m.login()) as { desafio: string };
-    const codigo = m.codigoEnviado();
-    await expect(m.verificar({ desafio: desafio + "A", codigo })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
-    await expect(m.verificar({ desafio: "basura-basura-basura", codigo })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
-    // hash alterado: el codigo ya no coincide
-    const cl = JSON.parse(Buffer.from(desafio.slice(2), "base64url").toString());
-    cl.hash = "00".repeat(32);
-    const falso = "x.".concat(Buffer.from(JSON.stringify(cl)).toString("base64url"));
-    await expect(m.verificar({ desafio: falso, codigo })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
-    m.expirar();
-    await expect(m.verificar({ desafio, codigo })).rejects.toMatchObject({ statusCode: 401, code: "MFA_INVALIDO" });
+    const desafio = desafioDe(await m.login());
+    for (let i = 0; i < 5; i++) await expect(m.verificar({ desafio, codigo: "999999" })).rejects.toMatchObject({ statusCode: 401 });
+    await expect(m.verificar({ desafio, codigo: "111111" })).rejects.toMatchObject({ statusCode: 429, code: "MFA_DEMASIADOS_INTENTOS" });
   });
 
-  it("codigo de un solo uso y limite de 5 intentos fallidos", async () => {
-    const m = montar();
-    const { desafio } = (await m.login()) as { desafio: string };
-    const codigo = m.codigoEnviado();
-    await m.verificar({ desafio, codigo });
-    await expect(m.verificar({ desafio, codigo })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+  it("desafio de otro tipo, secreto ilegible o usuario suspendido -> 401", async () => {
+    const pend = montar({ mfaEstado: "pendiente", mfaSecreto: null });
+    await expect(pend.verificar({ desafio: desafioDe(await pend.login()), codigo: "111111" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
 
-    const m2 = montar();
-    const d2 = ((await m2.login()) as { desafio: string }).desafio;
-    const c2 = m2.codigoEnviado();
-    const malo = c2 === "000000" ? "111111" : "000000";
-    for (let i = 0; i < 5; i++) await expect(m2.verificar({ desafio: d2, codigo: malo })).rejects.toMatchObject({ statusCode: 401 });
-    await expect(m2.verificar({ desafio: d2, codigo: c2 })).rejects.toMatchObject({ statusCode: 429, code: "MFA_DEMASIADOS_INTENTOS" });
+    const roto = montar({ mfaSecreto: "basura" });
+    await expect(roto.verificar({ desafio: desafioDe(await roto.login()), codigo: "111111" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+
+    const m = montar();
+    const desafio = desafioDe(await m.login());
+    m.c.usuario.estado = "suspendido";
+    await expect(m.verificar({ desafio, codigo: "111111" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
   });
 
-  it("reenvio: nuevo codigo, invalida el desafio previo y limita a 3", async () => {
+  it("sin deps de MFA el login nunca omite el 2FA", async () => {
     const m = montar();
-    const d1 = ((await m.login()) as { desafio: string }).desafio;
-    const c1 = m.codigoEnviado();
-    const r = await m.reenviar({ desafio: d1 });
-    expect(m.correos).toHaveLength(2);
-    await expect(m.verificar({ desafio: d1, codigo: c1 })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
-    await m.verificar({ desafio: r.desafio, codigo: m.codigoEnviado() });
+    await expect(loginAdmin({ usuarioRepository: { buscarPorEmail: async () => m.c, buscarPorId: async () => m.c, registrarUltimoAcceso: async () => {} }, firmarToken: () => "t" })({ email: "ana@test.cl", clave: CLAVE }))
+      .rejects.toMatchObject({ statusCode: 403, code: "MFA_NO_IMPLEMENTADO" });
+  });
+});
 
-    const m2 = montar();
-    let d = ((await m2.login()) as { desafio: string }).desafio;
-    for (let i = 0; i < 3; i++) d = (await m2.reenviar({ desafio: d })).desafio;
-    await expect(m2.reenviar({ desafio: d })).rejects.toMatchObject({ statusCode: 429 });
+describe("2FA TOTP: enrolamiento", () => {
+  it("entrega secreto + QR; lo guarda cifrado como pendiente y el primer codigo lo activa", async () => {
+    const m = montar({ mfaEstado: "pendiente", mfaSecreto: null });
+    const e = await m.enrolar({ desafio: desafioDe(await m.login()) });
+    expect(e).toMatchObject({ secreto: "NUEVO", otpauthUrl: "otpauth://totp/Cotizapp:ana@test.cl?secret=NUEVO" });
+    expect(e.qrDataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(m.c.usuario).toMatchObject({ mfaEstado: "pendiente", mfaSecreto: "cifrado:NUEVO" });
+
+    await expect(m.confirmar({ desafio: e.desafio, codigo: "999999" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+    const r = await m.confirmar({ desafio: e.desafio, codigo: "111111" });
+    expect(r).toHaveProperty("token");
+    expect(m.c.usuario).toMatchObject({ mfaEstado: "activo", mfaSecreto: "cifrado:NUEVO" });
+
+    // Desafio de confirmacion de un solo uso, y ya no se puede re-enrolar.
+    await expect(m.confirmar({ desafio: e.desafio, codigo: "222222" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+    await expect(m.enrolar({ desafio: desafioDe(await m.login()) })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
   });
 
-  it.each(["inactivo", "pendiente", "opcional"] as const)("mfa_estado %s no exige 2FA", async (estado) => {
-    const m = montar(estado);
-    const r = await m.login();
-    expect("token" in r).toBe(true);
-    expect(m.correos).toHaveLength(0);
+  it("si sale y vuelve a entrar antes de confirmar, recibe el MISMO secreto (la cuenta ya agregada a la app sigue sirviendo)", async () => {
+    const m = montar({ mfaEstado: "pendiente", mfaSecreto: null });
+    const primero = await m.enrolar({ desafio: desafioDe(await m.login()) });
+    const segundo = await m.enrolar({ desafio: desafioDe(await m.login()) });
+    expect(segundo.secreto).toBe(primero.secreto);
+    expect(segundo.otpauthUrl).toBe(primero.otpauthUrl);
+    expect(await m.confirmar({ desafio: segundo.desafio, codigo: "111111" })).toHaveProperty("token");
+  });
+
+  it("un secreto pendiente ilegible (ej. cambio la clave de cifrado) se reemplaza por uno nuevo", async () => {
+    const m = montar({ mfaEstado: "pendiente", mfaSecreto: "basura" });
+    const e = await m.enrolar({ desafio: desafioDe(await m.login()) });
+    expect(m.c.usuario.mfaSecreto).toBe(`cifrado:${e.secreto}`);
+  });
+
+  it("no se puede enrolar con un desafio de codigo ni confirmar con uno de enrolamiento", async () => {
+    const act = montar();
+    await expect(act.enrolar({ desafio: desafioDe(await act.login()) })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
+    const pend = montar({ mfaEstado: "pendiente", mfaSecreto: null });
+    await expect(pend.confirmar({ desafio: desafioDe(await pend.login()), codigo: "111111" })).rejects.toMatchObject({ code: "MFA_INVALIDO" });
   });
 });

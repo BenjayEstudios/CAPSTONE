@@ -173,7 +173,11 @@ export class DrizzleUsuarioAdminRepository implements UsuarioAdminRepository {
 
   async actualizar(id: number, cambios: CambiosUsuario, auditoria: RegistroAuditoria) {
     await this.db.transaction(async (tx) => {
-      await tx.update(usuario).set(cambios).where(eq(usuario.id, id));
+      // Cualquier cambio de mfa_estado que no sea "activo" descarta el secreto
+      // TOTP: asi un admin reinicia el 2FA (ej. telefono perdido) poniendo
+      // "pendiente", y el usuario se enrola de nuevo en su proximo ingreso.
+      const reiniciaMfa = cambios.mfaEstado !== undefined && cambios.mfaEstado !== "activo";
+      await tx.update(usuario).set(reiniciaMfa ? { ...cambios, mfaSecreto: null } : cambios).where(eq(usuario.id, id));
       await tx.insert(auditoriaLog).values(auditoria);
     });
   }

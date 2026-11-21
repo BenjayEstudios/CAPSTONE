@@ -10,8 +10,10 @@ src/
 ├── db/
 │   ├── client.ts        # createDbClient(): pool de mysql2 + instancia de drizzle
 │   ├── schema/            # tablas de Drizzle (mysqlTable), una por entidad
-│   └── seed/              # datos de prueba (pnpm db:seed)
-│   └── particiones/       # mantenimiento de particiones (pnpm db:particiones)
+│   ├── seed/              # datos de prueba (pnpm db:seed)
+│   ├── particiones/       # mantenimiento de particiones (pnpm db:particiones);
+│   │                        asegurar.ts lo reusa el paso de migraciones
+│   └── migrar/            # paso de migraciones del deploy (sin drizzle-kit)
 ├── repositories/           # implementaciones concretas (Drizzle) de las
 │                            interfaces de @cotizapp/domain/repositories
 test/                         # tests de integración (vitest) contra el seed local
@@ -47,6 +49,46 @@ horizonte). Es idempotente y no borra datos; hay que correrlo una vez al
 mes contra cada base. Si nadie lo corre no se pierde nada: los eventos caen
 en `pmax`, solo se deja de ganar el pruning por mes. Por ser particionada,
 la tabla no tiene FKs (ver `DataBase/dbDiagram.sql`).
+
+## Migraciones en el deploy
+
+En producción no hay `drizzle-kit` (es devDependency): la imagen del backend
+trae `migrations/` y el script compilado `dist/db/migrar/run.js`, que usa el
+**mismo migrator de drizzle-orm** (`drizzle-orm/mysql2/migrator`) que
+`drizzle-kit migrate`. La tabla `__drizzle_migrations` queda igual con
+cualquiera de los dos (`hash` = sha256 del `.sql`, `created_at` = `when` del
+journal), así que son intercambiables. El deploy lo corre como contenedor de
+una sola vez antes de levantar el backend nuevo (ver
+[infra/README.md](../../infra/README.md#deploy-devyml--imágenes-en-ghcr-y-deploy-al-droplet)):
+
+```bash
+# en el droplet / stack de producción
+docker compose -f docker-compose.prod.yml run --rm --no-deps backend \
+  node packages/infrastructure/dist/db/migrar/run.js
+# en local, contra DATABASE_URL (o el MySQL local)
+pnpm build && node dist/db/migrar/run.js
+```
+
+Antes de migrar revisa el historial **completo** (`src/db/migrar/historial.ts`,
+con tests en `test/migrar.test.ts`), porque el migrator de drizzle solo mira la
+última fila y con un historial ajeno falla en silencio. El script **se niega a
+migrar** (sale con código 1, sin tocar tablas) si:
+
+- `__drizzle_migrations` tiene filas cuyo `hash` no corresponde a ninguna
+  migración de `migrations/` (base con migraciones viejas o editadas, como
+  pasó en Aiven);
+- una migración local no está aplicada pero es anterior a la última del
+  historial (drizzle se la saltaría);
+- la base tiene tablas pero no `__drizzle_migrations` (creada con `push`).
+
+Qué hacer: comparar `SELECT hash, created_at FROM __drizzle_migrations` con
+`sha256sum migrations/*.sql`. Si la base es descartable, recrearla; si no,
+alinear el historial a mano después de confirmar que el esquema coincide.
+
+Después de migrar asegura las particiones de `evento_analitico` (mes actual +
+3), igual que `pnpm db:particiones`. Va en el mismo paso porque es
+idempotente, no borra datos y así cada deploy deja la tabla cubierta; **no
+reemplaza** la corrida mensual (los deploys no tienen fecha fija).
 
 ## Datos de prueba (`db:seed`)
 
@@ -108,7 +150,10 @@ SELECT crudo usa `consultar<T>(db, sql)` de `src/db/client.ts`.
 
 `test/` tiene tests de integración de los repositorios contra el MySQL
 local **con el seed cargado** (`pnpm db:migrate && pnpm db:seed`). Cada test
-corre en una transacción que se revierte, así que no ensucian los datos.
+corre en una transacción de Drizzle que se revierte, así que no ensucian los
+datos; si el repositorio abre la suya, queda como `SAVEPOINT` adentro y
+también se revierte. No uses `START TRANSACTION`/`ROLLBACK` crudos en un test:
+en MySQL un `BEGIN` confirma la transacción en curso.
 Se niegan a correr contra un host que no sea local. En CI (`CI` definida)
 no hay MySQL: si la base no responde, la suite se salta; en local, falla
 diciendo por qué. `check-types` también revisa `test/` (`test/tsconfig.json`).

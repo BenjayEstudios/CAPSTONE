@@ -98,7 +98,46 @@ export interface OrdenCreada {
   codigo: string;
 }
 
+/** Direccion guardada de la organizacion (GET /carro/opciones-entrega). */
+export interface DireccionGuardada {
+  id: number;
+  calle: string;
+  numero: string | null;
+  complemento: string | null;
+  referencia: string | null;
+  comunaId: number;
+  comuna: string;
+  region: string;
+  /** Aditivo (KAN-109): para saber que proveedores cubren la direccion. */
+  regionCodigo: string;
+}
+
+/** Punto de retiro activo de un proveedor. */
+export interface PuntoRetiroOpcion {
+  id: number;
+  proveedorId: number;
+  nombre: string;
+  horario: string | null;
+  direccion: string;
+}
+
+export interface OpcionesEntrega {
+  direcciones: DireccionGuardada[];
+  puntosRetiro: PuntoRetiroOpcion[];
+  /**
+   * Aditivo (KAN-109): zonas de despacho de los proveedores del carro, para
+   * que el checkout solo ofrezca despacho a una comuna cubierta (la misma
+   * regla que planificarOrden: la comuna primero, si no, toda la region).
+   */
+  coberturas: Array<CoberturaProveedor & { proveedorId: number }>;
+}
+
 export interface CarroRepository {
+  /**
+   * Direcciones de la organizacion (la suya y las usadas en sus ordenes
+   * anteriores) y puntos de retiro activos de los proveedores indicados.
+   */
+  opcionesEntrega(organizacionId: number, proveedorIds: number[]): Promise<OpcionesEntrega>;
   obtenerAbierto(usuarioId: number): Promise<Carro | null>;
   /** Crea el carro abierto si no existe y reemplaza sus items. */
   guardarItems(usuarioId: number, items: CarroItem[]): Promise<Carro>;

@@ -1,0 +1,34 @@
+h2 { font-size: clamp(24px, 3vw, 30px); margin: 0; }
+h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; color: var(--color-text-soft); margin-left: 8px; }
+.bajada { margin: 6px 0 16px; font-size: 14px; color: var(--color-text-soft); max-width: 72ch; }
+.cargando, .suave { color: var(--color-text-soft); }
+.vacio { padding: 28px 0; color: var(--color-text-soft); }
+
+.filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip { font: inherit; font-size: 13px; padding: 6px 12px; border: 1px solid var(--color-divider); background: #fff; cursor: pointer; color: var(--color-text); }
+.chip .n { font-variant-numeric: tabular-nums; color: var(--color-text-soft); margin-left: 2px; }
+.chip.activo { background: var(--color-accent); border-color: var(--color-accent); color: #fff; font-weight: 600; }
+.chip.activo .n { color: inherit; }
+.mensaje { margin-bottom: 12px; }
+
+.tabla-contenedor { overflow-x: auto; background: var(--color-card); border: 1px solid var(--color-divider); }
+.tabla { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 880px; }
+.tabla th, .tabla td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--color-divider); vertical-align: middle; }
+.tabla thead th { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--color-text-soft); font-weight: 600; }
+.tabla tbody tr:not(.fila-error):hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
+.tabla small { display: block; font-size: 11.5px; color: var(--color-text-soft); }
+.folio { font-family: var(--font-heading); font-weight: 600; white-space: nowrap; }
+.num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fuerte { font-family: var(--font-heading); font-weight: 600; }
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text); }
+.tag[data-tono="accion"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.tag[data-tono="curso"] { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag[data-tono="ok"] { background: var(--color-surface); color: var(--color-accent-800); }
+.tag[data-tono="neutro"] { color: var(--color-text-soft); }
+.accion { text-align: right !important; white-space: nowrap; }
+.accion .btn { font-size: 13px; padding: 6px 12px; }
+.fila-error td { background: #fff; }
+.fila-error .mensaje { margin: 0; }
+.mas { display: flex; gap: 12px; align-items: center; margin-top: 14px; font-size: 13px; }
+
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

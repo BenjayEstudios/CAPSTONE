@@ -1,0 +1,18 @@
+# Override LOCAL (Compose lo carga solo): el backend usa la base compartida de
+# desarrollo (Aiven) en vez del MySQL del compose. No commitear.
+#
+# El DATABASE_URL sale de apps/backend/.env (el compose base lo forzaba a
+# mysql:3306; aca se quita ese override). Para Aiven agregale TLS:
+#   DATABASE_URL=mysql://USUARIO:CLAVE@HOST:PUERTO/BASE?ssl={"rejectUnauthorized":true}
+#
+# El servicio mysql local queda detras del perfil "local-db":
+#   docker compose --profile local-db up   (y borra este override o su perfil)
+services:
+  mysql:
+    profiles: ["local-db"]
+  backend:
+    environment:
+      DATABASE_URL: mysql://cotizapp:cotizapp@mysql:3306/cotizapp
+    depends_on: !override
+      fix-permissions:
+        condition: service_completed_successfully

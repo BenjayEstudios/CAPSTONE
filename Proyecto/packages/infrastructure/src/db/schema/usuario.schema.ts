@@ -19,6 +19,8 @@ export const usuario = mysqlTable(
     telefono: varchar("telefono", { length: 24 }),
     hashClave: char("hash_clave", { length: 60 }).notNull(),
     mfaEstado: mysqlEnum("mfa_estado", ["activo", "pendiente", "opcional", "inactivo"]).notNull().default("inactivo"),
+    // Secreto TOTP cifrado (AES-256-GCM, ver apps/backend/src/lib/mfa.ts). NULL = sin enrolar.
+    mfaSecreto: varchar("mfa_secreto", { length: 255 }),
     ultimoAcceso: datetime("ultimo_acceso"),
     estado: mysqlEnum("estado", ["activo", "invitado", "suspendido"]).notNull().default("invitado")
   },

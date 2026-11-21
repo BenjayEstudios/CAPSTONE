@@ -1,0 +1,121 @@
+#cloud-config
+# Preparacion de la VM de QA en Oracle Cloud Always Free (ARM, Ubuntu 24.04).
+# SOLO ASCII: Digital Ocean recodifica mal tildes y simbolos en el user-data
+# y cloud-init descarta el YAML completo (paso el 2026-11-20).
+# Variante de infra/deploy/cloud-init.yml (Digital Ocean) con lo propio de
+# Oracle: imagenes ARM (tag "-arm64"), firewall iptables de la imagen de
+# Oracle en vez de ufw, e IP publica leida desde fuera (la metadata de OCI
+# solo da la IP privada).
+#
+# Uso: Compute -> Instances -> Create instance -> "Show advanced options" ->
+# Management -> "Paste cloud-init script": pegar este archivo completo,
+# DESPUES de reemplazar CLAVE_PUBLICA_DEPLOY por el contenido de
+# id_deploy.pub (una sola linea "ssh-ed25519 AAAA... deploy-cotizapp").
+#
+# Deja: Docker Engine + Compose, usuario "deploy" (grupo docker, solo llave),
+# puertos 80/443 abiertos en iptables (ademas hay que abrirlos en la Security
+# List de la VCN, ver README), el repo en /opt/cotizapp y
+# Proyecto/infra/.env con secretos generados aca y dominios <ip>.nip.io.
+# NO levanta el stack: eso lo hace el primer deploy de deploy-oracle.yml.
+#
+# Ver el resultado:  sudo cat /var/log/cotizapp-preparacion.log
+# Detalle: Proyecto/infra/oracle/README.md.
+
+ssh_pwauth: false
+
+users:
+  - default
+  - name: deploy
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - CLAVE_PUBLICA_DEPLOY
+
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - netfilter-persistent
+  - iptables-persistent
+
+write_files:
+  - path: /root/preparar-cotizapp.sh
+    permissions: "0700"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      exec >>/var/log/cotizapp-preparacion.log 2>&1
+      echo "==> Inicio $(date -Is)"
+
+      if grep -q CLAVE_PUBLICA_DEPLOY /home/deploy/.ssh/authorized_keys 2>/dev/null; then
+        echo "ERROR: no se reemplazo CLAVE_PUBLICA_DEPLOY; el deploy no podra entrar."
+      fi
+
+      # Firewall de la imagen de Oracle: iptables con REJECT al final de INPUT
+      # (solo deja el 22). Se abren 80/443 justo antes de ese REJECT y se
+      # guardan las reglas ANTES de instalar Docker, para no persistir sus
+      # cadenas (Docker las crea solo al arrancar). No se usa ufw: Oracle
+      # recomienda no reemplazar estas reglas.
+      for puerto in 80 443; do
+        if ! iptables -C INPUT -p tcp -m state --state NEW --dport "$puerto" -j ACCEPT 2>/dev/null; then
+          linea="$(iptables -L INPUT --line-numbers -n | awk '$2 == "REJECT" {print $1; exit}')"
+          iptables -I INPUT "${linea:-1}" -p tcp -m state --state NEW --dport "$puerto" -j ACCEPT
+        fi
+      done
+      netfilter-persistent save
+
+      # Docker Engine + plugin Compose desde el repo oficial de Docker.
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+      # shellcheck source=/dev/null
+      . /etc/os-release
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+        > /etc/apt/sources.list.d/docker.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      systemctl enable --now docker
+      usermod -aG docker deploy
+
+      # Repo (publico, por HTTPS) en /opt/cotizapp, del usuario deploy.
+      install -d -o deploy -g deploy /opt/cotizapp
+      if [ ! -d /opt/cotizapp/.git ]; then
+        sudo -u deploy git clone https://github.com/BenjayEstudios/CAPSTONE.git /opt/cotizapp
+      fi
+
+      # infra/.env con secretos generados aca (hex = solo alfanumericos, lo
+      # que exige MYSQL_PASSWORD). Si ya existe, no se toca.
+      # IMAGE_TAG=dev-arm64: default para comandos a mano; el deploy lo pisa
+      # con <sha>-arm64.
+      env_file=/opt/cotizapp/Proyecto/infra/.env
+      if [ ! -f "$env_file" ]; then
+        ip="$(curl -fsS --max-time 10 https://checkip.amazonaws.com | tr -d '[:space:]' || true)"
+        if ! [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "AVISO: no se pudo leer la IP publica; editar APP_DOMAIN y ADMIN_DOMAIN en $env_file"
+          ip="IP-PUBLICA"
+        fi
+        umask 077
+        {
+          echo "# Generado por cloud-init el $(date -Is). Dominios provisorios (nip.io)."
+          echo "APP_DOMAIN=${ip}.nip.io"
+          echo "ADMIN_DOMAIN=admin.${ip}.nip.io"
+          echo "HTTP_PORT=80"
+          echo "UPLOADS_MAX_MB=5"
+          echo "IMAGE_TAG=dev-arm64"
+          echo "MYSQL_PASSWORD=$(openssl rand -hex 32)"
+          echo "MYSQL_ROOT_PASSWORD=$(openssl rand -hex 32)"
+          echo "JWT_SECRET=$(openssl rand -hex 32)"
+        } > "$env_file"
+        chown deploy:deploy "$env_file"
+        chmod 600 "$env_file"
+      fi
+
+      sudo -u deploy docker compose -f /opt/cotizapp/Proyecto/infra/docker-compose.prod.yml config --quiet \
+        && echo "compose config OK"
+      echo "==> Listo $(date -Is)"
+
+runcmd:
+  - [bash, /root/preparar-cotizapp.sh]

@@ -187,8 +187,6 @@ Table organizacion {
 
   indexes {
     tipo
-    razon_social
-    // FULLTEXT (razon_social, nombre_fantasia): selector con busqueda (migracion 0001)
   }
 
   Note: '''
@@ -210,14 +208,13 @@ Table usuario {
   rut             varchar(12)
   telefono        varchar(24)
   hash_clave      char(60) [not null]
-  mfa_estado      usuario_mfa_estado [not null, default: 'inactivo']
+  mfa_estado      usuario_mfa_estado [not null, default: 'inactivo', note: 'pendiente = 2FA exigido sin enrolar; activo = TOTP enrolado (KAN-144)']
+  mfa_secreto     varchar(255) [note: 'secreto TOTP cifrado con AES-256-GCM (nunca en claro); NULL si no hay enrolamiento']
   ultimo_acceso   datetime
   estado          usuario_estado [not null, default: 'invitado']
 
   indexes {
     estado
-    nombre
-    // FULLTEXT (nombre, email): busqueda del listado (migracion 0001; DBML no modela FULLTEXT)
   }
 
   Note: 'Cuenta de acceso: una organización, un rol.'
@@ -322,7 +319,7 @@ Table producto {
   creado_en                 datetime [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
-    nombre [name: 'ix_producto_nombre_fulltext', note: 'FULLTEXT en MySQL (DBML no soporta el tipo): creado a mano en la migración 0003 con ALTER TABLE ... ADD FULLTEXT (KAN-140)']
+    nombre [name: 'ix_producto_nombre_fulltext', note: 'FULLTEXT en MySQL (DBML no soporta el tipo): creado a mano en la migración 0001 con ALTER TABLE ... ADD FULLTEXT (KAN-140)']
     estado
   }
 
@@ -528,7 +525,7 @@ Table orden_envio {
     proveedor ve en su panel. punto_retiro_id se exige si modalidad =
     retiro; direccion_entrega_id si modalidad = despacho; nunca ambos.
     Lo garantiza el CHECK ck_orden_envio_destino (KAN-140, migración
-    0003). FUSIÓN: incluye lo que antes era la tabla
+    0001). FUSIÓN: incluye lo que antes era la tabla
     liquidacion_detalle (liquidacion_id + montos liquidados), ya que un
     envío se liquida una sola vez (relación 1:1 real con liquidacion).
   '''
@@ -683,7 +680,7 @@ Table evento_analitico {
     catálogo. Trade-off: se pierde algo de tipado estricto por columna
     a cambio de una sola tabla con un solo set de índices que mantener.
 
-    PARTICIONADA por mes (KAN-140, migración 0004): PARTITION BY RANGE
+    PARTICIONADA por mes (KAN-140, migración 0001): PARTITION BY RANGE
     COLUMNS(creado_en), una partición pAAAAMM por mes + pmax (MAXVALUE)
     de resguardo para que un insert nunca falle. `pnpm db:particiones`
     crea los meses siguientes (correrlo una vez al mes). DBML no expresa

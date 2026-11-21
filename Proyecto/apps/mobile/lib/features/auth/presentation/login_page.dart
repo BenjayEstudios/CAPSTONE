@@ -19,6 +19,14 @@ const _accesosDemo = [
 
 final _formatoEmail = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
+// El backend responde en texto técnico y sin tildes; la app traduce por code.
+String _mensajeLogin(Failure f) => switch (f.code) {
+      'CREDENCIALES_INVALIDAS' => 'Correo o clave incorrectos.',
+      'USUARIO_NO_ACTIVO' => 'Tu cuenta todavía no está activa. Te avisaremos cuando se apruebe.',
+      'VALIDACION' => 'Revisa el correo y la clave.',
+      _ => f.message,
+    };
+
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -52,7 +60,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     try {
       await ref.read(sesionProvider.notifier).iniciarSesion(email: _email.text, clave: _clave.text);
     } on Failure catch (f) {
-      if (mounted) setState(() => _error = f.message);
+      if (mounted) setState(() => _error = _mensajeLogin(f));
     } catch (_) {
       if (mounted) setState(() => _error = 'Ocurrió un error inesperado.');
     } finally {

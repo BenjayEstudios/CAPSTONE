@@ -1,78 +1,128 @@
 import Fastify from "fastify";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
-import { CorreoEnMemoria } from "@cotizapp/infrastructure";
+import { base32Decodificar, codigoHotp, pasoTotp } from "../../lib/totp.js";
 
+// 2FA TOTP de punta a punta sobre las rutas (KAN-144), con repositorios en memoria.
 const CLAVE = "clave-de-prueba-123";
 const hashClave = "$2b$04$r9ZmSZ.Peb.icRyK7IWKke4.u1zf.eAxcJ/eCsNHCTUXRc2oSLbMq";
 const ctx = {
   usuario: {
     id: 9, organizacionId: 1, rolId: 2, nombre: "Eva", email: "eva@test.cl", rut: null, telefono: null,
-    hashClave, mfaEstado: "activo", ultimoAcceso: null, estado: "activo"
+    hashClave, mfaEstado: "pendiente", mfaSecreto: null as string | null, ultimoAcceso: null, estado: "activo"
   },
   rol: { codigo: "soporte", permisos: { ver_auditoria: "parcial" } },
-  organizacion: { tipo: "interna" }
+  organizacion: { id: 1, tipo: "interna", estado: "activa", nombre: "Cotizapp" }
 };
 vi.mock("@cotizapp/infrastructure", async (orig) => ({
   ...(await orig<typeof import("@cotizapp/infrastructure")>()),
   DrizzleUsuarioRepository: class {
-    async buscarPorEmail(e: string) {
-      return e === ctx.usuario.email ? ctx : null;
-    }
-    async buscarPorId(id: number) {
-      return id === 9 ? ctx : null;
-    }
+    async buscarPorEmail(e: string) { return e === ctx.usuario.email ? structuredClone(ctx) : null; }
+    async buscarPorId(id: number) { return id === 9 ? structuredClone(ctx) : null; }
     async registrarUltimoAcceso() {}
+  },
+  DrizzleCuentaRepository: class {
+    async guardarSecretoMfaPendiente(_id: number, cifrado: string) {
+      ctx.usuario.mfaSecreto = cifrado;
+      ctx.usuario.mfaEstado = "pendiente";
+    }
+    async activarMfa() {
+      ctx.usuario.mfaEstado = "activo";
+    }
   }
 }));
 
 let app: FastifyInstance;
-const correo = new CorreoEnMemoria();
-const codigo = () => /es: (\d{6})/.exec(correo.enviados.at(-1)!.texto)![1]!;
+let secreto = "";
+const codigoEn = (pasoRelativo: number) => codigoHotp(base32Decodificar(secreto), pasoTotp(Date.now()) + pasoRelativo);
+const post = (url: string, payload: object) => app.inject({ method: "POST", url, payload });
+const loginAdmin = () => post("/auth/admin/login", { email: "eva@test.cl", clave: CLAVE });
 
 beforeAll(async () => {
+  // Reloj fijo a mitad de una ventana de 30 s: los codigos no cambian entre tests.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-18T12:00:15Z"));
   vi.stubEnv("JWT_SECRET", "secreto-solo-para-test");
   const { authRoutes } = await import("./index.js");
   const { errorHandler } = await import("../../lib/error-handler.js");
   app = Fastify();
-  app.decorate("servicioCorreo", correo);
+  app.decorate("db", {} as never);
   app.setErrorHandler(errorHandler);
   authRoutes.forEach((r) => app.route(r));
 });
 
-const login = () => app.inject({ method: "POST", url: "/auth/admin/login", payload: { email: "eva@test.cl", clave: CLAVE } });
+describe("2FA TOTP (rutas)", () => {
+  it("primer ingreso: pide enrolar, entrega QR y con el primer codigo guarda el secreto cifrado y abre sesion", async () => {
+    const r1 = await loginAdmin();
+    expect(r1.json()).toMatchObject({ mfaRequerido: true, enrolar: true });
+    expect(r1.json().token).toBeUndefined();
 
-describe("2FA por correo (rutas)", () => {
-  it("login -> codigo por correo -> sesion -> /auth/me", async () => {
-    const r1 = await login();
-    expect(r1.statusCode).toBe(200);
-    const { mfaRequerido, desafio, token } = r1.json();
-    expect(mfaRequerido).toBe(true);
-    expect(token).toBeUndefined();
-    expect(r1.body).not.toContain(codigo());
-    const r2 = await app.inject({ method: "POST", url: "/auth/admin/mfa", payload: { desafio, codigo: codigo() } });
+    // El desafio de enrolamiento no sirve para verificar un codigo.
+    expect((await post("/auth/admin/mfa", { desafio: r1.json().desafio, codigo: "123456" })).statusCode).toBe(401);
+
+    const r2 = await post("/auth/admin/mfa/enrolar", { desafio: r1.json().desafio });
     expect(r2.statusCode).toBe(200);
-    expect(r2.json().usuario.rol).toBe("soporte");
-    const me = await app.inject({ method: "GET", url: "/auth/me", headers: { authorization: `Bearer ${r2.json().token}` } });
+    const enrol = r2.json();
+    expect(enrol.qrDataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(enrol.otpauthUrl).toContain(`secret=${enrol.secreto}`);
+    expect(enrol.otpauthUrl).toContain("issuer=Cotizapp");
+    secreto = enrol.secreto;
+    // Queda guardado (cifrado, nunca en claro) pero pendiente hasta confirmar.
+    expect(ctx.usuario.mfaEstado).toBe("pendiente");
+    expect(ctx.usuario.mfaSecreto).toMatch(/^v1:/);
+    expect(ctx.usuario.mfaSecreto).not.toContain(secreto);
+
+    // Salir y volver a entrar antes de confirmar entrega el MISMO QR.
+    const otraVez = (await post("/auth/admin/mfa/enrolar", { desafio: (await loginAdmin()).json().desafio })).json();
+    expect(otraVez.secreto).toBe(secreto);
+
+    const malo = await post("/auth/admin/mfa/confirmar", { desafio: enrol.desafio, codigo: codigoEn(0) === "000000" ? "111111" : "000000" });
+    expect(malo.statusCode).toBe(401);
+
+    const r3 = await post("/auth/admin/mfa/confirmar", { desafio: enrol.desafio, codigo: codigoEn(0) });
+    expect(r3.statusCode).toBe(200);
+    expect(r3.json().usuario.rol).toBe("soporte");
+    expect(ctx.usuario.mfaEstado).toBe("activo");
+    expect(ctx.usuario.mfaSecreto).toMatch(/^v1:/);
+    expect(ctx.usuario.mfaSecreto).not.toContain(secreto);
+
+    // El desafio de confirmacion es de un solo uso.
+    expect((await post("/auth/admin/mfa/confirmar", { desafio: enrol.desafio, codigo: codigoEn(0) })).statusCode).toBe(401);
+  });
+
+  it("ingresos siguientes: pide el codigo de la app; un codigo ya usado no sirve de nuevo", async () => {
+    const r1 = await loginAdmin();
+    expect(r1.json()).toMatchObject({ mfaRequerido: true, enrolar: false });
+
+    // El codigo del paso actual ya se uso al confirmar: se rechaza.
+    const reuso = await post("/auth/admin/mfa", { desafio: r1.json().desafio, codigo: codigoEn(0) });
+    expect(reuso.statusCode).toBe(401);
+    expect(reuso.json().error.code).toBe("MFA_INVALIDO");
+
+    // El del paso siguiente (tolerancia de reloj) todavia no se uso.
+    const ok = await post("/auth/admin/mfa", { desafio: r1.json().desafio, codigo: codigoEn(1) });
+    expect(ok.statusCode).toBe(200);
+    const me = await app.inject({ method: "GET", url: "/auth/me", headers: { authorization: `Bearer ${ok.json().token}` } });
     expect(me.statusCode).toBe(200);
+
+    // Ya enrolado: no se puede volver a pedir un QR.
+    const r2 = await loginAdmin();
+    expect((await post("/auth/admin/mfa/enrolar", { desafio: r2.json().desafio })).statusCode).toBe(401);
   });
 
-  it("codigo incorrecto y desafio manipulado -> 401 generico", async () => {
-    const { desafio } = (await login()).json();
-    const malo = codigo() === "000000" ? "111111" : "000000";
-    const r = await app.inject({ method: "POST", url: "/auth/admin/mfa", payload: { desafio, codigo: malo } });
-    expect(r.statusCode).toBe(401);
-    expect(r.json().error.code).toBe("MFA_INVALIDO");
-    const r2 = await app.inject({ method: "POST", url: "/auth/admin/mfa", payload: { desafio: desafio + "x", codigo: codigo() } });
-    expect(r2.statusCode).toBe(401);
+  it("el login unico tambien exige el 2FA a los internos", async () => {
+    const r = await post("/auth/login", { email: "eva@test.cl", clave: CLAVE });
+    expect(r.json()).toMatchObject({ mfaRequerido: true, enrolar: false });
+    expect(r.json().token).toBeUndefined();
   });
 
-  it("reenvio entrega un desafio nuevo con otro correo", async () => {
-    const { desafio } = (await login()).json();
-    const n = correo.enviados.length;
-    const r = await app.inject({ method: "POST", url: "/auth/admin/mfa/reenviar", payload: { desafio } });
-    expect(r.statusCode).toBe(200);
-    expect(correo.enviados.length).toBe(n + 1);
-    expect(r.json().desafio).not.toBe(desafio);
+  it("desafio manipulado -> 401; el reenvio por correo ya no existe", async () => {
+    const { desafio } = (await loginAdmin()).json();
+    expect((await post("/auth/admin/mfa", { desafio: desafio + "x", codigo: codigoEn(-1) })).statusCode).toBe(401);
+    expect((await post("/auth/admin/mfa/reenviar", { desafio })).statusCode).toBe(404);
   });
+});
+
+afterAll(() => {
+  vi.useRealTimers();
 });

@@ -113,11 +113,26 @@ existe está especificado en
 
 ## Pagos
 
-Integración con Webpay/MercadoPago en modo sandbox, consumida solo desde
-`apps/backend` (los datos de tarjeta nunca tocan el backend propio). El
-reparto (split) entre distribuidores es simulado en la base propia — no hay
-split nativo de la pasarela — y se refleja en `liquidacion`. Sin implementar
-(KAN-148).
+Webpay Plus de Transbank (API REST v1.2), consumida solo desde `apps/backend`
+detrás del puerto `PasarelaPago` (`packages/domain/src/services`), con el
+adaptador `WebpayPlus` en `packages/infrastructure/src/pagos`. Los datos de
+tarjeta se ingresan en Webpay: nunca tocan el backend propio. Flujo (KAN-95):
+
+1. `POST /carro/confirmar` crea la orden `pendiente_pago` (un envío por
+   distribuidor) y descuenta stock.
+2. `POST /ordenes/:id/pago` crea la transacción por el total y guarda el
+   token en `orden.referencia_pasarela`; el navegador envía `token_ws` a
+   Webpay con un formulario POST.
+3. Webpay devuelve al comprador a `GET|POST /pagos/webpay/retorno` (público),
+   que confirma (commit), deja la orden `pagada` / `pagado` o `fallido`,
+   emite la boleta o factura y las guías (`emitirDocumentosOrden`) y redirige
+   a `ECOMMERCE_URL/checkout/resultado`.
+
+Ambiente por `WEBPAY_ENTORNO` (`integracion` usa las credenciales públicas
+de prueba). El reparto (split) entre distribuidores es simulado en la base
+propia — no hay split nativo de la pasarela — y se refleja en `liquidacion`.
+La devolución por pasarela de un reembolso queda como punto de extensión
+(`devolverDinero` en `reembolsos.use-cases.ts`, KAN-148).
 
 ## Infraestructura
 

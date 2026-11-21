@@ -1,0 +1,63 @@
+<section class="ventas" aria-labelledby="titulo-ventas">
+  <h2 id="titulo-ventas">Órdenes de venta <small>{{ resumen() }}</small></h2>
+  <p class="bajada">Cada fila es tu parte de una orden: tus líneas, tus cajas y tu monto. Avanza el estado a medida que preparas, despachas y entregas; el comprador lo ve en su pedido.</p>
+
+  <div class="filtros" role="group" aria-label="Filtrar por estado">
+    @for (f of filtros(); track f.etiqueta) {
+      <button type="button" class="chip" [class.activo]="filtro() === f.estado" [attr.aria-pressed]="filtro() === f.estado" (click)="filtrar(f.estado)">
+        {{ f.etiqueta }} <span class="n">{{ f.n }}</span>
+      </button>
+    }
+  </div>
+
+  @if (aviso(); as a) { <p class="mensaje ok" role="status">{{ a }}</p> }
+
+  @switch (estado()) {
+    @case ("cargando") { <p class="cargando">Cargando tus órdenes…</p> }
+    @case ("error") { <p class="mensaje error" role="alert">No pudimos cargar tus órdenes. <button type="button" class="btn-link" (click)="cargar()">Reintentar</button></p> }
+    @default {
+      @if (!ventas().length) {
+        <p class="vacio">{{ filtro() ? "No tienes órdenes en este estado." : "Todavía no tienes órdenes de venta. Aparecen aquí cuando un comprador paga una orden con tus productos." }}</p>
+      } @else {
+        <div class="tabla-contenedor">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Folio</th><th scope="col">Cliente</th><th scope="col">Comuna</th><th scope="col">Fecha</th>
+                <th scope="col" class="num">Líneas</th><th scope="col" class="num">Cajas</th><th scope="col" class="num">Monto</th>
+                <th scope="col">Estado</th><th scope="col"><span class="visualmente-oculto">Acción</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of ventas(); track v.envioId) {
+                <tr>
+                  <th scope="row" class="folio">{{ v.folio }}</th>
+                  <td>{{ v.cliente }}</td>
+                  <td class="suave">{{ v.comuna ?? "—" }}<small>{{ v.modalidad === "retiro" ? "Retiro en bodega" : "Despacho" }}</small></td>
+                  <td class="suave">{{ fecha(v.fecha) }}</td>
+                  <td class="num">{{ v.lineas }}</td>
+                  <td class="num">{{ entero(v.cajas) }}</td>
+                  <td class="num fuerte">{{ clp(v.monto) }}</td>
+                  <td><span class="tag" [attr.data-tono]="estados[v.estado].tono">{{ estados[v.estado].texto }}</span></td>
+                  <td class="accion">
+                    @if (v.siguiente; as s) {
+                      <button type="button" class="btn" [class.btn-primary]="v.estado === 'por_despachar'" [class.btn-secondary]="v.estado !== 'por_despachar'"
+                        [disabled]="moviendo() !== null" (click)="avanzar(v)">{{ moviendo() === v.envioId ? "Guardando…" : textoAccion(s) }}</button>
+                    }
+                  </td>
+                </tr>
+                @if (error()?.envioId === v.envioId) {
+                  <tr class="fila-error"><td colspan="9"><p class="mensaje error" role="alert">{{ error()!.texto }}</p></td></tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (hayMas()) {
+          <p class="mas"><button type="button" class="btn btn-secondary" [disabled]="cargandoMas()" (click)="verMas()">{{ cargandoMas() ? "Cargando…" : "Ver más órdenes" }}</button>
+            <span class="suave">{{ ventas().length }} de {{ total() }}</span></p>
+        }
+      }
+    }
+  }
+</section>

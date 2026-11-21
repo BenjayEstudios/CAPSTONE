@@ -4,6 +4,7 @@ import {
   generarLiquidaciones,
   listarLiquidaciones,
   listarMisLiquidaciones,
+  obtenerMiLiquidacion,
   obtenerLiquidacion,
   pagarLiquidacion
 } from "@cotizapp/application";
@@ -35,6 +36,14 @@ const miasRoute: RouteOptions = {
   handler: async (request) => listarMisLiquidaciones(deps(request))(uid(request), request.query)
 };
 
+// Detalle de una liquidacion propia con sus envios (KAN-111). Una ajena = 404.
+const miaRoute: RouteOptions = {
+  method: "GET",
+  url: "/liquidaciones/mias/:id",
+  preHandler: [requireAuth, requirePermiso("ver_ordenes_propias")],
+  handler: async (request) => obtenerMiLiquidacion(deps(request))(uid(request), idParamSchema.parse(request.params).id)
+};
+
 const getRoute: RouteOptions = {
   method: "GET",
   url: "/liquidaciones/:id",
@@ -58,4 +67,4 @@ const pagarRoute: RouteOptions = {
     pagarLiquidacion(deps(request))(idParamSchema.parse(request.params).id, request.body, uid(request))
 };
 
-export const liquidacionRoutes: RouteOptions[] = [listRoute, miasRoute, getRoute, generarRoute, pagarRoute];
+export const liquidacionRoutes: RouteOptions[] = [listRoute, miasRoute, miaRoute, getRoute, generarRoute, pagarRoute];
