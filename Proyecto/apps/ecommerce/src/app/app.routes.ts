@@ -40,7 +40,7 @@ export const routes: Routes = [
     title: "Pago · Cotizapp"
   },
   {
-    // Adonde vuelve el comprador desde Webpay (el backend redirige aqui).
+    // Adonde vuelve el comprador desde la pasarela (el backend redirige aqui).
     path: "checkout/resultado",
     canActivate: [sesionGuard],
     loadComponent: () => import("./features/checkout/resultado.component").then((m) => m.ResultadoPagoComponent),

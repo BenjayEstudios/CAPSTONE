@@ -7,7 +7,7 @@ import { CalificarEnvioComponent } from "./calificar-envio.component";
 import { estadoEnvio, PasoSeguimiento, pasosEnvio } from "./estados";
 
 const MEDIOS: Record<MedioPago, string> = {
-  tarjeta: "Tarjeta (Webpay)",
+  tarjeta: "Tarjeta / PayPal",
   transferencia: "Transferencia bancaria",
   linea_credito: "Línea de crédito Cotizapp"
 };

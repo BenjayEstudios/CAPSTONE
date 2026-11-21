@@ -1,30 +1,27 @@
 :host { display: flex; flex-direction: column; min-height: 100%; }
 
 .cabecera { background: var(--color-bg); }
+.cabecera .contenedor { position: relative; }
 
 /* Franja superior, como la del mockup: versalitas pequeñas entre dos reglas. */
-.franja { border-bottom: 1px solid var(--color-divider); }
-.franja-fila { display: flex; gap: 10px; flex-wrap: wrap; padding-block: 7px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-soft); }
+.franja { background: linear-gradient(90deg, var(--tinta) 0%, var(--tinta-clara) 100%); }
+.franja-fila { display: flex; gap: 10px; flex-wrap: wrap; padding-block: 7px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-menta); }
 .franja-fila > span:not(:last-child)::after { content: "·"; margin-left: 10px; }
 .franja-fin { margin-left: auto; }
 .franja-fin::after { content: none !important; }
 
-.marca-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(16px, 3vw, 40px); align-items: center; padding-block: 18px 14px; border-top: 4px solid var(--color-text); margin-top: 10px; }
+.marca-fila { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: clamp(16px, 3vw, 40px); align-items: center; padding-block: 18px 14px; }
 
 .marca { display: flex; flex-direction: column; text-decoration: none; color: var(--color-text); }
-.nombre { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-heading); font-weight: 700; font-size: 30px; letter-spacing: -0.02em; line-height: 1.05; }
+.nombre { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-heading); font-weight: 800; font-size: 30px; letter-spacing: -0.02em; line-height: 1.05; }
 .lema { font-size: 12px; color: var(--color-text-soft); }
-/* Las tres tintas de proceso (cian, magenta, amarillo), superpuestas. */
-.tintas { display: inline-flex; }
-.tintas i { width: 13px; height: 13px; border-radius: 50%; mix-blend-mode: multiply; }
-.tintas i:nth-child(1) { background: var(--color-accent); }
-.tintas i:nth-child(2) { background: var(--color-accent-2); margin-left: -5px; }
-.tintas i:nth-child(3) { background: var(--color-yellow); margin-left: -5px; }
+/* Isotipo Laguna (el mismo del admin-site): sol crema sobre dos olas. */
+.tintas { flex: none; }
 
 .buscador { display: flex; max-width: 560px; width: 100%; justify-self: center; }
-.buscador .input { border-radius: var(--radius-md) 0 0 var(--radius-md); background: var(--color-surface); }
-.btn-buscar { background: var(--color-accent); color: #fff; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-.btn-buscar:hover { background: var(--color-accent-600); }
+.buscador .input { border-radius: var(--radius-pill) 0 0 var(--radius-pill); background: #fff; padding-left: 20px; }
+.btn-buscar { background: var(--color-primary); color: #fff; border-radius: 0 var(--radius-pill) var(--radius-pill) 0; }
+.btn-buscar:hover { background: var(--color-primary-600); }
 
 .acciones { display: flex; align-items: center; gap: 16px; }
 .carro { flex-direction: column; align-items: flex-end; gap: 0; padding: 7px 12px; text-align: right; white-space: nowrap; }
@@ -36,13 +33,15 @@
 .pedidos { white-space: nowrap; }
 
 /* Barra de categorias: nivel 1 en negrita, nivel 2 normal; en pantallas chicas se desplaza de lado. */
-.categorias { display: flex; gap: 18px; overflow-x: auto; padding-block: 8px 0; border-bottom: 1px solid var(--color-divider); scrollbar-width: thin; }
+.categorias { display: flex; gap: 20px; overflow-x: auto; padding-block: 8px 0; border-bottom: 1px solid var(--color-divider); scrollbar-width: thin; }
 .categorias a { white-space: nowrap; font-size: 13.5px; color: var(--color-text-soft); text-decoration: none; padding-bottom: 8px; border-bottom: 2px solid transparent; }
-.categorias a.raiz { color: var(--color-text); font-weight: 600; }
-.categorias a:hover, .categorias a.activo { border-bottom-color: var(--color-accent-2); color: var(--color-text); }
+.categorias a.raiz { color: var(--color-text); font-weight: 700; }
+.categorias a:hover, .categorias a.activo { border-bottom-color: var(--color-primary); color: var(--color-text); }
 
 .principal { flex: 1; }
-.pie { border-top: 3px solid var(--color-text); margin-top: 40px; padding-block: 16px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-soft); }
+/* Pie marino con ondas arriba, como las superficies oscuras del admin-site. */
+.pie { position: relative; margin-top: 90px; padding-block: 22px 24px; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.8); background: linear-gradient(180deg, var(--tinta-clara) 0%, var(--tinta) 100%); }
+.pie::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 60px; background: var(--ondas-laguna) center bottom / 100% 100% no-repeat; pointer-events: none; }
 .pie-fila { display: flex; gap: 22px; flex-wrap: wrap; }
 .pie a { color: inherit; text-decoration: none; }
 .pie-fin { margin-left: auto; text-transform: none; letter-spacing: 0; }

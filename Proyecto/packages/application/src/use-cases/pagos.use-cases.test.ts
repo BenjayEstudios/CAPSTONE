@@ -78,7 +78,7 @@ describe("iniciarPago (KAN-95)", () => {
   it("crea la transaccion por el total de la orden y guarda el token", async () => {
     const { st, inicio } = setup();
     const r = await inicio(8, 12, { medioPago: "tarjeta" });
-    expect(r).toEqual({ ordenId: 12, codigo: "CM-90012", total: 80150, pasarela: "prueba", urlPago: "https://pasarela.test/pagar", token: "tok-1" });
+    expect(r).toEqual({ ordenId: 12, codigo: "CM-90012", total: 80150, pasarela: "prueba", urlPago: "https://pasarela.test/pagar", token: "tok-1", metodo: "POST" });
     expect(st.solicitudes[0]).toEqual({ ordenCompra: "CM-90012", sesionId: "orden-12", monto: 80150, urlRetorno: "http://api.test/pagos/webpay/retorno" });
     expect(st.orden.referenciaPasarela).toBe("tok-1");
   });

@@ -1,7 +1,9 @@
 import {
   CalificacionError,
+  calificacionesRecibidasQuerySchema,
   calificarEnvioSchema,
   type CalificacionRepository,
+  type ProveedorRepository,
   type UsuarioRepository
 } from "@cotizapp/domain";
 import { ErrorAplicacion } from "../errors.js";
@@ -36,5 +38,40 @@ export function calificarEnvio(deps: Deps) {
       }
       throw err;
     }
+  };
+}
+
+interface DepsRecibidas {
+  calificacionRepository: CalificacionRepository;
+  usuarioRepository: UsuarioRepository;
+  proveedorRepository: Pick<ProveedorRepository, "perfil">;
+}
+
+/**
+ * GET /calificaciones/recibidas (KAN-200, KAN-135 en mobile): lo que el
+ * proveedor de la sesion recibio. Shape de apps/mobile/API_CONTRACT.md
+ * (`resumen`, `entregasATiempoPct`, `items`) mas `total`, `pagina` y `tamano`
+ * para paginar. Solo usuarios activos de una organizacion proveedor.
+ */
+export function calificacionesRecibidas(deps: DepsRecibidas) {
+  return async (usuarioId: number, query: unknown) => {
+    const ctx = await deps.usuarioRepository.buscarPorId(usuarioId);
+    if (!ctx || ctx.usuario.estado !== "activo") throw new ErrorAplicacion(401, "UNAUTHORIZED", "Sesion invalida");
+    if (ctx.organizacion.tipo !== "proveedor") throw new ErrorAplicacion(403, "FORBIDDEN", "Solo un proveedor ve sus calificaciones");
+    const q = validar(calificacionesRecibidasQuerySchema, query ?? {});
+    const proveedorId = ctx.organizacion.id;
+    const [resumen, pagina, perfil] = await Promise.all([
+      deps.calificacionRepository.resumenRecibidas(proveedorId),
+      deps.calificacionRepository.listarRecibidas(proveedorId, q),
+      deps.proveedorRepository.perfil(proveedorId)
+    ]);
+    return {
+      resumen,
+      entregasATiempoPct: perfil?.entregasATiempoPct ?? null,
+      items: pagina.items,
+      total: pagina.total,
+      pagina: q.pagina,
+      tamano: q.tamano
+    };
   };
 }

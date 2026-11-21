@@ -2,21 +2,6 @@
 
 Lo que falta resolver. Ninguna bloquea el trabajo en curso salvo donde se diga.
 
-## 2. Fastify vs Express
-
-**Aplica en:** KAN-169 — conviene resolverlo **antes** de que entre más API
-
-Dos de los tres integrantes conocen Express y no Fastify. El ticket pide
-evaluar si conviene migrar `apps/backend` ahora, cuando solo existe el
-ejemplo de `categoria`, y documentar la decisión con su razón. Si no se
-migra, hace falta un plan de onboarding para trabajar en Fastify.
-
-A favor de quedarse: el patrón de rutas (`RouteOptions`), los `preHandler`
-de auth, el composition root y la validación de entorno ya están hechos y
-documentados sobre Fastify.
-
-**Bloquea:** el arranque de los tickets de API (KAN-144 a KAN-156).
-
 ## 5. Dominio y HTTPS
 
 **Aplica en:** KAN-159

@@ -29,3 +29,26 @@ export class CalificacionError extends Error {
     this.name = "CalificacionError";
   }
 }
+
+// KAN-200. Calificacion recibida por un proveedor, tal como la ve en su panel
+// y en la app movil: con el folio de la orden y la organizacion compradora.
+export interface CalificacionRecibida {
+  id: number;
+  ordenEnvioId: number;
+  ordenCodigo: string;
+  /** Nombre de la organizacion compradora (no del usuario que califico). */
+  cliente: string;
+  puntaje: number;
+  comentario: string | null;
+  creadaEn: Date;
+}
+
+/** Cuantas calificaciones recibio el proveedor por cada puntaje (1 a 5). */
+export type DistribucionCalificaciones = Record<"1" | "2" | "3" | "4" | "5", number>;
+
+export interface ResumenCalificacionesRecibidas {
+  /** null si no tiene calificaciones. */
+  promedio: number | null;
+  cantidad: number;
+  distribucion: DistribucionCalificaciones;
+}

@@ -14,7 +14,8 @@ import { logger } from "../lib/logger.js";
 import { registerRoutes } from "../routes/index.js";
 
 export async function buildApp(env: Env) {
-  const app = Fastify({ logger: false });
+  // trustProxy: tras Nginx, request.ip (rate limit) debe ser la IP del cliente.
+  const app = Fastify({ logger: false, trustProxy: env.FASTIFY_TRUST_PROXY });
 
   await app.register(cors, { origin: env.CORS_ORIGIN });
 

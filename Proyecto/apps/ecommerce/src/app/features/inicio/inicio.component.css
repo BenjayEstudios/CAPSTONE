@@ -1,14 +1,20 @@
 .portada { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: clamp(24px, 5vw, 72px); padding-block: clamp(28px, 5vw, 56px); }
 
-.propuesta h1 { font-size: clamp(34px, 4.6vw, 56px); line-height: 1.04; letter-spacing: -0.025em; max-width: 19ch; margin-bottom: 18px; }
-.bajada { max-width: 46ch; font-size: 16px; margin: 0 0 24px; }
+/* Portada marina: panel azul con sol crema, aros y ondas, como el login del admin-site. */
+.propuesta { position: relative; overflow: hidden; isolation: isolate; color: #fff; padding: clamp(24px, 4vw, 44px) clamp(22px, 4vw, 44px) clamp(90px, 10vw, 120px); border-radius: 28px; background: linear-gradient(180deg, var(--tinta) 0%, #0d4a6b 100%); box-shadow: var(--shadow-card); }
+.propuesta::before { content: ""; position: absolute; z-index: -1; right: 8%; bottom: 70px; width: 130px; height: 130px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fbf1df, var(--color-crema) 70%); }
+.propuesta::after { content: ""; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; height: 90px; background: var(--ondas-laguna) center bottom / 100% 100% no-repeat; }
+.propuesta h1 { color: #fff; font-size: clamp(34px, 4.6vw, 56px); line-height: 1.04; letter-spacing: -0.025em; max-width: 19ch; margin-bottom: 18px; }
+.bajada { max-width: 46ch; font-size: 16px; margin: 0 0 24px; color: rgba(255, 255, 255, 0.85); }
 .botones { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn-catalogo { background: var(--color-accent); color: #fff; }
-.btn-catalogo:hover { background: var(--color-accent-600); }
+.btn-catalogo { background: var(--color-menta); color: var(--tinta); }
+.btn-catalogo:hover { background: #b4efe5; }
+.propuesta .btn-secondary { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.35); color: #fff; }
+.propuesta .btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.5); }
 
 .contadores { display: flex; gap: clamp(28px, 5vw, 56px); margin: clamp(32px, 5vw, 48px) 0 0; }
 .contadores div { display: flex; flex-direction: column-reverse; }
-.contadores dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-soft); margin-top: 6px; }
+.contadores dt { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-menta); margin-top: 6px; }
 .contadores dd { margin: 0; }
 
 /*
@@ -19,21 +25,25 @@
 .tinta-desfasada { position: relative; display: inline-block; font-family: var(--font-heading); font-weight: 700; font-size: clamp(44px, 6vw, 68px); line-height: 1; letter-spacing: -0.03em; color: var(--color-text); isolation: isolate; }
 .tinta-desfasada::before, .tinta-desfasada::after { content: attr(data-valor); position: absolute; inset: 0; z-index: -1; mix-blend-mode: multiply; }
 .tinta-desfasada::before { color: var(--color-accent); transform: translate(-3px, 1px); }
-.tinta-desfasada::after { color: var(--color-accent-2); transform: translate(3px, 2px); }
-.tinta-desfasada { text-shadow: 1px -2px 0 color-mix(in srgb, var(--color-yellow) 85%, transparent); }
+.tinta-desfasada::after { color: var(--color-menta); transform: translate(3px, 2px); }
+.tinta-desfasada { text-shadow: 1px -2px 0 color-mix(in srgb, var(--color-yellow) 45%, transparent); }
+/* Sobre fondo marino la mezcla "multiply" no se ve: el numero va blanco y limpio. */
+.propuesta .tinta-desfasada { color: #fff; text-shadow: none; }
+.propuesta .tinta-desfasada::before, .propuesta .tinta-desfasada::after { content: none; }
 
 .cargando { color: var(--color-text-soft); font-size: 14px; }
+.propuesta .cargando { color: rgba(255, 255, 255, 0.8); }
 .contadores-vacios { margin-top: 40px; }
 
-.lateral { display: flex; flex-direction: column; gap: 28px; border-left: 1px solid var(--color-divider); padding-left: clamp(18px, 3vw, 32px); }
+.lateral { display: flex; flex-direction: column; gap: 28px; align-self: start; background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: clamp(18px, 3vw, 28px); }
 .lateral .etiqueta { margin: 0 0 12px; font-family: var(--font-body); font-weight: 600; }
 
 .categoria { margin-bottom: 14px; }
 .categoria a { text-decoration: none; }
-.categoria .raiz { display: block; font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--color-text); margin-bottom: 4px; }
+.categoria .raiz { display: block; font-family: var(--font-heading); font-size: 18px; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
 .categoria ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
 .categoria li { font-size: 14px; }
-.categoria li a { color: var(--color-accent); }
+.categoria li a { color: var(--color-primary); }
 .n { font-size: 12px; color: var(--color-text-soft); font-weight: 400; margin-left: 4px; font-variant-numeric: tabular-nums; }
 
 .diferencias { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-divider); }
@@ -42,9 +52,8 @@
 .diferencias a:hover .nombre { text-decoration: underline; text-underline-offset: 3px; }
 .diferencias .nombre { font-size: 14.5px; }
 .diferencias .rango { font-size: 12px; color: var(--color-text-soft); }
-.monto { color: var(--color-accent-2); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.monto { color: var(--color-primary); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 @media (max-width: 860px) {
   .portada { grid-template-columns: 1fr; }
-  .lateral { border-left: 0; padding-left: 0; border-top: 1px solid var(--color-divider); padding-top: 24px; }
 }

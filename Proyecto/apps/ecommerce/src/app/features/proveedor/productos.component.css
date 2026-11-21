@@ -7,7 +7,7 @@ h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; col
 .herramientas { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .filtros { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { font: inherit; font-size: 13px; padding: 6px 12px; border: 1px solid var(--color-divider); background: #fff; cursor: pointer; color: var(--color-text); }
-.chip.activo { background: var(--color-accent); border-color: var(--color-accent); color: #fff; font-weight: 600; }
+.chip.activo { background: var(--color-primary); border-color: var(--color-accent); color: #fff; font-weight: 600; }
 .buscar .input { min-width: 240px; }
 .mensaje { margin-bottom: 12px; }
 
@@ -22,7 +22,7 @@ h2 small { font-family: var(--font-body); font-weight: 400; font-size: 13px; col
 .tabla small { display: block; font-size: 11.5px; color: var(--color-text-soft); }
 .num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fuerte { font-weight: 700; }
-.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text); }
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; white-space: nowrap; background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-pill); }
 .tag[data-tono="ok"] { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag[data-tono="aviso"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .acciones { white-space: nowrap; text-align: right !important; }

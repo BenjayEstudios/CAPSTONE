@@ -19,6 +19,15 @@ export interface RegistroAuditoria {
   datosDespues: unknown;
 }
 
+/** Fila minima de un documento para recalcular su vigencia (KAN-150). */
+export interface VigenciaDocumento {
+  id: number;
+  proveedorId: number;
+  tipo: ProveedorDocumentoTipo;
+  venceEn: string | null; // YYYY-MM-DD
+  vigencia: ProveedorDocumentoVigencia;
+}
+
 export interface RevisionDocumento {
   revisionEstado: ProveedorDocumentoRevision;
   motivoRechazo: string | null;
@@ -171,6 +180,10 @@ export interface ProveedorRepository {
   ): Promise<ProveedorDocumento>;
   buscarDocumento(documentoId: number): Promise<ProveedorDocumento | null>;
   revisarDocumento(documentoId: number, revision: RevisionDocumento, auditoria: RegistroAuditoria): Promise<ProveedorDocumento>;
+  /** KAN-150: todos los documentos de todos los proveedores con su vigencia guardada (insumo del job de vencimiento). */
+  listarVigenciaDocumentos(): Promise<VigenciaDocumento[]>;
+  /** KAN-150: guarda la vigencia recalculada de un documento y su auditoria en la misma transaccion. */
+  actualizarVigenciaDocumento(documentoId: number, vigencia: ProveedorDocumentoVigencia, auditoria: RegistroAuditoria): Promise<void>;
   cambiarEstado(
     id: number,
     estado: ProveedorEstado,

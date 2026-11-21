@@ -26,16 +26,8 @@
     <span class="circulo circulo-b" aria-hidden="true"></span>
     <div class="login">
       <span class="paso"><span class="paso-punto" aria-hidden="true"></span>Paso {{ enMfa() ? 2 : 1 }} de 2</span>
-      @if (!enMfa()) {
-        <h2 class="titulo">Ingresar</h2>
-        <p class="sub">Ingresa con tu cuenta del equipo Cotizapp.</p>
-      } @else if (enrolamiento()) {
-        <h2 class="titulo">Activa la verificación</h2>
-        <p class="sub">Tu cuenta exige verificación en dos pasos. Configúrala una sola vez con tu teléfono.</p>
-      } @else {
-        <h2 class="titulo">Verificación</h2>
-        <p class="sub">Abre tu app autenticadora y escribe el código de 6 dígitos de Cotizapp.</p>
-      }
+      <h2 class="titulo">{{ enMfa() ? "Verificación" : "Ingresar" }}</h2>
+      <p class="sub">{{ !enMfa() ? "Ingresa con tu cuenta del equipo Cotizapp." : enrolamiento() ? "Configura tu app autenticadora para proteger tu cuenta." : "Abre tu app autenticadora y escribe el código de 6 dígitos de Cotizapp." }}</p>
 
       @if (enMfa()) {
       <form class="form" [formGroup]="formMfa" (ngSubmit)="verificar()" novalidate>
@@ -98,7 +90,7 @@
         <button type="submit" class="btn btn-primary btn-block" [disabled]="cargando()">
           {{ cargando() ? "Ingresando..." : "Ingresar →" }}
         </button>
-        <p class="nota-2fa">Después te pediremos el código de 6 dígitos de tu app autenticadora.</p>
+        <p class="nota-2fa">Te pediremos el código de tu app autenticadora.</p>
       </form>
       }
     </div>
