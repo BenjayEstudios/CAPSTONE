@@ -27,15 +27,16 @@ Hoy existen `GET /health-check` y `GET/POST /categorias`, más los
 | KAN-145 | Catálogo, búsqueda y comparador | Benjamín | ✅ [entrada](../cambios/2026-11-20-catalogo-publico-y-comparador.md) |
 | KAN-146 | Ofertas del proveedor | Benjamín | ✅ [entrada](../cambios/2026-11-20-ofertas-del-proveedor.md) |
 | KAN-147 | Carro y creación de orden con split por proveedor | Sebastián | ✅ |
-| KAN-148 | Pagos: pasarela Webpay/MercadoPago sandbox | Sebastián | 🔄 Webpay Plus integrado en KAN-95 (iniciar, retorno, emisión de documentos; [entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md)). Falta: devolución por pasarela en reembolsos (`devolverDinero`) y la vuelta a la app móvil |
+| KAN-148 | Pagos: pasarela Webpay/MercadoPago sandbox | Sebastián | 🔄 Webpay Plus integrado en KAN-95 (iniciar, retorno, emisión de documentos; [entrada](../cambios/2026-11-20-ecommerce-checkout-con-webpay.md)). Desde el 2026-11-21 también PayPal sandbox (`PASARELA=paypal`, [entrada](../cambios/2026-11-21-paypal-sandbox-y-vigencia-de-documentos.md)). Pago aprobado, anulado, reintento y **devolución por PayPal en reembolsos** probados en el sandbox. Falta: la vuelta a la app móvil y Webpay en producción |
 | KAN-149 | Órdenes y estados de envío | Sebastián | ✅ |
-| KAN-150 | Proveedores: perfil, cobertura, retiro y documentos | Sebastián | ⏳ |
+| KAN-150 | Proveedores: perfil, cobertura, retiro y documentos | Sebastián | ✅ Admin, perfil, cobertura, retiro y documentos del proveedor, y job `job:vigencia-documentos` ([entrada](../cambios/2026-11-21-paypal-sandbox-y-vigencia-de-documentos.md)). Falta programar el cron en producción |
 | KAN-151 | Usuarios, roles y permisos | Sebastián | ✅ |
 | KAN-152 | Liquidaciones semanales | Sebastián | ✅ (job `pnpm job:liquidaciones`, sin scheduler) |
 | KAN-153 | Documentos tributarios simulados (SII) | Sebastián | ✅ |
 | KAN-154 | Ingesta de eventos analíticos | Sebastián | ✅ |
 | KAN-155 | Auditoría y moderación automáticas | Sebastián | ✅ Casos abiertos al registrar proveedor, en precio fuera de rango y en cada reembolso ([entrada](../cambios/2026-11-21-correos-de-compra-y-caso-de-reembolso.md)) |
 | KAN-156 | Correos transaccionales | Sebastián | ✅ Invitación, 2FA, recuperación de clave, confirmación de compra y aviso al proveedor ([entrada](../cambios/2026-11-21-correos-de-compra-y-caso-de-reembolso.md)). Falta SMTP real en el entorno |
+| KAN-200 | Calificaciones recibidas del proveedor (`GET /calificaciones/recibidas`) | Sebastián | ✅ [entrada](../cambios/2026-11-21-calificaciones-recibidas-devolucion-paypal-y-datos-de-prueba.md) |
 | KAN-169 | Decidir Fastify vs Express | Sebastián | ✅ Se queda en Fastify ([decisiones cerradas](../decisiones/DECISIONES-CERRADAS.md)) |
 
 ## Infraestructura — Samuel Alarcón

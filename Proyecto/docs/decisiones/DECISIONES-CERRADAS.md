@@ -233,6 +233,21 @@ inicia con la orden ya creada (`POST /carro/confirmar` y luego
 antes de redirigir al ecommerce, y solo se da por pagada si el monto
 autorizado es el total de la orden.
 
+### PayPal sandbox como pasarela de prueba mientras no haya cuenta de Webpay
+
+Decidido el 2026-11-21 (KAN-148). Webpay Plus sigue siendo la pasarela
+prevista para Chile, pero pasar a producción exige cuenta empresa; para probar
+el flujo completo se agregó un segundo adaptador, `PayPal` (Orders API v2,
+sandbox), detrás del mismo puerto `PasarelaPago`. Se elige con `PASARELA=paypal`
+y no cambia casos de uso ni el flujo de órdenes. Tres diferencias que quedan
+absorbidas por el adaptador y la ruta de retorno: PayPal no acepta CLP (se
+cobra en USD con `PAYPAL_CLP_POR_USD`, y el monto en pesos viaja en
+`custom_id` para verificar contra el total de la orden), el navegador va a la
+URL de aprobación con GET en vez de un formulario POST (`metodo: "GET"`), y el
+retorno es `/pagos/paypal/retorno` (se traduce a la forma de Webpay). El medio
+de pago guardado sigue siendo `tarjeta` (sin migración); la pasarela usada
+queda en la auditoría del pago (`pasarela: "paypal"`).
+
 ### 2FA solo con TOTP y solo para usuarios internos
 
 Lo fija KAN-144. Compradores y proveedores entran con correo y clave.

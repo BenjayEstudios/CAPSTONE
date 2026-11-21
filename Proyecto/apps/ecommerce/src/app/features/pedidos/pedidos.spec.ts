@@ -116,9 +116,9 @@ describe("Mis pedidos (KAN-98)", () => {
     const el = h.routeNativeElement!;
     expect(el.querySelector("ol.seguimiento")).toBeNull();
     (Array.from(el.querySelectorAll("button")).find((b) => b.textContent!.includes("Pagar ahora")) as HTMLButtonElement).click();
-    ctrl.expectOne(`${API}/ordenes/13/pago`).flush({ ordenId: 13, codigo: "CM-90013", total: 85140, pasarela: "webpay", urlPago: "https://webpay/init", token: "t" });
+    ctrl.expectOne(`${API}/ordenes/13/pago`).flush({ ordenId: 13, codigo: "CM-90013", total: 85140, pasarela: "webpay", urlPago: "https://webpay/init", token: "t", metodo: "POST" });
     await h.fixture.whenStable();
-    expect(TestBed.inject(NavegadorPasarela).ir).toHaveBeenCalledWith("https://webpay/init", "t");
+    expect(TestBed.inject(NavegadorPasarela).ir).toHaveBeenCalledWith("https://webpay/init", "t", "POST");
   });
 
   it("pasos y estados", () => {

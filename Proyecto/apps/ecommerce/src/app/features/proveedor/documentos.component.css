@@ -13,7 +13,7 @@ h3 { font-size: 18px; margin: 0 0 4px; }
 .revision[data-revision="aprobado"] { color: var(--color-accent-800); }
 .revision[data-revision="rechazado"] { color: var(--color-accent-2-800); }
 .lado { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex: 0 0 auto; }
-.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; white-space: nowrap; }
+.tag { font-size: 12px; font-weight: 600; padding: 3px 9px; white-space: nowrap; border-radius: var(--radius-pill); }
 .tag[data-tono="ok"] { background: var(--color-accent-100); color: var(--color-accent-800); }
 .tag[data-tono="aviso"], .tag[data-tono="alerta"] { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 .lado .btn { font-size: 13px; padding: 7px 12px; }

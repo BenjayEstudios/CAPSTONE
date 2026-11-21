@@ -57,7 +57,7 @@ export function iniciarPago(deps: DepsInicio) {
       urlRetorno: deps.urlRetorno
     });
     await deps.ordenRepository.registrarInicioPago(oc.orden.id, inicio.token);
-    return { ordenId: oc.orden.id, codigo: oc.orden.codigo, total: oc.orden.total, pasarela: deps.pasarela.nombre, urlPago: inicio.url, token: inicio.token };
+    return { ordenId: oc.orden.id, codigo: oc.orden.codigo, total: oc.orden.total, pasarela: deps.pasarela.nombre, urlPago: inicio.url, token: inicio.token, metodo: inicio.metodo ?? "POST" };
   };
 }
 

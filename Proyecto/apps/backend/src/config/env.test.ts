@@ -51,3 +51,22 @@ describe("PASARELA (KAN-164)", () => {
     expect(crearPasarelaPago(loadEnv(base)).nombre).not.toBe("simulada");
   });
 });
+
+describe("PASARELA=paypal (KAN-148)", () => {
+  it("exige las credenciales y arma el adaptador PayPal", async () => {
+    expect(() => loadEnv({ ...base, PASARELA: "paypal" })).toThrow(/PAYPAL_CLIENT_ID/);
+    const env = loadEnv({ ...base, PASARELA: "paypal", PAYPAL_CLIENT_ID: "id", PAYPAL_CLIENT_SECRET: "sec" });
+    expect(env.PAYPAL_ENTORNO).toBe("sandbox");
+    expect(env.PAYPAL_CLP_POR_USD).toBe(950);
+    const { crearPasarelaPago } = await import("../lib/pasarela.js");
+    expect(crearPasarelaPago(env).nombre).toBe("paypal");
+  });
+});
+
+describe("FASTIFY_TRUST_PROXY", () => {
+  it("false por defecto y acepta true", () => {
+    expect(loadEnv(base).FASTIFY_TRUST_PROXY).toBe(false);
+    expect(loadEnv({ ...base, FASTIFY_TRUST_PROXY: "true" }).FASTIFY_TRUST_PROXY).toBe(true);
+    expect(() => loadEnv({ ...base, FASTIFY_TRUST_PROXY: "si" })).toThrow();
+  });
+});

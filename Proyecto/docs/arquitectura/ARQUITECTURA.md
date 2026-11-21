@@ -113,10 +113,24 @@ existe está especificado en
 
 ## Pagos
 
-Webpay Plus de Transbank (API REST v1.2), consumida solo desde `apps/backend`
-detrás del puerto `PasarelaPago` (`packages/domain/src/services`), con el
-adaptador `WebpayPlus` en `packages/infrastructure/src/pagos`. Los datos de
-tarjeta se ingresan en Webpay: nunca tocan el backend propio. Flujo (KAN-95):
+Consumida solo desde `apps/backend` detrás del puerto `PasarelaPago`
+(`packages/domain/src/services`), con un adaptador por pasarela en
+`packages/infrastructure/src/pagos` y selector `PASARELA` en
+`apps/backend/src/lib/pasarela.ts`:
+
+- `paypal` — `PayPal` (Orders API v2, sandbox). Es la que se usa mientras no
+  exista cuenta empresa de Webpay. PayPal no acepta CLP: se cobra en USD con
+  `PAYPAL_CLP_POR_USD`; el monto en pesos viaja en `custom_id` y es el que se
+  compara con el total de la orden. El navegador va a la URL de aprobación con
+  un GET (`metodo: "GET"` en la respuesta de `POST /ordenes/:id/pago`) y vuelve
+  a `GET /pagos/paypal/retorno`.
+- `webpay` — `WebpayPlus` de Transbank (API REST v1.2), formulario POST con
+  `token_ws` y retorno a `/pagos/webpay/retorno`.
+- `simulada` — aprueba sin pasarela (pruebas e2e; no en producción).
+
+Los datos de tarjeta se ingresan en la pasarela: nunca tocan el backend
+propio. Flujo (KAN-95), descrito para Webpay (con PayPal cambia solo el paso
+de ida y la URL de retorno, que se traduce a la misma forma):
 
 1. `POST /carro/confirmar` crea la orden `pendiente_pago` (un envío por
    distribuidor) y descuenta stock.
@@ -129,7 +143,7 @@ tarjeta se ingresan en Webpay: nunca tocan el backend propio. Flujo (KAN-95):
    a `ECOMMERCE_URL/checkout/resultado`.
 
 Ambiente por `WEBPAY_ENTORNO` (`integracion` usa las credenciales públicas
-de prueba). El reparto (split) entre distribuidores es simulado en la base
+de prueba) o `PAYPAL_ENTORNO` (`sandbox`). El reparto (split) entre distribuidores es simulado en la base
 propia — no hay split nativo de la pasarela — y se refleja en `liquidacion`.
 La devolución por pasarela de un reembolso queda como punto de extensión
 (`devolverDinero` en `reembolsos.use-cases.ts`, KAN-148).

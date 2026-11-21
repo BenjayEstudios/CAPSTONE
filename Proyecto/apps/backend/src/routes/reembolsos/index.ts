@@ -11,6 +11,13 @@ const deps = (request: FastifyRequest) => ({
   emisorRut: process.env.SII_EMISOR_RUT || undefined,
   // KAN-155: cada reembolso abre un caso de moderacion.
   moderacionRepository: new DrizzleModeracionRepository(request.server.db),
+  // KAN-148: si la pasarela activa sabe devolver (PayPal), el reembolso tambien devuelve el dinero.
+  devolverDinero: request.server.pasarelaPago?.devolver
+    ? async (s: { monto: number; ordenCodigo: string; referenciaPasarela: string | null }) => {
+        if (!s.referenciaPasarela) throw new Error("la orden no tiene referencia de pasarela");
+        await request.server.pasarelaPago!.devolver!({ referencia: s.referenciaPasarela, monto: s.monto, ordenCompra: s.ordenCodigo });
+      }
+    : undefined,
   log: (mensaje: string, error?: unknown) => logger.error(mensaje, { error: error instanceof Error ? error.message : String(error) })
 });
 const uid = (request: FastifyRequest) => Number(request.auth?.sub);

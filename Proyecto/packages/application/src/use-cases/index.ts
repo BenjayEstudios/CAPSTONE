@@ -46,3 +46,4 @@ export * from "./notificar-orden-pagada.use-case.js";
 export * from "./comunas.use-cases.js";
 export * from "./calificaciones.use-cases.js";
 export * from "./panel-proveedor.use-cases.js";
+export * from "./vigencia-documentos.use-case.js";

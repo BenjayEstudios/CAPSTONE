@@ -7,7 +7,7 @@ h1 { font-size: clamp(26px, 3vw, 34px); margin-bottom: 12px; }
 /* Chips de "Refinar", como en el mockup. */
 .refinar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .refinar .etiqueta { margin-right: 4px; }
-.chip { font: inherit; font-size: 13px; padding: 5px 11px; border: 1px solid var(--color-divider); background: #fff; color: var(--color-text); cursor: pointer; border-radius: 2px; }
+.chip { font: inherit; font-size: 13px; padding: 5px 11px; border: 1px solid var(--color-divider); background: #fff; color: var(--color-text); cursor: pointer; border-radius: var(--radius-pill); }
 .chip:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .chip.activo { background: var(--color-accent-100); border-color: var(--color-accent); color: var(--color-accent-800); font-weight: 600; }
 .chip.marca { padding: 0; }
@@ -23,7 +23,7 @@ h1 { font-size: clamp(26px, 3vw, 34px); margin-bottom: 12px; }
 .info h2 a { color: var(--color-text); text-decoration: none; }
 .info h2 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .comparacion { margin: 8px 0 0; font-size: 14px; }
-.n-prov { color: var(--color-accent-2); font-weight: 600; }
+.n-prov { color: var(--color-primary); font-weight: 600; }
 .ahorro { color: var(--color-text-soft); font-size: 13px; }
 .precio-col { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
 .precio { margin: 0; font-family: var(--font-heading); font-weight: 700; font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }

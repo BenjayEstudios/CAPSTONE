@@ -14,9 +14,10 @@ import {
   PagoIniciado
 } from "../models/checkout.models";
 
-// Llamadas del checkout (KAN-95). El pago va por Webpay Plus: el backend crea
-// la transaccion y el navegador envia token_ws a la URL de Webpay con un
-// formulario POST (asi lo pide Transbank).
+// Llamadas del checkout (KAN-95, KAN-148). El backend crea la transaccion en
+// la pasarela configurada y dice como llevar al comprador: Webpay pide un
+// formulario POST con token_ws; PayPal, una redireccion GET a su URL de
+// aprobacion.
 @Injectable({ providedIn: "root" })
 export class CheckoutService {
   private readonly api = inject(ApiClient);
@@ -68,7 +69,11 @@ export class CheckoutService {
 export class NavegadorPasarela {
   private readonly document = inject(DOCUMENT);
 
-  ir(url: string, token: string): void {
+  ir(url: string, token: string, metodo: "POST" | "GET" = "POST"): void {
+    if (metodo === "GET") {
+      this.document.location.assign(url);
+      return;
+    }
     const form = this.document.createElement("form");
     form.method = "POST";
     form.action = url;

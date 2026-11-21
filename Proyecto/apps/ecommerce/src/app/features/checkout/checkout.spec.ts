@@ -103,9 +103,9 @@ describe("Checkout (KAN-95)", () => {
     await Promise.resolve();
     const pago = ctrl.expectOne(`${API}/ordenes/12/pago`);
     expect(pago.request.body).toEqual({ medioPago: "tarjeta" });
-    pago.flush({ ordenId: 12, codigo: "CM-90012", total: 41690, pasarela: "webpay", urlPago: "https://webpay/init", token: "tok" });
+    pago.flush({ ordenId: 12, codigo: "CM-90012", total: 41690, pasarela: "webpay", urlPago: "https://webpay/init", token: "tok", metodo: "POST" });
     await p;
-    expect(ir).toHaveBeenCalledWith("https://webpay/init", "tok");
+    expect(ir).toHaveBeenCalledWith("https://webpay/init", "tok", "POST");
   });
 
   it("otra direccion: pide calle y comuna antes de pagar y la manda en el cuerpo", async () => {
@@ -251,9 +251,9 @@ describe("Resultado del pago (KAN-95)", () => {
     expect(el.textContent).toContain("El pago fue rechazado");
     expect(el.textContent).toContain("pendiente de pago");
     const p = c.reintentar();
-    ctrl.expectOne(`${API}/ordenes/12/pago`).flush({ ordenId: 12, codigo: "CM-90012", total: 80150, pasarela: "webpay", urlPago: "https://webpay/init", token: "tok-2" });
+    ctrl.expectOne(`${API}/ordenes/12/pago`).flush({ ordenId: 12, codigo: "CM-90012", total: 80150, pasarela: "webpay", urlPago: "https://webpay/init", token: "tok-2", metodo: "POST" });
     await p;
-    expect(ir).toHaveBeenCalledWith("https://webpay/init", "tok-2");
+    expect(ir).toHaveBeenCalledWith("https://webpay/init", "tok-2", "POST");
   });
 
   it("no confia solo en ?pago=: si la orden no esta pagada no dice aprobado", async () => {

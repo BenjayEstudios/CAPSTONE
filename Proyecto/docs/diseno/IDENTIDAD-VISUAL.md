@@ -56,17 +56,38 @@ principal); chips en píldora; barra inferior blanca con indicador magenta al
 
 ## Tipografía
 
-Los mockups usan **Source Serif 4** para títulos y cuerpo. Mobile usa por
+Los mockups usan **Source Serif 4**; la web (ecommerce y admin-site) usa Manrope. Mobile usa por
 ahora la tipografía del sistema (Roboto en Android). Si se quiere alinear,
 empaquetar los `.ttf` en `assets/fonts/` y declararlos en `pubspec.yaml`,
 sin `google_fonts`, para que funcione offline.
 
-## Web
+## Web: tema Laguna (ecommerce y admin-site)
 
-`apps/ecommerce` y `apps/admin-site` todavía no tienen tema: solo la vista
-de status. Al implementarlo, partir de los tokens de los mockups de arriba
-(como variables CSS en `styles.css`) para que web y mobile se vean como el
-mismo producto.
+`apps/ecommerce` y `apps/admin-site` comparten el tema **Laguna**: azul marino
+profundo, teal, menta muy claro y acentos crema, con ondas y círculos
+decorativos, y tipografía **Manrope** (400 a 800). La fuente de verdad es
+`apps/admin-site/src/styles.css`; el ecommerce copia los mismos valores en
+`apps/ecommerce/src/styles.css`. Esto reemplaza la paleta CMYK de los mockups
+en la web (los mockups siguen siendo la referencia de estructura y flujo).
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--tinta` / `--tinta-clara` | `#0b3d5c` / `#134e72` | Texto, paneles y pie marinos |
+| `--color-bg` / `--color-surface` / `--color-card` | `#eef6f5` / `#d9eae7` / `#fafdfd` | Fondo, superficies, tarjetas |
+| `--color-primary` | `#138a80` | Acción principal, enlaces |
+| `--color-menta` / `--color-crema` | `#99e6da` / `#f3e2c7` | Acentos sobre marino (sol, ondas) |
+| `--color-accent-2` | `#c8483a` | Salmón: errores y pendientes (antes magenta) |
+| `--color-ok` | `#1f9d6b` | Estados positivos |
+
+Formas: botones y chips en píldora, controles con radio 14, tarjetas con radio
+20 (paneles de login y portada, 28), sombra suave `--shadow-card`.
+
+Diferencia deliberada: en el ecommerce `--color-accent` vale `#138a80` (igual
+que primary) y no `#1fa79d`, porque se usa como fondo de botones con texto
+blanco y el teal claro no da contraste. Las ondas del ecommerce son una
+imagen SVG en la variable `--ondas-laguna` (`styles.css`), usada en el pie, la
+portada y el panel de las pantallas de cuenta; el isotipo es el mismo SVG del
+admin-site, en línea en `app.component.html`.
 
 ## Marca en Android
 

@@ -41,6 +41,8 @@ services:
       APP_NAME: cotizapp-backend
       HOST: 0.0.0.0
       PORT: 8000
+      # Nginx va delante: request.ip (rate limit) debe salir de X-Forwarded-For.
+      FASTIFY_TRUST_PROXY: "true"
       # MYSQL_PASSWORD debe ser alfanumérico: va dentro de una URL.
       DATABASE_URL: mysql://cotizapp:${MYSQL_PASSWORD:?Falta MYSQL_PASSWORD en infra/.env}@mysql:3306/cotizapp
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en infra/.env}
